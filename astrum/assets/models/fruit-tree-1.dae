@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.82.7</authoring_tool>
+    </contributor>
+    <created>2021-12-05T12:16:50</created>
+    <modified>2021-12-05T12:16:50</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="Material-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images/>
+  <library_materials>
+    <material id="Material-material" name="Material">
+      <instance_effect url="#Material-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="Plane-mesh" name="Plane">
+      <mesh>
+        <source id="Plane-mesh-positions">
+          <float_array id="Plane-mesh-positions-array" count="36">-2.333493 -0.9637938 5.823113 -1.993188 0.7052105 0 -2.36054 2.03401 0 -0.9773183 1.761902 0 -3.279141 2.456841 5.823113 0.2815878 1.756373 5.823113 -2.689567 -2.255431 8.199524 -4.240309 3.353971 8.199524 1.598829 2.205293 8.199524 -1.379888 1.127688 5.536055 -2.066792 1.262817 5.536055 -1.884366 0.6029379 5.536055</float_array>
+          <technique_common>
+            <accessor source="#Plane-mesh-positions-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane-mesh-normals">
+          <float_array id="Plane-mesh-normals-array" count="60">0 0 -1 0.1852664 0.9417747 -0.2806006 0.05650883 0.2872555 -0.9561858 0.2541269 -0.2443086 -0.935806 -0.3082745 -0.08522468 -0.9474722 -2.46326e-7 0 1 0.6962053 -0.6693089 -0.2594685 -0.9258924 -0.2559666 -0.2778569 -0.9637516 -0.2664326 0.01402229 0.7206323 -0.6927929 -0.026964 0.1914964 0.9734439 0.1254436 0.1852664 0.9417747 -0.2806007 0.05650925 0.2872555 -0.9561857 0.2541256 -0.2443089 -0.9358063 -0.3082785 -0.08522462 -0.947471 0.6962049 -0.6693093 -0.2594687 -0.9258922 -0.2559669 -0.2778572 -0.9637516 -0.2664328 0.01402229 0.7206323 -0.692793 -0.026964 0.1914964 0.9734439 0.1254435</float_array>
+          <technique_common>
+            <accessor source="#Plane-mesh-normals-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane-mesh-map-0">
+          <float_array id="Plane-mesh-map-0-array" count="120">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#Plane-mesh-map-0-array" count="60" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane-mesh-colors-Col" name="Col">
+          <float_array id="Plane-mesh-colors-Col-array" count="240">0.3490196 0.2784314 0.1764706 1 0.3568627 0.2823529 0.1764706 1 0.3529412 0.2784314 0.1764706 1 0.1568627 0.2705882 0.1294118 1 0.1294118 0.2313725 0.1098039 1 0.1176471 0.2078431 0.0980392 1 0.1176471 0.2078431 0.0980392 1 0.1843137 0.1411765 0.06666666 1 0.2 0.1529412 0.07450979 1 0.1843137 0.1411765 0.06666666 1 0.1215686 0.2196078 0.1019608 1 0.2196078 0.1764706 0.0862745 1 0.1215686 0.2196078 0.1019608 1 0.2 0.1529412 0.07450979 1 0.2196078 0.1764706 0.0862745 1 0.1568627 0.2705882 0.1294118 1 0.0980392 0.1686275 0.07843136 1 0.1215686 0.2156863 0.1019608 1 0.1294118 0.2313725 0.1098039 1 0.0980392 0.1686275 0.07843136 1 0.1215686 0.2196078 0.1019608 1 0.1215686 0.2196078 0.1019608 1 0.1568627 0.2705882 0.1294118 1 0.1176471 0.2078431 0.0980392 1 0.3529412 0.2784314 0.1764706 1 0.2 0.1529412 0.07450979 1 0.3490196 0.2784314 0.1764706 1 0.1843137 0.1411765 0.06666666 1 0.3529412 0.2784314 0.1764706 1 0.3568627 0.2823529 0.1764706 1 0.2 0.1529412 0.07450979 1 0.3568627 0.2823529 0.1764706 1 0.3490196 0.2784314 0.1764706 1 0.1568627 0.2705882 0.1294118 1 0.1215686 0.2156863 0.1019608 1 0.1294118 0.2313725 0.1098039 1 0.1176471 0.2078431 0.0980392 1 0.1294118 0.2313725 0.1098039 1 0.1843137 0.1411765 0.06666666 1 0.1843137 0.1411765 0.06666666 1 0.1294118 0.2313725 0.1098039 1 0.1215686 0.2196078 0.1019608 1 0.1215686 0.2196078 0.1019608 1 0.1176471 0.2078431 0.0980392 1 0.2 0.1529412 0.07450979 1 0.1294118 0.2313725 0.1098039 1 0.1215686 0.2156863 0.1019608 1 0.0980392 0.1686275 0.07843136 1 0.1215686 0.2196078 0.1019608 1 0.0980392 0.1686275 0.07843136 1 0.1568627 0.2705882 0.1294118 1 0.3529412 0.2784314 0.1764706 1 0.2196078 0.1764706 0.0862745 1 0.2 0.1529412 0.07450979 1 0.1843137 0.1411765 0.06666666 1 0.2196078 0.1764706 0.0862745 1 0.3529412 0.2784314 0.1764706 1 0.2 0.1529412 0.07450979 1 0.1843137 0.1411765 0.06666666 1 0.3568627 0.2823529 0.1764706 1</float_array>
+          <technique_common>
+            <accessor source="#Plane-mesh-colors-Col-array" count="60" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Plane-mesh-vertices">
+          <input semantic="POSITION" source="#Plane-mesh-positions"/>
+        </vertices>
+        <triangles material="Material-material" count="20">
+          <input semantic="VERTEX" source="#Plane-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Plane-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Plane-mesh-map-0" offset="2" set="0"/>
+          <input semantic="COLOR" source="#Plane-mesh-colors-Col" offset="3" set="0"/>
+          <p>2 0 0 0 3 0 1 1 1 0 2 2 7 1 3 3 5 1 4 4 4 1 5 5 4 2 6 6 9 2 7 7 10 2 8 8 9 3 9 9 0 3 10 10 11 3 11 11 0 4 12 12 10 4 13 13 11 4 14 14 7 5 15 15 6 5 16 16 8 5 17 17 5 6 18 18 6 6 19 19 0 6 20 20 0 7 21 21 7 7 22 22 4 7 23 23 1 8 24 24 10 8 25 25 2 8 26 26 9 9 27 27 1 9 28 28 3 9 29 29 10 10 30 30 3 10 31 31 2 10 32 32 7 11 33 33 8 11 34 34 5 11 35 35 4 12 36 36 5 12 37 37 9 12 38 38 9 13 39 39 5 13 40 40 0 13 41 41 0 14 42 42 4 14 43 43 10 14 44 44 5 15 45 45 8 15 46 46 6 15 47 47 0 16 48 48 6 16 49 49 7 16 50 50 1 17 51 51 11 17 52 52 10 17 53 53 9 18 54 54 11 18 55 55 1 18 56 56 10 19 57 57 9 19 58 58 3 19 59 59</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="Plane" name="Plane" type="NODE">
+        <matrix sid="transform">1 0 0 1.73021 0 1 0 -1.423991 0 0 1 -1.1375 0 0 0 1</matrix>
+        <instance_geometry url="#Plane-mesh" name="Plane">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="Material-material" target="#Material-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

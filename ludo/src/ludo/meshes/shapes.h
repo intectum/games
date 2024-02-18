@@ -1,0 +1,126 @@
+/*
+ * This file is part of ludo. See the LICENSE file for the full license governing this code.
+ */
+
+#ifndef LUDO_MESHES_SHAPES_H
+#define LUDO_MESHES_SHAPES_H
+
+#include "../meshes.h"
+
+namespace ludo
+{
+  ///
+  /// A set of options for building a shape mesh.
+  struct shape_options
+  {
+    vec3 center = vec3_zero; ///< The center position of the shape.
+    vec3 dimensions = vec3_one; ///< The dimensions of the shape. Of the form [width/diameter,height,depth].
+    uint32_t divisions = 1; ///< The number of divisions in the shape.
+
+    bool outward_faces = true; ///< Determines if the outward faces should be included. If this is true, the shape will be visible from the outside.
+    bool inward_faces = false; ///< Determines if the inward faces should be included. If this is true, the shape will be visible from the inside.
+
+    bool smooth = false; ///< Determines if the shape should use smooth shading (only applicable to the cylinder and spheres).
+  };
+
+  ///
+  /// Appends a box to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the box to.
+  /// \param options The options used to build the box.
+  LUDO_API void box(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in a box.
+  /// \param options The options used to build the box.
+  /// \return The total and unique vertex counts of a box. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> box_counts(const shape_options& options);
+
+  ///
+  /// Appends a circle to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the circle to.
+  /// \param options The options used to build the circle.
+  LUDO_API void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in a circle.
+  /// \param options The options used to build the circle.
+  /// \return The total and unique vertex counts of a circle. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> circle_counts(const shape_options& options);
+
+  ///
+  /// Appends a cylinder to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the cylinder to.
+  /// \param options The options used to build the cylinder.
+  LUDO_API void cylinder(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in a cylinder.
+  /// \param options The options used to build the cylinder.
+  /// \return The total and unique vertex counts of a cylinder. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> cylinder_counts(const shape_options& options);
+
+  ///
+  /// Appends a rectangle to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the rectangle to.
+  /// \param options The options used to build the rectangle.
+  LUDO_API void rectangle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in a rectangle.
+  /// \param options The options used to build the rectangle.
+  /// \return The total and unique vertex counts of a rectangle. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> rectangle_counts(const shape_options& options);
+
+  ///
+  /// Appends a cube-based sphere to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the sphere to.
+  /// \param options The options used to build the sphere.
+  /// \param spherified Determines if the points of the cube should be 'spherified' instead of just normalized.
+  LUDO_API void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options, bool spherified = true);
+
+  ///
+  /// Determines the total and unique vertex counts in a cube-based sphere.
+  /// \param options The options used to build the sphere.
+  /// \return The total and unique vertex counts of a cube-based sphere. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_cube_counts(const shape_options& options);
+
+  ///
+  /// Appends an icosahedron-based sphere to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the sphere to.
+  /// \param options The options used to build the sphere.
+  LUDO_API void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in an icosahedron-based sphere.
+  /// \param options The options used to build the sphere.
+  /// \return The total and unique vertex counts of an icosahedron-based sphere. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_ico_counts(const shape_options& options);
+
+  ///
+  /// Appends a UV sphere to the end of the given mesh.
+  /// \param mesh_buffer The mesh buffer containing the mesh.
+  /// \param format The vertex format of the mesh buffer.
+  /// \param mesh The mesh to append the sphere to.
+  /// \param options The options used to build the sphere.
+  LUDO_API void sphere_uv(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+
+  ///
+  /// Determines the total and unique vertex counts in a UV sphere.
+  /// \param options The options used to build the sphere.
+  /// \return The total and unique vertex counts of a UV sphere. Of the form { total, unique }.
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_uv_counts(const shape_options& options);
+}
+
+#endif // LUDO_MESHES_SHAPES_H
