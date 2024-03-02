@@ -12,7 +12,8 @@ namespace astrum
   const auto visualize_physics = false;
 
   // Rendering
-  const auto msaa_samples = uint8_t(16);
+  // TODO Handle this better, 16 here crashed on my new laptop (Zephyrus G14)
+  const auto msaa_samples = uint8_t(8);
 
   // Physics
   const auto astronomical_unit = 149597870700.0f * 0.00005f;
