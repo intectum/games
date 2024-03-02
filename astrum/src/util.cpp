@@ -70,13 +70,19 @@ namespace astrum
       }
 
       ludo::log_debug("astrum", "FPS: %i, Average script times:", frame_count);
+      auto average_frame_time = 0.0f;
       for (auto index = 0; index < ludo::total_script_times.size(); index++)
       {
         auto script_name = final_script_names[index];
         auto padding_size = longest_script_name_size - script_name.size() + 2;
 
-        ludo::log_debug("astrum", std::string("  ") + script_name + std::string(padding_size, ' ') + "%.2fms", ludo::total_script_times[index] / static_cast<float>(frame_count) * 1000.0f);
+        auto average_script_time = ludo::total_script_times[index] / static_cast<float>(frame_count) * 1000.0f;
+        average_frame_time += average_script_time;
+        ludo::log_debug("astrum", std::string("  ") + script_name + std::string(padding_size, ' ') + "%.2fms", average_script_time);
       }
+
+      auto padding_size = longest_script_name_size - std::string("all_scripts").size() + 2;
+      ludo::log_debug("astrum", std::string("  ") + "all_scripts" + std::string(padding_size, ' ') + "%.2fms", average_frame_time);
 
       ludo::total_script_times.clear();
       frame_count = 0;
