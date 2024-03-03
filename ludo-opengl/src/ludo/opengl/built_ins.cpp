@@ -248,7 +248,7 @@ layout(std430, binding = 0) buffer context_layout
     {
       stream <<
 R"--(
-layout(std430, binding = 4) buffer mesh_layout
+layout(std430, binding = 3) buffer texture_layout
 {
   sampler2D samplers[)--" << static_cast<uint32_t>(options.texture_count) << R"--(];
 };
@@ -259,7 +259,7 @@ layout(std430, binding = 4) buffer mesh_layout
     {
       stream <<
 R"--(
-layout(std430, binding = 5) buffer animation_layout
+layout(std430, binding = 4) buffer animation_layout
 {
   mat4 bone_transforms[];
 };

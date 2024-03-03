@@ -21,7 +21,7 @@ in point_t point;
 
 // Buffers
 
-layout(std430, binding = 1) buffer node_layout
+layout(std430, binding = 1) buffer render_layout
 {
   sampler2D color_sampler;
   bool horizontal;

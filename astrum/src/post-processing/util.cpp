@@ -63,6 +63,9 @@ namespace astrum
   {
     auto buffer = ludo::allocate_vram(16);
 
+    ludo::write(buffer, 0, 0L);
+    ludo::write(buffer, 8, 0L);
+
     if (texture_id_0) ludo::write(buffer, 0, ludo::texture { .id = texture_id_0 });
     if (texture_id_1) ludo::write(buffer, 8, ludo::texture { .id = texture_id_1 });
 

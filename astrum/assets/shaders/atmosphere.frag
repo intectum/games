@@ -78,7 +78,7 @@ layout(std430, binding = 0) buffer context_layout
   light_t lights[];
 };
 
-layout(std430, binding = 1) buffer node_layout
+layout(std430, binding = 1) buffer render_layout
 {
   sampler2D color_sampler;
   sampler2DShadow depth_sampler;

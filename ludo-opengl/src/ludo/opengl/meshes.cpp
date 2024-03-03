@@ -212,7 +212,7 @@ namespace ludo
         continue;
       }
 
-      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3 + index, mesh_buffer.data_buffers[index].id); check_opengl_error();
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 + index, mesh_buffer.data_buffers[index].id); check_opengl_error();
     }
   }
 }
