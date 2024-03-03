@@ -2,7 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include "logging.h"
+#include <iostream>
+
 #include "testing.h"
 
 namespace ludo
@@ -19,13 +20,13 @@ namespace ludo
 
   int32_t test_finalize()
   {
-    log_info("ludo testing", "%i/%i tests passed.", test_count - test_failed_count, test_count);
+    std::cout << test_count - test_failed_count << "/" << test_count << " tests passed" << std::endl;
     if (!test_failed_logs.empty())
     {
-      log_info("ludo testing", "Failed tests:");
+      std::cout << "failed tests:" << std::endl;
       for (auto& test_failed_log : test_failed_logs)
       {
-        log_info("ludo testing", "  %s", test_failed_log.c_str());
+        std::cout << "  " << test_failed_log << std::endl;
       }
     }
 

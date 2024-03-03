@@ -1,3 +1,6 @@
+#include <iomanip>
+#include <iostream>
+
 #include <ludo/api.h>
 
 #include "constants.h"
@@ -127,7 +130,7 @@ int main()
 
   ludo::add<ludo::script>(inst, astrum::print_timings);
 
-  ludo::log_debug("astrum", "load time (seconds): %f", ludo::elapsed(timer));
+  std::cout << std::fixed << std::setprecision(2) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
 
   ludo::play(inst);
 

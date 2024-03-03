@@ -2,10 +2,11 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include <GLFW/glfw3.h>
 
 #include <ludo/data.h>
-#include <ludo/logging.h>
 #include <ludo/windowing.h>
 
 #include "input.h"
@@ -61,12 +62,14 @@ namespace ludo
 
     glfwSetErrorCallback([](int error, const char* description)
     {
-      log_error("ludo", "GLFW error %i: %s", error, description);
+      std::cout << "GLFW error " << error << ": " << description << std::endl;
+      assert(false && "GLFW error");
     });
 
     if (!glfwInit())
     {
-      log_error("ludo", "Failed to initialize GLFW");
+      std::cout << "failed to initialize GLFW" << std::endl;
+      assert(false && "failed to initialize GLFW");
     }
 
     return windowing_context;

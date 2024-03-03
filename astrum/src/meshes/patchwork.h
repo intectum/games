@@ -1,6 +1,8 @@
 #ifndef ASTRUM_MESHES_DYNAMIC_MESH_H
 #define ASTRUM_MESHES_DYNAMIC_MESH_H
 
+#include <iostream>
+
 #include <ludo/api.h>
 
 #include "../types.h"

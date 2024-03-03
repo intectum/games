@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include <GL/glew.h>
 
 #include "util.h"
@@ -13,7 +15,8 @@ namespace ludo
     auto error = glGetError();
     if (error != GL_NO_ERROR)
     {
-      log_error("ludo", "OpenGL error %i: %s", error, gluErrorString(error));
+      std::cout << "OpenGL error " << error << ": " << gluErrorString(error);
+      assert(false && "OpenGL error");
     }
   }
 

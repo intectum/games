@@ -2,7 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include "logging.h"
+#include <iostream>
+
 #include "thread_pool.h"
 
 namespace ludo
@@ -21,7 +22,7 @@ namespace ludo
   {
     while (!thread_pool_semaphore.try_acquire_for(std::chrono::duration(std::chrono::seconds(1))))
     {
-      log_warning("ludo", "waiting for thread pool availability...");
+      std::cout << "waiting for thread pool availability..." << std::endl;
     }
     thread_pool_executing++;
 

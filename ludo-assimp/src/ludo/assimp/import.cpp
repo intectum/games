@@ -3,13 +3,13 @@
  */
 
 #include <algorithm>
+#include <iostream>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <FreeImagePlus.h>
 
-#include <ludo/logging.h>
 #include <ludo/meshes.h>
 
 #include "animation.h"
@@ -52,7 +52,8 @@ namespace ludo
     auto assimp_scene = importer.ReadFile(file_name, aiProcessPreset_TargetRealtime_MaxQuality);
     if (assimp_scene == nullptr)
     {
-      log_error("ludo", "Assimp error: %s", importer.GetErrorString());
+      std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
+      assert(false && "Assimp error");
       return { 0, 0 };
     }
 
@@ -109,7 +110,8 @@ namespace ludo
     auto assimp_scene = importer.ReadFile(file_name, aiProcessPreset_TargetRealtime_MaxQuality);
     if (assimp_scene == nullptr)
     {
-      log_error("ludo", "Assimp error: %s", importer.GetErrorString());
+      std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
+      assert(false && "Assimp error");
       return;
     }
 

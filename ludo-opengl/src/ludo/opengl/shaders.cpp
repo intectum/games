@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include "util.h"
 
 namespace ludo
@@ -45,8 +47,8 @@ namespace ludo
       GLchar info_log[1024];
       glGetShaderInfoLog(shader->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-      log_error("ludo", "Failed to compile shader:");
-      log_error("ludo", info_log);
+      std::cout << "failed to compile shader: " << info_log << std::endl;
+      assert(false && "failed to compile shader");
     }
 
     return shader;

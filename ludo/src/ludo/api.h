@@ -16,7 +16,6 @@
 #include "meshes/shapes.h"
 #include "graphs.h"
 #include "input.h"
-#include "logging.h"
 #include "math/distance.h"
 #include "math/mat.h"
 #include "math/quat.h"

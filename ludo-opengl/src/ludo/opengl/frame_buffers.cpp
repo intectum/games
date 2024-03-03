@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include "frame_buffers.h"
 #include "util.h"
 
@@ -45,11 +47,13 @@ namespace ludo
     auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status == GL_FRAMEBUFFER_UNSUPPORTED)
     {
-      log_error("ludo", "Frame buffer unsupported");
+      std::cout << "frame buffer unsupported" << std::endl;
+      assert(false && "frame buffer unsupported");
     }
     else if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-      log_error("ludo", "Failed to create frame buffer");
+      std::cout << "failed to create frame buffer, status: " << status << std::endl;
+      assert(false && "failed to create frame buffer");
     }
 
     return frame_buffer;

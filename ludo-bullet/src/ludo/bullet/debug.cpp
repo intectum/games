@@ -2,7 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <ludo/logging.h>
+#include <iostream>
 
 #include "debug.h"
 #include "math.h"
@@ -47,12 +47,12 @@ namespace ludo
 
   void debug_drawer::draw3dText(const btVector3& location, const char* text_string)
   {
-    log_debug("ludo-bullet", "3d text: %s", text_string);
+    std::cout << "bullet debug 3d text: " << text_string << std::endl;
   }
 
   void debug_drawer::reportErrorWarning(const char* warning_string)
   {
-    log_debug("ludo-bullet", "warning: %s", warning_string);
+    std::cout << "bullet debug warning: " << warning_string << std::endl;
   }
 
   int debug_drawer::getDebugMode() const

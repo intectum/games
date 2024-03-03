@@ -8,7 +8,6 @@
 #include <GL/glew.h>
 
 #include <ludo/rendering.h>
-#include <ludo/logging.h>
 
 namespace ludo
 {

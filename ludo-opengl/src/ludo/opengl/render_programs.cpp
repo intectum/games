@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include "render_programs.h"
 #include "util.h"
 
@@ -33,8 +35,8 @@ namespace ludo
       GLchar info_log[1024];
       glGetProgramInfoLog(render_program->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-      log_error("ludo", "Failed to link shader program:");
-      log_error("ludo", info_log);
+      std::cout << "failed to link shader program: " << info_log << std::endl;
+      assert(false && "failed to link shader program:");
     }
 
     return render_program;
@@ -61,8 +63,8 @@ namespace ludo
       GLchar info_log[1024];
       glGetProgramInfoLog(render_program.id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-      log_error("ludo", "Failed to validate shader program:");
-      log_error("ludo", info_log);
+      std::cout << "failed to validate shader program: " << info_log << std::endl;
+      assert(false && "failed to validate shader program:");
     }
 
     glUseProgram(render_program.id); check_opengl_error();

@@ -5,7 +5,6 @@
 #include <cmath>
 
 #include "../graphs.h"
-#include "../logging.h" // TODO temp
 #include "../tasks.h"
 #include "./util.h"
 

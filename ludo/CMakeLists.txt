@@ -17,7 +17,6 @@ set(SRC_FILES
     src/ludo/graphs/dynamic_octree.cpp
     src/ludo/graphs/linear_octree.cpp
     src/ludo/graphs/util.cpp
-    src/ludo/logging.cpp
     src/ludo/math/distance.cpp
     src/ludo/math/mat.cpp
     src/ludo/math/quat.cpp
