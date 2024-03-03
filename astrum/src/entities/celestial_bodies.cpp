@@ -92,14 +92,12 @@ namespace astrum
       auto& linear_octree = ludo::data<ludo::linear_octree>(inst, "celestial-bodies")[index];
       auto& mesh_buffer = ludo::data<ludo::mesh_buffer>(inst, "celestial-bodies")[index];
 
-      auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
-
       auto position = ludo::position(ludo::get_transform(mesh_buffer, 0));
 
       auto& patch = patchwork.patches[patch_index];
       auto& mesh = *ludo::get<ludo::mesh>(inst, patch.mesh_id);
 
-      //ludo::add(linear_octree, mesh, position + patch.center);
+      ludo::add(linear_octree, mesh, position + patch.center);
     };
 
     auto on_unload = [&inst, index](const patchwork& patchwork, uint32_t patch_index)
