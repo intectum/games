@@ -81,7 +81,9 @@ layout(std430, binding = 0) buffer context_layout
 layout(std430, binding = 1) buffer render_layout
 {
   sampler2D color_sampler;
-  sampler2DShadow depth_sampler;
+  // TODO why is sampler2DShadow not working? AMD thing? I'm sure it was working before...
+  //sampler2DShadow depth_sampler;
+  sampler2D depth_sampler;
 };
 
 layout(std430, binding = 2) buffer program_layout
@@ -251,7 +253,8 @@ void main()
 {
   color = texture(color_sampler, point.tex_coords[0]);
 
-  float depth = linear_depth(texture(depth_sampler, vec3(point.tex_coords[0], 0.0)));
+  //float depth = linear_depth(texture(depth_sampler, vec3(point.tex_coords[0], 0.0)));
+  float depth = linear_depth(texture(depth_sampler, point.tex_coords[0]).x);
 
   mat4 camera_projection_inverse = inverse(camera.projection);
   vec3 view = vec3(camera_projection_inverse * vec4(point.tex_coords[0] * 2.0 - 1.0, 0.0, 1.0));

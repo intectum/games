@@ -56,6 +56,7 @@ namespace ludo
     { pixel_format::DEPTH, 4 }
   };
 
+  // TODO something much better than this *global* hack
   auto texture_handles = std::unordered_map<uint64_t, uint64_t>();
 
   template<>

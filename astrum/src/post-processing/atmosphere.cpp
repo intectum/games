@@ -28,7 +28,7 @@ namespace astrum
     ludo::write(*blue_noise_texture, reinterpret_cast<std::byte*>(image.accessPixels()));
 
     auto byte_index = 0;
-    ludo::write(render_program->data_buffer, 0, *blue_noise_texture);
+    ludo::write(render_program->data_buffer, byte_index, *blue_noise_texture);
     byte_index += 16;
     byte_index += 12; // skip planet_t.position
     ludo::write(render_program->data_buffer, byte_index, planet_radius);
@@ -40,8 +40,7 @@ namespace astrum
       auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
       auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-      auto byte_index = 16;
-      ludo::write(render_program->data_buffer, byte_index, celestial_body_point_masses[celestial_body_index].transform.position);
+      ludo::write(render_program->data_buffer, 16, celestial_body_point_masses[celestial_body_index].transform.position);
     });
 
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,

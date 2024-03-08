@@ -14,24 +14,20 @@ namespace astrum
 
     if (target_screen)
     {
-      ludo::add<ludo::script>(inst,
-        [previous_frame_buffer](ludo::instance& inst)
-        {
-          auto& window = *ludo::first<ludo::window>(inst);
-          ludo::blit(previous_frame_buffer, ludo::frame_buffer { .width = window.width, .height = window.height });
-        }
-      );
+      ludo::add<ludo::script>(inst, [previous_frame_buffer](ludo::instance& inst)
+      {
+        auto& window = *ludo::first<ludo::window>(inst);
+        ludo::blit(previous_frame_buffer, ludo::frame_buffer { .width = window.width, .height = window.height });
+      });
     }
     else
     {
       auto frame_buffer = *add_post_processing_frame_buffer(inst, true);
 
-      ludo::add<ludo::script>(inst,
-        [previous_frame_buffer, frame_buffer](ludo::instance& inst)
-        {
-          ludo::blit(previous_frame_buffer, frame_buffer);
-        }
-      );
+      ludo::add<ludo::script>(inst, [previous_frame_buffer, frame_buffer](ludo::instance& inst)
+      {
+        ludo::blit(previous_frame_buffer, frame_buffer);
+      });
     }
   }
 }
