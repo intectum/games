@@ -13,7 +13,7 @@ namespace astrum
 {
   ludo::vec2 ray_sphere_intersections(const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, const ludo::vec3& sphere_center, float sphere_radius);
   float optical_depth(uint32_t sample_count, float scale_height, float planet_radius, float atmosphere_radius, const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, float ray_length);
-  float atmospheric_density(float scale_height, float normalized_altitude);
+  float atmospheric_density(float scale_height, float altitude);
   float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position);
 
   void add_atmosphere(ludo::instance& inst, uint64_t mesh_id, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
@@ -74,10 +74,10 @@ namespace astrum
     for (auto row = 0; row < texture_size; row++)
     {
       auto image_data = reinterpret_cast<float*>(image.getScanLine(row));
-      auto normalized_altitude = 1.0f / static_cast<float>(texture_size) * static_cast<float>(row) + 0.0001f;
-      auto altitude = (atmosphere_radius - planet_radius) * normalized_altitude;
+      auto altitude = 1.0f / static_cast<float>(texture_size) * static_cast<float>(row);
+      auto scaled_altitude = (atmosphere_radius - planet_radius) * altitude;
 
-      auto ray_origin = ludo::vec3 { 0.0f, planet_radius + altitude, 0.0f };
+      auto ray_origin = ludo::vec3 { 0.0f, planet_radius + scaled_altitude, 0.0f };
 
       for (auto column = 0; column < texture_size; column++)
       {
@@ -92,7 +92,7 @@ namespace astrum
 
         // NOTE: Red and blue are flipped when the texture is saved...
         // A bug in FreeImage when saving to TIFF?
-        image_data[FI_RGBA_BLUE] = atmospheric_density(scale_height, normalized_altitude);
+        image_data[FI_RGBA_BLUE] = atmospheric_density(scale_height, altitude);
         image_data[FI_RGBA_GREEN] = optical_depth(sample_count, scale_height, planet_radius, atmosphere_radius, ray_origin, ray_direction, ray_length) / 512.0f;
         image_data[FI_RGBA_RED] = 0.0f;
         image_data += 3;
@@ -142,13 +142,12 @@ namespace astrum
     return depth;
   }
 
-  float atmospheric_density(float scale_height, float normalized_altitude)
+  float atmospheric_density(float scale_height, float altitude)
   {
-    auto density = std::exp(-normalized_altitude / scale_height);
+    auto density = std::exp(-altitude / scale_height);
 
     // Ensure the density is 0.0 at the atmosphere radius.
-    // Or maybe we can get a longer exp tail into the lower numbers? Would probably require a larger overall atmosphere though...
-    //density *= 1.0 - altitude;
+    density *= 1.0f - altitude;
 
     return density;
   }

@@ -12,7 +12,7 @@ const uint in_scatter_sample_count = 10;
 const uint optical_depth_sample_count = 10;
 const float scale_height = 0.25;
 
-const float scattering_strength = 2500000.0;
+const float scattering_strength = 10000000.0;
 const vec3 scattering_constants = vec3(
   1.0 / pow(700.0, 4.0) * scattering_strength,
   1.0 / pow(530.0, 4.0) * scattering_strength,
