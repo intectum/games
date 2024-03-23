@@ -329,18 +329,35 @@ namespace ludo
     auto image = fipImage();
     image.load(file_name.c_str());
 
+    auto bits_per_pixel = image.getBitsPerPixel();
+    if (bits_per_pixel != 24 && bits_per_pixel != 32)
+    {
+      assert(false && "unsupported pixel datatype");
+    }
+
+    auto color_type = image.getColorType();
+    if (color_type != FIC_RGB && color_type != FIC_RGBALPHA)
+    {
+      assert(false && "unsupported pixel components");
+    }
+
+    if (FI_RGBA_BLUE != 0)
+    {
+      assert(false && "unsupported platform (need to implement solution for this)");
+    }
+
     auto texture = add(
       instance,
       ludo::texture
       {
-        .format = pixel_format::BGRA,
+        .components = bits_per_pixel == 32 ? pixel_components::BGRA : pixel_components::BGR,
         .width = image.getWidth(),
         .height = image.getHeight()
       },
       partition
     );
 
-    write(*texture, reinterpret_cast<std::byte*>(image.accessPixels()), true);
+    write(*texture, reinterpret_cast<std::byte*>(image.accessPixels()));
 
     return texture;
   }

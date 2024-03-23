@@ -2,58 +2,30 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <iostream>
+
 #include "util.h"
 
 namespace ludo
 {
-  auto pixel_formats = std::unordered_map<pixel_format, GLenum>
-  {
-    { pixel_format::BGR, GL_BGR },
-    { pixel_format::BGR_HDR, GL_BGR },
-    { pixel_format::BGRA, GL_BGRA },
-    { pixel_format::BGRA_HDR, GL_BGRA },
-    { pixel_format::RGB, GL_RGB },
-    { pixel_format::RGB_HDR, GL_RGB },
-    { pixel_format::RGBA, GL_RGBA },
-    { pixel_format::RGBA_HDR, GL_RGBA },
+  GLint internal_pixel_format(const texture& texture);
 
-    { pixel_format::DEPTH, GL_DEPTH_COMPONENT }
+  auto pixel_formats = std::unordered_map<pixel_components, GLenum>
+  {
+    { pixel_components::BGR, GL_BGR },
+    { pixel_components::BGRA, GL_BGRA },
+    { pixel_components::RGB, GL_RGB },
+    { pixel_components::RGBA, GL_RGBA },
+
+    { pixel_components::DEPTH, GL_DEPTH_COMPONENT }
   };
 
-  auto internal_pixel_formats = std::unordered_map<pixel_format, GLint>
+  auto pixel_types = std::unordered_map<pixel_datatype, GLenum>
   {
-    { pixel_format::BGR, GL_RGB8 },
-    { pixel_format::BGR_HDR, GL_RGB16F },
-    { pixel_format::BGRA, GL_RGBA8 },
-    { pixel_format::BGRA_HDR, GL_RGBA16F },
-    { pixel_format::RGB, GL_RGB8 },
-    { pixel_format::RGB_HDR, GL_RGB16F },
-    { pixel_format::RGBA, GL_RGBA8 },
-    { pixel_format::RGBA_HDR, GL_RGBA16F },
+    { pixel_datatype::UINT8, GL_UNSIGNED_BYTE },
 
-    { pixel_format::DEPTH, GL_DEPTH_COMPONENT32F }
-  };
-
-  auto srgb_internal_pixel_formats = std::unordered_map<pixel_format, GLint>
-  {
-    { pixel_format::BGR, GL_SRGB8 },
-    { pixel_format::BGRA, GL_SRGB8_ALPHA8 },
-    { pixel_format::RGB, GL_SRGB8 },
-    { pixel_format::RGBA, GL_SRGB8_ALPHA8 }
-  };
-
-  auto pixel_depths = std::unordered_map<pixel_format, GLuint>
-  {
-    { pixel_format::BGR, 3 },
-    { pixel_format::BGR_HDR, 6 },
-    { pixel_format::BGRA, 4 },
-    { pixel_format::BGRA_HDR, 8 },
-    { pixel_format::RGB, 3 },
-    { pixel_format::RGB_HDR, 6 },
-    { pixel_format::RGBA, 4 },
-    { pixel_format::RGBA_HDR, 8 },
-
-    { pixel_format::DEPTH, 4 }
+    { pixel_datatype::FLOAT16, GL_HALF_FLOAT },
+    { pixel_datatype::FLOAT32, GL_FLOAT }
   };
 
   // TODO something much better than this *global* hack
@@ -79,7 +51,7 @@ namespace ludo
       glTextureStorage2DMultisample(
         texture->id,
         options.samples,
-        internal_pixel_formats[texture->format],
+        internal_pixel_format(*texture),
         static_cast<GLsizei>(texture->width),
         static_cast<GLsizei>(texture->height),
         false
@@ -111,32 +83,34 @@ namespace ludo
     remove(data<texture>(instance), element, partition);
   }
 
-  std::vector<std::byte> read(const texture& texture, bool convert_srgb)
+  std::vector<std::byte> read(const texture& texture)
   {
-    auto data = std::vector<std::byte>(texture.width * texture.height * pixel_depths[texture.format]);
-    auto type = texture.format == pixel_format::DEPTH ? GL_FLOAT : GL_UNSIGNED_BYTE;
-    auto internal_format = convert_srgb ? srgb_internal_pixel_formats[texture.format] : internal_pixel_formats[texture.format];
+    auto data = std::vector<std::byte>(texture.width * texture.height * pixel_depth(texture));
 
-    glGetTextureImage(texture.id, 0, internal_format, type, static_cast<GLsizei>(data.size()), data.data()); check_opengl_error();
+    glGetTextureImage(
+      texture.id,
+      0,
+      pixel_formats[texture.components],
+      pixel_types[texture.datatype],
+      static_cast<GLsizei>(data.size()),
+      data.data()
+    ); check_opengl_error();
 
     return data;
   }
 
-  void write(texture& texture, const std::byte* data, bool convert_srgb)
+  void write(texture& texture, const std::byte* data)
   {
-    auto type = texture.format == pixel_format::DEPTH ? GL_FLOAT : GL_UNSIGNED_BYTE;
-    auto internal_format = convert_srgb ? srgb_internal_pixel_formats[texture.format] : internal_pixel_formats[texture.format];
-
     glTextureImage2DEXT(
       texture.id,
       GL_TEXTURE_2D,
       0,
-      internal_format,
+      internal_pixel_format(texture),
       static_cast<GLsizei>(texture.width),
       static_cast<GLsizei>(texture.height),
       0,
-      pixel_formats[texture.format],
-      type,
+      pixel_formats[texture.components],
+      pixel_types[texture.datatype],
       data
     ); check_opengl_error();
   }
@@ -153,5 +127,53 @@ namespace ludo
     }
 
     write(buffer, position, texture_handles[value.id]);
+  }
+
+  GLint internal_pixel_format(const texture& texture)
+  {
+    if (texture.components == pixel_components::BGR || texture.components == pixel_components::RGB)
+    {
+      if (texture.datatype == pixel_datatype::UINT8)
+      {
+        return GL_RGB8;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT16)
+      {
+        return GL_RGB16F;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT32)
+      {
+        return GL_RGB32F;
+      }
+    }
+    else if (texture.components == pixel_components::BGRA || texture.components == pixel_components::RGBA)
+    {
+      if (texture.datatype == pixel_datatype::UINT8)
+      {
+        return GL_RGBA8;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT16)
+      {
+        return GL_RGBA16F;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT32)
+      {
+        return GL_RGBA32F;
+      }
+    }
+    else if (texture.components == pixel_components::DEPTH)
+    {
+      if (texture.datatype == pixel_datatype::FLOAT32)
+      {
+        return GL_DEPTH_COMPONENT32F;
+      }
+    }
+    else
+    {
+      assert(false && "unsupported components");
+    }
+
+    assert(false && "unsupported components/datatype combination");
+    return GL_RGB8;
   }
 }

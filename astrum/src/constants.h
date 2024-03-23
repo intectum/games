@@ -47,6 +47,7 @@ namespace astrum
 
   // Terra
   const auto terra_radius = 6371000.0f * planetary_scale;
+  const auto terra_atmosphere_scale = 1.3f;
   const auto terra_surface_gravity = 9.8f;
   const auto terra_mass = terra_surface_gravity * terra_radius * terra_radius * gravitational_constant;
   const auto terra_lods = std::vector<lod> { { 5, 0.0f }, { 6, terra_radius * 3.2f }, { 8, terra_radius * 0.8f }, { 10, terra_radius * 0.2f }, { 12, terra_radius * 0.05f } };

@@ -33,6 +33,7 @@ set(SRC_FILES
     src/ludo/meshes/sphere_ico.cpp
     src/ludo/meshes/sphere_uv.cpp
     src/ludo/meshes/util.cpp
+    src/ludo/rendering.cpp
     src/ludo/scripts.cpp
     src/ludo/tasks.cpp
     src/ludo/testing.cpp

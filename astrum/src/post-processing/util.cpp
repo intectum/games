@@ -43,15 +43,15 @@ namespace astrum
     auto width = static_cast<uint32_t>(static_cast<float>(window.width) * texture_size);
     auto height = static_cast<uint32_t>(static_cast<float>(window.height) * texture_size);
 
-    auto blank_color_data = std::vector<std::byte>(width * height * 6);
-    auto color_texture = ludo::add(inst, ludo::texture { .format = ludo::pixel_format::RGB_HDR, .width = width, .height = height }, { .clamp = true });
+    auto color_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT16, .width = width, .height = height }, { .clamp = true });
+    auto blank_color_data = std::vector<std::byte>(width * height * ludo::pixel_depth(*color_texture));
     ludo::write(*color_texture, blank_color_data.data());
 
     auto depth_texture_id = uint32_t(0);
     if (has_depth)
     {
-      auto blank_depth_data = std::vector<std::byte>(width * height * 4);
-      auto depth_texture = ludo::add(inst, ludo::texture { .format = ludo::pixel_format::DEPTH, .width = width, .height = height }, { .clamp = true });
+      auto depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::DEPTH, .datatype = ludo::pixel_datatype::FLOAT32, .width = width, .height = height }, { .clamp = true });
+      auto blank_depth_data = std::vector<std::byte>(width * height * ludo::pixel_depth(*depth_texture));
       ludo::write(*depth_texture, blank_depth_data.data());
       depth_texture_id = depth_texture->id;
     }

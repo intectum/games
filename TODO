@@ -4,5 +4,5 @@
 - Parallel rendering
 - Occlusion culling
 - Improve atmosphere performance (existing branch)
-- Add the 'container' concept? Each container would maintain the count of data elements in each partitioned of each partitioned array (replaces the 'context' concept).
+- Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
 - heap_buffer as native data container. Vertex types? Only trouble could be things like render and import which need to know the vertex info (esp. render which needs to render diff vertex types separately - render program contains vertex info?).

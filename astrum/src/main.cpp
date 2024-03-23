@@ -34,7 +34,7 @@ int main()
   ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::shader>(inst, 19);
   ludo::allocate<ludo::static_body>(inst, 25); // TODO bit of a guess really since they're loaded dynamically
-  ludo::allocate<ludo::texture>(inst, 20);
+  ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
   ludo::allocate<ludo::windowing_context>(inst, 1);
 
@@ -83,8 +83,8 @@ int main()
     }
   );
 
-  auto msaa_color_texture = ludo::add(inst, ludo::texture { .format = ludo::pixel_format::RGB_HDR, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
-  auto msaa_depth_texture = ludo::add(inst, ludo::texture { .format = ludo::pixel_format::DEPTH, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
+  auto msaa_color_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT16, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
+  auto msaa_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::DEPTH, .datatype = ludo::pixel_datatype::FLOAT32, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
   auto msaa_frame_buffer = ludo::add(inst, ludo::frame_buffer { .width = window->width, .height = window->height, .color_texture_ids = { msaa_color_texture->id }, .depth_texture_id = msaa_depth_texture->id });
 
   ludo::add(inst, ludo::physics_context { .gravity = ludo::vec3_zero, .visualize = astrum::visualize_physics });
@@ -119,7 +119,8 @@ int main()
   // Post-processing
   auto post_processing_mesh = astrum::add_post_processing_mesh(inst);
   astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
-  astrum::add_atmosphere(inst, post_processing_mesh->id, 1, astrum::terra_radius, astrum::terra_radius * 1.6f);
+  //astrum::write_atmosphere_texture(50, 0.25f, 1.0f, astrum::terra_atmosphere_scale, "assets/effects/atmosphere.tiff", 1024);
+  astrum::add_atmosphere(inst, post_processing_mesh->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
   astrum::add_bloom(inst, post_processing_mesh->id, 5, 0.1f);
   astrum::add_hdr_resolve(inst, post_processing_mesh->id);
   astrum::add_pass(inst, true);

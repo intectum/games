@@ -81,19 +81,25 @@ namespace ludo
   };
 
   ///
-  /// A pixel format.
-  enum class pixel_format
+  /// The components of a pixel.
+  enum class pixel_components
   {
     BGR, ///< [blue,green,red].
-    BGR_HDR, ///< [blue,green,red] with HDR capabilities.
     BGRA, ///< [blue,green,red,alpha].
-    BGRA_HDR, ///< [blue,green,red,alpha] with HDR capabilities.
     RGB, ///< [red,green,blue].
-    RGB_HDR, ///< [red,green,blue] with HDR capabilities.
     RGBA, ///< [red,green,blue,alpha].
-    RGBA_HDR, ///< [red,green,blue,alpha] with HDR capabilities.
 
     DEPTH
+  };
+
+  ///
+  /// The datatype of a component within a pixel.
+  enum class pixel_datatype
+  {
+    UINT8,
+
+    FLOAT16,
+    FLOAT32,
   };
 
   ///
@@ -102,7 +108,8 @@ namespace ludo
   {
     uint64_t id = 0; ///< The ID of the texture.
 
-    pixel_format format = pixel_format::RGB; ///< The pixel format of the texture.
+    pixel_components components = pixel_components::RGB; ///< The pixel components of the texture.
+    pixel_datatype datatype = pixel_datatype::UINT8; ///< The pixel datatype of the texture.
     uint32_t width = 0; ///< The width of the texture.
     uint32_t height = 0; ///< The height of the texture.
   };
@@ -253,19 +260,23 @@ namespace ludo
   ///
   /// Reads data from a texture.
   /// \param texture The texture.
-  /// \param srgb Determines if the texture colors should be converted from sRGB space to linear space.
   /// \return The texture data.
-  LUDO_API std::vector<std::byte> read(const texture& texture, bool convert_srgb = false);
+  LUDO_API std::vector<std::byte> read(const texture& texture);
 
   ///
   /// Writes data to a texture.
   /// \param texture The texture.
-  /// \param srgb Determines if the texture colors should be converted from sRGB space to linear space.
   /// \param data The texture data.
-  LUDO_API void write(texture& texture, const std::byte* data, bool convert_srgb = false);
+  LUDO_API void write(texture& texture, const std::byte* data);
 
   template<>
   LUDO_API void write(buffer& buffer, uint64_t position, const texture& value);
+
+  ///
+  /// Determines the size (in bytes) of a pixel in a texture.
+  /// \param texture The texture.
+  /// \return The size (in bytes) of a pixel in a texture.
+  uint8_t pixel_depth(const texture& texture);
 }
 
 #endif // LUDO_RENDERING_H

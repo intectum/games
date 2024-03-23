@@ -8,16 +8,15 @@
 
 const float four_pi = 4.0 * 3.1416;
 
-const int optical_depth_sample_count = 10;
-const int scattering_sample_count = 10;
+const uint in_scatter_sample_count = 10;
+const uint optical_depth_sample_count = 10;
 const float scale_height = 0.25;
 
-const float scattering_strength = 2.5;
-const vec4 scattering_constants = vec4(
-  1.0 / pow(700.0, 4.0) * 1000000.0 * scattering_strength,
-  1.0 / pow(530.0, 4.0) * 1000000.0 * scattering_strength,
-  1.0 / pow(440.0, 4.0) * 1000000.0 * scattering_strength,
-  1.0
+const float scattering_strength = 2500000.0;
+const vec3 scattering_constants = vec3(
+  1.0 / pow(700.0, 4.0) * scattering_strength,
+  1.0 / pow(530.0, 4.0) * scattering_strength,
+  1.0 / pow(440.0, 4.0) * scattering_strength
 );
 
 const float dither_strength = 0.004;
@@ -88,6 +87,7 @@ layout(std430, binding = 1) buffer render_layout
 
 layout(std430, binding = 2) buffer program_layout
 {
+  sampler2D atmosphere_sampler;
   sampler2D blue_noise_sampler;
   planet_t planet;
 };
@@ -96,16 +96,12 @@ layout(std430, binding = 2) buffer program_layout
 
 out vec4 color;
 
-float linear_depth(float depth)
+float linear_depth()
 {
-  return camera.near_clipping_distance * camera.far_clipping_distance / (camera.far_clipping_distance + depth * (camera.near_clipping_distance - camera.far_clipping_distance));
-}
+  //float depth = texture(depth_sampler, vec3(point.tex_coords[0], 0.0));
+  float depth = texture(depth_sampler, point.tex_coords[0]).r;
 
-vec2 square_tex_coord(vec2 tex_coord) {
-  float scale = 1280.0;
-  float x = tex_coord.x * 1280; // TODO
-  float y = tex_coord.y * 720; // TODO
-  return vec2(x / scale, y / scale);
+  return camera.near_clipping_distance * camera.far_clipping_distance / (camera.far_clipping_distance + depth * (camera.near_clipping_distance - camera.far_clipping_distance));
 }
 
 vec2 ray_sphere_intersection(vec3 ray_origin, vec3 ray_direction, vec3 sphere_center, float sphere_radius)
@@ -148,6 +144,23 @@ vec2 ray_sphere_intersection(vec3 ray_origin, vec3 ray_direction, vec3 sphere_ce
   return vec2(0.0);
 }
 
+vec2 square_tex_coord(vec2 tex_coord)
+{
+  float scale = 1280.0;
+  float x = tex_coord.x * 1280; // TODO
+  float y = tex_coord.y * 720; // TODO
+  return vec2(x / scale, y / scale);
+}
+
+vec3 pixel_view_vector()
+{
+  vec4 ndc = vec4(vec3(point.tex_coords[0], 0.0) * 2.0 - 1.0, 1.0);
+
+  mat4 camera_projection_inverse = inverse(camera.projection);
+  vec4 view = camera_projection_inverse * ndc;
+  return vec3(camera.view * vec4(view.xyz, 0.0));
+}
+
 // The amount of light scattered in a given angle by scattering.
 float phase(float angle, float g)
 {
@@ -173,102 +186,90 @@ float rayleigh_phase(float angle)
   return 0.75 * (1.0 + cangle * cangle);
 }
 
-float atmospheric_density(planet_t planet, float altitude)
+// The altitude of a position normalized to the range [0,1] where 0 is at the planet surface and 1 is at the edge of the atmosphere.
+float normalized_altitude(planet_t planet, vec3 position)
 {
-  float normalized_altitude = altitude / (planet.atmosphere_radius - planet.radius);
-  float density = exp(-normalized_altitude / scale_height);
-
-  // Ensure the density is 0.0 at the atmosphere radius.
-  // Or maybe we can get a longer exp tail into the lower numbers? Would probably require a larger overall atmosphere though...
-  //density *= 1.0 - normalized_altitude;
-
-  return density;
+  float altitude = length(position - planet.position) - planet.radius;
+  return altitude / (planet.atmosphere_radius - planet.radius);
 }
 
-// The average atmospheric density between 'from' and 'to'.
-float optical_depth(planet_t planet, vec3 from, vec3 to)
+// The atmospheric density at the (normalized) altitude given. Uses a lookup texture for better performance.
+float atmospheric_density(float altitude)
 {
-  vec3 sample_position = from;
-  vec3 sample_delta = (to - from) / (optical_depth_sample_count - 1);
-  float sample_frequency = length(to - from) / (optical_depth_sample_count - 1);
+  return texture(atmosphere_sampler, vec2(0.0, altitude)).r;
+}
 
-  float depth = 0.0;
-  for (int sample_index = 0; sample_index < optical_depth_sample_count; sample_index++)
+// The average atmospheric density along a ray (multiplied by the ray length). Uses a lookup texture for better performance.
+float optical_depth(planet_t planet, vec3 ray_origin, vec3 ray_direction, float origin_altitude, float target_altitude)
+{
+  float angle = dot(normalize(planet.position - ray_origin), ray_direction) * 0.5 + 0.5;
+
+  if (target_altitude < 1.0f)
   {
-    float sample_altitude = length(sample_position - planet.position) - planet.radius;
-    depth += atmospheric_density(planet, sample_altitude) * sample_frequency;
-    sample_position += sample_delta;
+    bool target_below_origin = target_altitude < origin_altitude;
+
+    // This effectively reverses the rays so that they do not go into the planet.
+    angle = target_below_origin ? 1.0 - angle : angle;
+
+    float depth = texture(atmosphere_sampler, vec2(angle, target_below_origin ? target_altitude : origin_altitude)).g * 512.0 * planet.radius;
+    return depth - texture(atmosphere_sampler, vec2(angle, target_below_origin ? origin_altitude : target_altitude)).g * 512.0 * planet.radius;
   }
 
-  return depth;
+  return texture(atmosphere_sampler, vec2(angle, origin_altitude)).g * 512.0 * planet.radius;
 }
 
-// The amount of light scattered out (lost) between 'from' and 'to'.
-vec4 out_scatter(planet_t planet, vec3 from, vec3 to)
+// The amount of light scattered out (lost) along a ray.
+vec3 out_scatter(planet_t planet, vec3 ray_origin, vec3 ray_direction, float origin_altitude, float target_altitude)
 {
-  return four_pi * scattering_constants * optical_depth(planet, from, to);
+  return four_pi * scattering_constants * optical_depth(planet, ray_origin, ray_direction, origin_altitude, target_altitude);
 }
 
-// The amount of light scattered in (gained) between 'from' and 'to'.
-vec4 in_scatter(planet_t planet, vec3 from, vec3 to)
+// The amount of light scattered in (gained) along a ray.
+vec3 in_scatter(planet_t planet, vec3 ray_origin, vec3 ray_direction, float ray_length)
 {
-  vec3 view_ray = to - from;
-
-  vec3 sample_position = from;
-  vec3 sample_delta = view_ray / (scattering_sample_count - 1);
-  float sample_frequency = length(view_ray) / (optical_depth_sample_count - 1);
+  float camera_altitude = normalized_altitude(planet, camera.position);
+  float step_size = ray_length / (in_scatter_sample_count + 1);
 
   // We'll just compute this once assuming the star is so far away that the rays from the star are essentially parallel.
-  vec3 star_direction = normalize(lights[0].position - sample_position);
+  vec3 star_direction = normalize(lights[0].position - ray_origin);
 
-  vec4 in_scattered_light = vec4(0.0, 0.0, 0.0, 1.0);
-  for (int sample_index = 0; sample_index < scattering_sample_count; sample_index++)
+  vec3 in_scattered_light = vec3(0.0, 0.0, 0.0);
+  for (uint sample_index = 1; sample_index <= in_scatter_sample_count; sample_index++)
   {
-    float sample_altitude = length(sample_position - planet.position) - planet.radius;
-    float sample_density = atmospheric_density(planet, sample_altitude);
+    vec3 sample_position = ray_origin + ray_direction * sample_index * step_size;
+    float sample_altitude = normalized_altitude(planet, sample_position);
+    float sample_density = atmospheric_density(sample_altitude);
 
-    vec2 star_ray_intersections = ray_sphere_intersection(sample_position, star_direction, planet.position, planet.atmosphere_radius);
-    float star_ray_length = star_ray_intersections[1] - star_ray_intersections[0];
-    vec4 star_ray_transmittance = out_scatter(planet, sample_position, sample_position + star_direction * star_ray_length);
+    vec3 star_ray_transmittance = out_scatter(planet, sample_position, star_direction, sample_altitude, 1.0);
+    vec3 view_ray_transmittance = out_scatter(planet, sample_position, -ray_direction, sample_altitude, camera_altitude);
 
-    vec4 view_ray_transmittance = out_scatter(planet, sample_position, camera.position);
-
-    in_scattered_light += sample_density * exp(-star_ray_transmittance - view_ray_transmittance) * sample_frequency;
-    sample_position += sample_delta;
+    in_scattered_light += sample_density * exp(-star_ray_transmittance - view_ray_transmittance) * step_size;
   }
 
-  float angle = acos(dot(normalize(view_ray), star_direction));
+  float angle = acos(dot(ray_direction, star_direction));
 
-  in_scattered_light *= scattering_constants * rayleigh_phase(angle);
-
-  // Soften banding effect.
-  vec4 blue_noise = texture(blue_noise_sampler, square_tex_coord(point.tex_coords[0]) * dither_scale);
-  blue_noise = (blue_noise - 0.5) * dither_strength;
-  in_scattered_light += blue_noise;
-
-  return in_scattered_light;
+  // TODO add star light intensity
+  return scattering_constants * rayleigh_phase(angle) * in_scattered_light;
 }
 
 void main()
 {
   color = texture(color_sampler, point.tex_coords[0]);
 
-  //float depth = linear_depth(texture(depth_sampler, vec3(point.tex_coords[0], 0.0)));
-  float depth = linear_depth(texture(depth_sampler, point.tex_coords[0]).x);
-
-  mat4 camera_projection_inverse = inverse(camera.projection);
-  vec3 view = vec3(camera_projection_inverse * vec4(point.tex_coords[0] * 2.0 - 1.0, 0.0, 1.0));
-  view = vec3(camera.view * vec4(view, 0.0));
-  vec3 ray_direction = normalize(view);
-
-  vec2 intersections = ray_sphere_intersection(camera.position, ray_direction, planet.position, planet.atmosphere_radius);
-  float atmosphere_depth = min(depth - intersections[0], intersections[1] - intersections[0]);
+  vec3 view_direction = normalize(pixel_view_vector());
+  vec2 view_ray_intersections = ray_sphere_intersection(camera.position, view_direction, planet.position, planet.atmosphere_radius);
+  float atmosphere_depth = min(linear_depth() - view_ray_intersections[0], view_ray_intersections[1] - view_ray_intersections[0]);
 
   if (atmosphere_depth > 0.0)
   {
-    vec3 near_position_in_atmosphere = camera.position + ray_direction * intersections[0];
-    vec3 far_position_in_atmosphere = camera.position + ray_direction * (intersections[0] + atmosphere_depth);
-    color += in_scatter(planet, far_position_in_atmosphere, near_position_in_atmosphere);
+    vec3 near_position_in_atmosphere = camera.position + view_direction * view_ray_intersections[0];
+
+    color += vec4(in_scatter(planet, near_position_in_atmosphere, view_direction, atmosphere_depth), 0.0);
+
+    // Soften banding effect.
+    vec4 blue_noise = texture(blue_noise_sampler, square_tex_coord(point.tex_coords[0]) * dither_scale);
+    blue_noise = (blue_noise - 0.5) * dither_strength;
+    color += blue_noise;
 
     // TODO combine reflected light too...
   }
