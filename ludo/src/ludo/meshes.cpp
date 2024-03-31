@@ -105,15 +105,6 @@ namespace ludo
     return false;
   }
 
-  template<>
-  mesh* add(instance& instance, const mesh& init, const std::string& partition)
-  {
-    auto mesh = add(data<ludo::mesh>(instance), init, partition);
-    mesh->id = next_id++;
-
-    return mesh;
-  }
-
   mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition)
   {
     auto mesh = add(instance, init, partition);

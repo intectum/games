@@ -58,13 +58,7 @@ namespace ludo
   LUDO_API void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms);
 
   template<>
-  LUDO_API armature* add(instance& instance, const armature& init, const std::string& partition);
-
-  template<>
   LUDO_API armature_instance* add(instance& instance, const armature_instance& init, const std::string& partition);
-
-  template<>
-  LUDO_API animation* add(instance& instance, const animation& init, const std::string& partition);
 }
 
 #endif // LUDO_ANIMATION_H

@@ -17,7 +17,7 @@ namespace ludo
   extern std::vector<float> total_script_times;
 
   template<typename T>
-  LUDO_API T* add(instance& instance, const std::function<void()>& init, const std::string& partition = "default");
+  LUDO_API T* add(instance& instance, const std::function<void(ludo::instance& instance)>& init, const std::string& partition = "default");
 
   template<typename T, typename Arg1>
   LUDO_API T* add(instance& instance, const std::function<void(ludo::instance& instance, Arg1 arg1)>& init, Arg1 arg1, const std::string& partition = "default");

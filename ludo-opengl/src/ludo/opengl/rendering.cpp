@@ -233,7 +233,7 @@ namespace ludo
     return render_program_id;
   }
 
-  void wait_for_render()
+  void wait_for_render(instance& instance)
   {
     auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0); check_opengl_error();
 

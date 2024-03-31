@@ -13,6 +13,7 @@ namespace astrum
 
     ludo::import(inst, "assets/models/minifig.dae", {}, "people");
     auto& mesh = *ludo::first<ludo::mesh>(inst, "people");
+    auto& body_shape = *ludo::first<ludo::body_shape>(inst, "people");
 
     mesh.transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
 
@@ -34,7 +35,7 @@ namespace astrum
       ludo::kinematic_body
       {
         { .transform = initial_transform },
-        { *first<std::vector<ludo::vec3>>(inst, "people-rigid-body-shapes") }
+        { body_shape.id }
       },
       "people"
     );

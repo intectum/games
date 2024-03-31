@@ -150,9 +150,6 @@ namespace ludo
   /// \return True if the left-hand mesh is less than the right-hand mesh, false otherwise.
   bool operator<(const mesh& lhs, const mesh& rhs);
 
-  template<>
-  LUDO_API mesh* add(instance& instance, const mesh& init, const std::string& partition);
-
   ///
   /// Adds a mesh to the data of an instance.
   /// Allocates index and vertex buffers based on the options provided.

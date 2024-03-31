@@ -162,7 +162,7 @@ namespace ludo
 
   ///
   /// Waits for rendering to complete.
-  LUDO_API void wait_for_render();
+  LUDO_API void wait_for_render(instance& instance);
 
   template<>
   LUDO_API rendering_context* add(instance& instance, const rendering_context& init, const std::string& partition);

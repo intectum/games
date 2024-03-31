@@ -26,15 +26,6 @@ namespace ludo
     }
   }
 
-  template<>
-  dynamic_octree* add(instance& instance, const dynamic_octree& init, const std::string& partition)
-  {
-    auto octree = add(data<ludo::dynamic_octree>(instance), init, partition);
-    octree->id = next_id++;
-
-    return octree;
-  }
-
   void add(dynamic_octree& octree, const dynamic_octree_element& element)
   {
     auto result = add(octree, octree.root, element);

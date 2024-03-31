@@ -24,15 +24,6 @@ namespace ludo
   }
 
   template<>
-  armature* add(instance& instance, const armature& init, const std::string& partition)
-  {
-    auto armature = add(data<ludo::armature>(instance), init, partition);
-    armature->id = next_id++;
-
-    return armature;
-  }
-
-  template<>
   armature_instance* add(instance& instance, const armature_instance& init, const std::string& partition)
   {
     auto armature_instance = add(data<ludo::armature_instance>(instance), init, partition);
@@ -44,15 +35,6 @@ namespace ludo
     }
 
     return armature_instance;
-  }
-
-  template<>
-  animation* add(instance& instance, const animation& init, const std::string& partition)
-  {
-    auto animation = add(data<ludo::animation>(instance), init, partition);
-    animation->id = next_id++;
-
-    return animation;
   }
 
   void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform, mat4* final_transforms)

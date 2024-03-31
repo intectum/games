@@ -11,6 +11,7 @@
 #include <FreeImagePlus.h>
 
 #include <ludo/meshes.h>
+#include <ludo/physics.h>
 
 #include "animation.h"
 #include "import.h"
@@ -516,31 +517,31 @@ namespace ludo
   {
     auto& assimp_mesh = *assimp_scene.mMeshes[rigid_body_object.mesh_index];
 
-    auto points = std::vector<vec3>();
+    auto positions = std::vector<vec3>();
 
     for (auto index = 0; index < assimp_mesh.mNumVertices; index++)
     {
       auto position = vec3(rigid_body_object.transform * vec4(to_vec3(assimp_mesh.mVertices[index])));
 
-      auto point_exists = false;
-      for (auto& point : points)
+      auto position_exists = false;
+      for (auto& existing_position : positions)
       {
-        if (near(point, position))
+        if (near(existing_position, position))
         {
-          point_exists = true;
+          position_exists = true;
           break;
         }
       }
 
-      if (point_exists)
+      if (position_exists)
       {
         continue;
       }
 
-      points.emplace_back(position);
+      positions.emplace_back(position);
     }
 
-    add(instance, points, partition + "-rigid-body-shapes");
+    add(instance, ludo::body_shape { .positions = positions }, partition);
   }
 
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects)

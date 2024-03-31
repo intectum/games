@@ -8,9 +8,9 @@
 namespace ludo
 {
   template<typename T>
-  T* add(instance& instance, const std::function<void()>& init, const std::string& partition)
+  T* add(instance& instance, const std::function<void(ludo::instance& instance)>& init, const std::string& partition)
   {
-    return add<T>(instance, [=](ludo::instance& instance) { init(); }, partition);
+    return add(data<T>(instance), init, partition);
   }
 
   template<typename T, typename Arg1>

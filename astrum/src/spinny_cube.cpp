@@ -21,14 +21,13 @@ int main()
   ludo::allocate<ludo::animation>(inst, max_instance_count);
   ludo::allocate<ludo::armature>(inst, max_instance_count);
   ludo::allocate<ludo::armature_instance>(inst, max_instance_count);
+  ludo::allocate<ludo::body_shape>(inst, 1);
   ludo::allocate<ludo::mesh>(inst, max_instance_count);
   ludo::allocate<ludo::render_program>(inst, max_instance_count);
   ludo::allocate<ludo::script>(inst, 5);
   ludo::allocate<ludo::shader>(inst, max_instance_count * 2);
   ludo::allocate<ludo::texture>(inst, max_instance_count);
   ludo::allocate<ludo::window>(inst, 1);
-
-  ludo::allocate<std::vector<ludo::vec3>>(inst, 1); // TODO WTF??? This is for importing rigid bodies?
 
   ludo::add(inst, ludo::windowing_context());
   ludo::add(inst, ludo::window { .title = "spinny cube!", .width = 1920, .height = 1080, .v_sync = false });
@@ -160,6 +159,7 @@ int main()
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
   ludo::deallocate<ludo::armature_instance>(inst);
+  ludo::deallocate<ludo::body_shape>(inst);
   ludo::deallocate<ludo::mesh>(inst);
   ludo::deallocate<ludo::render_program>(inst);
   ludo::deallocate<ludo::script>(inst);

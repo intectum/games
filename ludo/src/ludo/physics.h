@@ -33,6 +33,12 @@ namespace ludo
     ludo::transform transform; ///< The transform of the body.
   };
 
+  struct LUDO_API body_shape
+  {
+    uint64_t id = 0; ///< The ID of the body shape.
+    std::vector<vec3> positions; ///< The vertex positions of the body shape.
+  };
+
   ///
   /// A static body. The transform of this body should not be changed. Not affected by physics. Can affect dynamic bodies.
   struct LUDO_API static_body : public body
@@ -43,9 +49,9 @@ namespace ludo
   /// A dynamic body. The transform of this body is updated during the physics frame function. Affected by physics. Can affect dynamic bodies.
   struct LUDO_API dynamic_body : public body
   {
-    float mass = 0.0f; ///< The mass of the body.
-    std::vector<std::vector<vec3>> shapes; ///< The shapes of the body (convex hulls).
+    std::vector<uint64_t> body_shape_ids; ///< The IDs of the body shapes that make up this body (convex hulls).
 
+    float mass = 0.0f; ///< The mass of the body.
     vec3 linear_velocity = vec3_zero; ///< The linear velocity of the body.
     vec3 angular_velocity = vec3_zero; ///< The angular velocity of the body.
   };
@@ -54,7 +60,7 @@ namespace ludo
   /// A kinematic body. The transform and velocities of this body needs to be updated manually. Not affected by physics. Can affect dynamic bodies.
   struct LUDO_API kinematic_body : public body
   {
-    std::vector<std::vector<vec3>> shapes; ///< The shapes of the body (convex hulls).
+    std::vector<uint64_t> body_shape_ids; ///< The IDs of the body shapes that make up this body (convex hulls).
 
     vec3 linear_velocity = vec3_zero; ///< The linear velocity of the body (used only for affecting dynamic bodies).
     vec3 angular_velocity = vec3_zero; ///< The angular velocity of the body (used only for affecting dynamic bodies).
@@ -64,7 +70,7 @@ namespace ludo
   /// A ghost body. The transform of this body needs to be updated manually. Not affected by physics. Cannot affect other bodies.
   struct LUDO_API ghost_body : public body
   {
-    std::vector<std::vector<vec3>> shapes; ///< The shapes of the body (convex hulls).
+    std::vector<uint64_t> body_shape_ids; ///< The IDs of the body shapes that make up this body (convex hulls).
   };
 
   ///

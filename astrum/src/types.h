@@ -10,6 +10,8 @@ namespace astrum
 
   struct celestial_body
   {
+    uint64_t id;
+
     std::string name;
     float radius = 0.0f;
     float mass = 0.0f;
@@ -61,6 +63,8 @@ namespace astrum
 
   struct game_controls
   {
+    uint64_t id = 0;
+
     enum class mode
     {
       person,
@@ -83,6 +87,8 @@ namespace astrum
 
   struct map_controls
   {
+    uint64_t id = 0;
+
     uint32_t target_index = 0;
     float target_radius = 0.0f;
 
@@ -92,6 +98,8 @@ namespace astrum
 
   struct person
   {
+    uint64_t id = 0;
+
     bool standing = true;
     bool jumping = false;
 
@@ -104,6 +112,8 @@ namespace astrum
 
   struct person_controls
   {
+    uint64_t id = 0;
+
     bool forward = false;
     bool back = false;
     bool left = false;
@@ -115,6 +125,8 @@ namespace astrum
 
   struct point_mass
   {
+    uint64_t id = 0;
+
     float mass = 0.0f;
 
     ludo::transform transform;
@@ -126,12 +138,16 @@ namespace astrum
 
   struct solar_system
   {
+    uint64_t id = 0;
+
     int32_t relative_celestial_body_index = -1;
     ludo::vec3 center_delta = ludo::vec3_zero;
   };
 
   struct spaceship_controls
   {
+    uint64_t id = 0;
+
     bool forward = false;
     bool back = false;
     bool left = false;

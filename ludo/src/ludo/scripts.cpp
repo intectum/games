@@ -8,6 +8,7 @@
 
 namespace ludo
 {
+  // TODO arghhh! global!
   std::vector<float> total_script_times;
 
   script series(const std::vector<script>& scripts)

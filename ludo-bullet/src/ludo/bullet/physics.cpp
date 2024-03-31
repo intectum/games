@@ -15,7 +15,7 @@
 
 namespace ludo
 {
-  btRigidBody* build_bullet_body(body* body, const std::vector<std::vector<vec3>>& shapes, float mass, bool kinematic, bool ghost);
+  btRigidBody* build_bullet_body(const instance& instance, body* body, const std::vector<uint64_t>& body_shape_ids, float mass, bool kinematic, bool ghost);
   void destroy_bullet_body(btRigidBody* bullet_body);
   void update_pointers(static_body* begin, static_body* end);
   void update_pointers(dynamic_body* begin, dynamic_body* end);
@@ -326,7 +326,7 @@ namespace ludo
     // As a result any pointers to them are invalidated.
     update_pointers(body + 1, dynamic_bodies.end());
 
-    auto bullet_body = build_bullet_body(body, body->shapes, body->mass, false, false);
+    auto bullet_body = build_bullet_body(instance, body, body->body_shape_ids, body->mass, false, false);
     push(*body);
 
     auto physics_context = first<ludo::physics_context>(instance);
@@ -447,7 +447,7 @@ namespace ludo
     // As a result any pointers to them are invalidated.
     update_pointers(body + 1, kinematic_bodies.end());
 
-    auto bullet_body = build_bullet_body(body, body->shapes, 0.0f, true, false);
+    auto bullet_body = build_bullet_body(instance, body, body->body_shape_ids, 0.0f, true, false);
     push(*body);
 
     auto physics_context = first<ludo::physics_context>(instance);
@@ -521,7 +521,7 @@ namespace ludo
     // As a result any pointers to them are invalidated.
     update_pointers(body + 1, ghost_bodies.end());
 
-    auto bullet_body = build_bullet_body(body, body->shapes, 0.0f, false, true);
+    auto bullet_body = build_bullet_body(instance, body, body->body_shape_ids, 0.0f, false, true);
 
     auto physics_context = first<ludo::physics_context>(instance);
     assert(physics_context && "physics context not found");
@@ -639,15 +639,19 @@ namespace ludo
     bullet_constraint->setAngularUpperLimit(to_btVector3(constraint.angular_upper_limit));
   }
 
-  btRigidBody* build_bullet_body(body* body, const std::vector<std::vector<vec3>>& shapes, float mass, bool kinematic, bool ghost)
+  btRigidBody* build_bullet_body(const instance& instance, body* body, const std::vector<uint64_t>& body_shape_ids, float mass, bool kinematic, bool ghost)
   {
     auto local_transform = btTransform();
     local_transform.setIdentity();
 
-    auto bullet_compound_shape = new btCompoundShape(true, static_cast<int>(shapes.size()));
-    for (auto& shape : shapes)
+    auto bullet_compound_shape = new btCompoundShape(true, static_cast<int>(body_shape_ids.size()));
+    for (auto& body_shape_id : body_shape_ids)
     {
-      bullet_compound_shape->addChildShape(local_transform, new btConvexHullShape(shape.data()->begin(), static_cast<int>(shape.size()), sizeof(vec3)));
+      auto* body_shape = get<ludo::body_shape>(instance, body_shape_id);
+      bullet_compound_shape->addChildShape(
+        local_transform,
+        new btConvexHullShape(body_shape->positions.data()->begin(), static_cast<int>(body_shape->positions.size()), sizeof(vec3))
+      );
     }
 
     auto bullet_body = new btRigidBody(mass, new motion_state(body), bullet_compound_shape);

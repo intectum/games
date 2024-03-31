@@ -113,12 +113,6 @@ namespace ludo
   LUDO_API dynamic_octree* add(instance& instance, const dynamic_octree& init, const std::string& partition);
 
   ///
-  /// Adds an element to a dynamic octree.
-  /// \param octree The dynamic octree to add the element to.
-  /// \param element The element to add to the dynamic octree.
-  LUDO_API void add(dynamic_octree& octree, const dynamic_octree_element& element);
-
-  ///
   /// Removes an element from a dynamic octree.
   /// \param octree The dynamic octree to remove the element from.
   /// \param element The element to remove from the dynamic octree.

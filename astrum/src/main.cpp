@@ -70,6 +70,7 @@ int main()
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
   ludo::allocate<ludo::armature_instance>(inst, 1);
+  ludo::allocate<ludo::body_shape>(inst, 3);
   ludo::allocate<ludo::dynamic_body>(inst, 0);
   ludo::allocate<ludo::frame_buffer>(inst, 16);
   ludo::allocate<ludo::ghost_body>(inst, 1);
@@ -92,8 +93,6 @@ int main()
   ludo::allocate<astrum::point_mass>(inst, 5);
   ludo::allocate<astrum::solar_system>(inst, 1);
   ludo::allocate<astrum::spaceship_controls>(inst, 1);
-
-  ludo::allocate<std::vector<ludo::vec3>>(inst, 1);
 
   ludo::add(inst, ludo::windowing_context());
   auto window = ludo::add(inst, ludo::window { .title = "astrum", .width = 1920, .height = 1080, .v_sync = false });
@@ -198,6 +197,7 @@ int main()
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
   ludo::deallocate<ludo::armature_instance>(inst);
+  ludo::deallocate<ludo::body_shape>(inst);
   ludo::deallocate<ludo::dynamic_body>(inst);
   ludo::deallocate<ludo::frame_buffer>(inst);
   ludo::deallocate<ludo::ghost_body>(inst);
@@ -224,8 +224,6 @@ int main()
   ludo::deallocate<astrum::point_mass>(inst);
   ludo::deallocate<astrum::solar_system>(inst);
   ludo::deallocate<astrum::spaceship_controls>(inst);
-
-  ludo::deallocate<std::vector<ludo::vec3>>(inst);
 
   ludo::deallocate_vram<ludo::draw_command>(inst);
   ludo::deallocate_vram<ludo::mat4>(inst);

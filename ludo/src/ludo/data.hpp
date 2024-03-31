@@ -182,7 +182,10 @@ namespace ludo
   template<typename T>
   T* add(instance& instance, const T& init, const std::string& partition)
   {
-    return add(data<T>(instance), init, partition);
+    auto element = add(data<T>(instance), init, partition);
+    element->id = next_id++;
+
+    return element;
   }
 
   template<typename T>

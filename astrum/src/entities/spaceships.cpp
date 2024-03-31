@@ -27,27 +27,52 @@ namespace astrum
       "spaceships"
     );
 
+    auto kinematic_shape = ludo::add(
+      inst,
+      ludo::body_shape
+      {
+        .positions =
+        {
+          { 0.8f, 0.5f, 4.25f },
+          { 0.8f, -0.5f, 4.25f },
+          { -0.8f, 0.5f, 4.25f },
+          { -0.8f, -0.5f, 4.25f },
+          { 0.8f, 0.5f, -1.25f },
+          { 0.8f, -0.5f, -1.25f },
+          { -0.8f, 0.5f, -1.25f },
+          { -0.8f, -0.5f, -1.25f }
+        }
+      }
+    );
+
     ludo::add(
       inst,
       ludo::kinematic_body
       {
         { .transform = initial_transform },
-        {
-          {
-            { 0.8f, 0.5f, 4.25f },
-            { 0.8f, -0.5f, 4.25f },
-            { -0.8f, 0.5f, 4.25f },
-            { -0.8f, -0.5f, 4.25f },
-            { 0.8f, 0.5f, -1.25f },
-            { 0.8f, -0.5f, -1.25f },
-            { -0.8f, 0.5f, -1.25f },
-            { -0.8f, -0.5f, -1.25f }
-          }
-        },
+        { kinematic_shape->id },
         initial_velocity,
         ludo::vec3_zero
       },
       "spaceships"
+    );
+
+    auto ghost_shape = ludo::add(
+      inst,
+      ludo::body_shape
+      {
+        .positions =
+        {
+          { 1.8f, 1.5f, 5.25f },
+          { 1.8f, -1.5f, 5.25f },
+          { -1.8f, 1.5f, 5.25f },
+          { -1.8f, -1.5f, 5.25f },
+          { 1.8f, 1.5f, -2.25f },
+          { 1.8f, -1.5f, -2.25f },
+          { -1.8f, 1.5f, -2.25f },
+          { -1.8f, -1.5f, -2.25f }
+        }
+      }
     );
 
     ludo::add(
@@ -55,18 +80,7 @@ namespace astrum
       ludo::ghost_body
       {
         { .transform = initial_transform },
-        {
-          {
-            { 1.8f, 1.5f, 5.25f },
-            { 1.8f, -1.5f, 5.25f },
-            { -1.8f, 1.5f, 5.25f },
-            { -1.8f, -1.5f, 5.25f },
-            { 1.8f, 1.5f, -2.25f },
-            { 1.8f, -1.5f, -2.25f },
-            { -1.8f, 1.5f, -2.25f },
-            { -1.8f, -1.5f, -2.25f }
-          }
-        }
+        { ghost_shape->id }
       },
       "spaceships"
     );
