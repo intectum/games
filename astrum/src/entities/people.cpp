@@ -1,5 +1,3 @@
-#include <ludo/assimp/api.h>
-
 #include "../constants.h"
 #include "people.h"
 

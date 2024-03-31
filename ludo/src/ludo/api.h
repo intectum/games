@@ -15,6 +15,7 @@
 #include "meshes/edit.h"
 #include "meshes/shapes.h"
 #include "graphs.h"
+#include "importing.h"
 #include "input.h"
 #include "math/distance.h"
 #include "math/mat.h"

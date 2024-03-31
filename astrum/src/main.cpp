@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include <ludo/api.h>
-#include <ludo/assimp/api.h>
 #include <ludo/opengl/util.h>
 
 #include "constants.h"

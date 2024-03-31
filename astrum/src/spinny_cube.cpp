@@ -1,8 +1,6 @@
-
 #include <FreeImagePlus.h>
 
 #include <ludo/api.h>
-#include <ludo/assimp/api.h>
 #include <ludo/opengl/util.h>
 
 int main()
