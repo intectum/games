@@ -2,14 +2,12 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <cmath>
-
 #include "../graphs.h"
 #include "../tasks.h"
 
 namespace ludo
 {
-  void find(std::set<mesh>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
+  void find(std::vector<mesh_instance>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
   std::array<ludo::aabb, 8> calculate_child_bounds(const aabb& bounds);
   uint32_t to_key(const linear_octree& octree, const vec3& position);
   uint32_t to_key(uint32_t x, uint32_t y, uint32_t z);
@@ -29,7 +27,7 @@ namespace ludo
       {
         for (auto z = 0; z < octant_count_1d; z++)
         {
-          octree->octants[to_key(x, y, z)] = std::vector<mesh>();
+          octree->octants[to_key(x, y, z)] = std::vector<mesh_instance>();
         }
       }
     }
@@ -37,17 +35,17 @@ namespace ludo
     return octree;
   }
 
-  void add(linear_octree& octree, const mesh& element, const vec3& position)
+  void add(linear_octree& octree, const mesh_instance& element, const vec3& position)
   {
     octree.octants[to_key(octree, position)].emplace_back(element);
   }
 
-  bool remove(linear_octree& octree, const mesh& element, const vec3& position)
+  bool remove(linear_octree& octree, const mesh_instance& element, const vec3& position)
   {
     auto& elements = octree.octants[to_key(octree, position)];
     for (auto element_iter = elements.begin(); element_iter < elements.end(); element_iter++)
     {
-      if (element_iter->id == element.id && element_iter->instance_start == element.instance_start)
+      if (element_iter->id == element.id)
       {
         elements.erase(element_iter);
         return true;
@@ -71,15 +69,15 @@ namespace ludo
     }
   }
 
-  std::set<mesh> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
+  std::vector<mesh_instance> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
-    auto meshes = std::set<mesh>();
-    find(meshes, octree, 0, octree.bounds, test, false);
+    auto mesh_instances = std::vector<mesh_instance>();
+    find(mesh_instances, octree, 0, octree.bounds, test, false);
 
-    return meshes;
+    return mesh_instances;
   }
 
-  void find(std::set<mesh>& meshes, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
+  void find(std::vector<mesh_instance>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
   {
     auto test_result = inside ? 1 : test(bounds);
     if (test_result == -1)
@@ -91,7 +89,7 @@ namespace ludo
     {
       auto center = bounds.min + (bounds.max - bounds.min) / 2.0f;
       auto& elements = octree.octants.at(to_key(octree, center));
-      meshes.insert(elements.begin(), elements.end());
+      results.insert(results.end(), elements.begin(), elements.end());
 
       return;
     }
@@ -99,20 +97,20 @@ namespace ludo
     auto child_bounds = calculate_child_bounds(bounds);
     for (auto child_bound : child_bounds)
     {
-      find(meshes, octree, depth + 1, child_bound, test, test_result == 1);
+      find(results, octree, depth + 1, child_bound, test, test_result == 1);
     }
   }
 
-  std::set<mesh> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
+  std::vector<mesh_instance> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
-    auto meshes = std::set<mesh>();
+    auto mesh_instances = std::vector<mesh_instance>();
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2, octree.depth));
     auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));
     auto octant_size = ludo::octant_size(octree);
 
-    divide_and_conquer(octant_count, [&octree, &test, &meshes, octant_count_1d, octant_size](uint32_t start, uint32_t end)
+    divide_and_conquer(octant_count, [&octree, &test, &mesh_instances, octant_count_1d, octant_size](uint32_t start, uint32_t end)
     {
-      auto task_meshes = std::set<mesh>();
+      auto task_mesh_instances = std::vector<mesh_instance>();
 
       for (auto index = start; index < end; index++)
       {
@@ -132,17 +130,17 @@ namespace ludo
         if (test(bounds) != -1)
         {
           auto& octant_meshes = octree.octants.at(to_key(x, y, z));
-          task_meshes.insert(octant_meshes.begin(), octant_meshes.end());
+          task_mesh_instances.insert(task_mesh_instances.end(), octant_meshes.begin(), octant_meshes.end());
         }
       }
 
-      return [&meshes, task_meshes]()
+      return [&mesh_instances, task_mesh_instances]()
       {
-        meshes.insert(task_meshes.begin(), task_meshes.end());
+        mesh_instances.insert(mesh_instances.end(), task_mesh_instances.begin(), task_mesh_instances.end());
       };
     });
 
-    return meshes;
+    return mesh_instances;
   }
 
   vec3 octant_size(const linear_octree& octree)

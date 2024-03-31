@@ -16,22 +16,25 @@ namespace ludo
 
   const auto bone_data_size = max_bone_weights_per_vertex * sizeof(uint32_t) + max_bone_weights_per_vertex * sizeof(float);
 
-  void import_meshes(instance& instance, const render_program& render_program, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition)
+  std::vector<mesh> import_meshes(instance& instance, const render_program& render_program, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition)
   {
-    auto merged_mesh = static_cast<mesh*>(nullptr);
+    auto meshes = std::vector<mesh>();
+
     if (options.merge_meshes)
     {
       auto mesh_counts = import_counts(assimp_scene, mesh_objects);
       auto texture_count = std::count_if(textures.begin(), textures.end(), [](const ludo::texture* texture) { return texture != nullptr; });
 
-      merged_mesh = add(
+      auto mesh = add(
         instance,
-        mesh { .render_program_id = render_program.id },
+        ludo::mesh { .render_program_id = render_program.id },
         mesh_counts.first,
         mesh_counts.second,
         render_program.format.size,
         partition
       );
+
+      meshes.push_back(*mesh);
     }
 
     auto index_start = uint32_t(0);
@@ -46,7 +49,7 @@ namespace ludo
 
       if (options.merge_meshes)
       {
-        write_mesh_data(*merged_mesh, assimp_scene, assimp_mesh, mesh_object.transform, index_start, vertex_start);
+        write_mesh_data(meshes[0], assimp_scene, assimp_mesh, mesh_object.transform, index_start, vertex_start);
 
         index_start += index_count;
         vertex_start += vertex_count;
@@ -66,14 +69,15 @@ namespace ludo
 
         if (assimp_mesh.mNumBones)
         {
-          import_armature(instance, assimp_scene, assimp_mesh, partition);
-          import_animations(instance, assimp_scene, assimp_mesh, partition);
-
-          auto armature_instance = add(instance, ludo::armature_instance(), partition);
-          mesh->armature_instance_id = armature_instance->id;
+          mesh->armature_id = import_armature(instance, assimp_scene, assimp_mesh, partition);
+          mesh->animation_ids = import_animations(instance, assimp_scene, assimp_mesh, partition);
         }
+
+        meshes.push_back(*mesh);
       }
     }
+
+    return meshes;
   }
 
   void write_mesh_data(mesh& mesh, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const mat4& transform, uint32_t index_start, uint32_t vertex_start)

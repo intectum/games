@@ -7,24 +7,12 @@
 namespace ludo
 {
   bool add(dynamic_octree& octree, dynamic_octree_node& node, const dynamic_octree_element& element);
-  void find(std::set<mesh>& results, const dynamic_octree_node& node, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
+  void find(std::vector<mesh_instance>& results, const dynamic_octree_node& node, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
   uint32_t count(const dynamic_octree_node& node);
   void split(dynamic_octree& octree, dynamic_octree_node& node);
   void merge(dynamic_octree& octree, dynamic_octree_node& node);
   void merge(dynamic_octree& octree, dynamic_octree_node& merger, dynamic_octree_node& mergee);
   std::vector<dynamic_octree_element>::iterator find(dynamic_octree_node& node, const dynamic_octree_element& element);
-
-  std::size_t dynamic_octree_element_node_hash::operator()(const std::pair<uint64_t, uint32_t>& pair) const noexcept
-  {
-    if (pair.first < pair.second)
-    {
-      return static_cast<std::size_t>(std::pow(pair.second, 2)) + pair.first;
-    }
-    else
-    {
-      return static_cast<std::size_t>(std::pow(pair.first, 2)) + pair.first + pair.second;
-    }
-  }
 
   void add(dynamic_octree& octree, const dynamic_octree_element& element)
   {
@@ -56,22 +44,22 @@ namespace ludo
     }
 
     node.elements.emplace_back(element);
-    octree.element_nodes[{ element.mesh.id, element.mesh.instance_start }] = &node;
+    octree.element_nodes[element.mesh_instance.id] = &node;
 
     return true;
   }
 
   bool remove(dynamic_octree& octree, const dynamic_octree_element& element)
   {
-    if (octree.element_nodes.find({ element.mesh.id, element.mesh.instance_start }) == octree.element_nodes.end())
+    if (octree.element_nodes.find(element.mesh_instance.id) == octree.element_nodes.end())
     {
       return false;
     }
 
-    auto& node = *octree.element_nodes[{ element.mesh.id, element.mesh.instance_start }];
+    auto& node = *octree.element_nodes[element.mesh_instance.id];
     auto element_iter = find(node, element);
 
-    octree.element_nodes.erase({ element.mesh.id, element.mesh.instance_start });
+    octree.element_nodes.erase(element.mesh_instance.id);
     node.elements.erase(element_iter);
 
     auto merge_node = &node;
@@ -88,21 +76,21 @@ namespace ludo
     return true;
   }
 
-  dynamic_octree_element& get(dynamic_octree& octree, const mesh& mesh)
+  dynamic_octree_element& get(dynamic_octree& octree, const mesh_instance& mesh_instance)
   {
-    assert(octree.element_nodes.find({ mesh.id, mesh.instance_start }) != octree.element_nodes.end() && "element not found");
+    assert(octree.element_nodes.find(mesh_instance.id) != octree.element_nodes.end() && "element not found");
 
-    auto& node = *octree.element_nodes[{ mesh.id, mesh.instance_start }];
-    auto element_iter = find(node, dynamic_octree_element { mesh.id, mesh.instance_start });
+    auto& node = *octree.element_nodes[mesh_instance.id];
+    auto element_iter = find(node, dynamic_octree_element { .mesh_instance = { .id = mesh_instance.id } });
 
     return *element_iter;
   }
 
   void update(dynamic_octree& octree, const dynamic_octree_element& element)
   {
-    assert(octree.element_nodes.find({ element.mesh.id, element.mesh.instance_start }) != octree.element_nodes.end() && "element not found");
+    assert(octree.element_nodes.find(element.mesh_instance.id) != octree.element_nodes.end() && "element not found");
 
-    auto& node = *octree.element_nodes[{ element.mesh.id, element.mesh.instance_start }];
+    auto& node = *octree.element_nodes[element.mesh_instance.id];
 
     if (contains(node.bounds, element.bounds))
     {
@@ -132,15 +120,15 @@ namespace ludo
     }
   }
 
-  std::set<mesh> find(const dynamic_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
+  std::vector<mesh_instance> find(const dynamic_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
-    auto meshes = std::set<mesh>();
-    find(meshes, octree.root, test, false);
+    auto mesh_instances = std::vector<mesh_instance>();
+    find(mesh_instances, octree.root, test, false);
 
-    return meshes;
+    return mesh_instances;
   }
 
-  void find(std::set<mesh>& meshes, const dynamic_octree_node& node, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
+  void find(std::vector<mesh_instance>& results, const dynamic_octree_node& node, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
   {
     auto test_result = inside ? 1 : test(node.bounds);
     if (test_result == -1)
@@ -156,12 +144,12 @@ namespace ludo
         continue;
       }
 
-      meshes.insert(element.mesh);
+      results.push_back(element.mesh_instance);
     }
 
     for (auto& child : node.children)
     {
-      find(meshes, child, test, test_result == 1);
+      find(results, child, test, test_result == 1);
     }
   }
 
@@ -241,7 +229,7 @@ namespace ludo
     for (auto& element : mergee.elements)
     {
       merger.elements.emplace_back(element);
-      octree.element_nodes[{ element.mesh.id, element.mesh.instance_start }] = &merger;
+      octree.element_nodes[element.mesh_instance.id] = &merger;
     }
 
     for (auto& child : mergee.children)
@@ -255,7 +243,7 @@ namespace ludo
     return std::find_if(node.elements.begin(), node.elements.end(),
       [&element](const dynamic_octree_element& node_element)
       {
-        return node_element.mesh.id == element.mesh.id && node_element.mesh.instance_start == element.mesh.instance_start;
+        return node_element.mesh_instance.id == element.mesh_instance.id;
       }
     );
   }

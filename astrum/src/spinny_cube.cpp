@@ -16,11 +16,12 @@ int main()
   ludo::allocate<ludo::rendering_context>(inst, 1);
   ludo::allocate<ludo::windowing_context>(inst, 1);
 
-  ludo::allocate<ludo::animation>(inst, max_instance_count);
-  ludo::allocate<ludo::armature>(inst, max_instance_count);
+  ludo::allocate<ludo::animation>(inst, 1);
+  ludo::allocate<ludo::armature>(inst, 1);
   ludo::allocate<ludo::armature_instance>(inst, max_instance_count);
   ludo::allocate<ludo::body_shape>(inst, 1);
-  ludo::allocate<ludo::mesh>(inst, max_instance_count);
+  ludo::allocate<ludo::mesh>(inst, 4);
+  ludo::allocate<ludo::mesh_instance>(inst, max_instance_count);
   ludo::allocate<ludo::render_program>(inst, max_instance_count);
   ludo::allocate<ludo::script>(inst, 5);
   ludo::allocate<ludo::shader>(inst, max_instance_count * 2);
@@ -78,6 +79,8 @@ int main()
   auto vertex_index = uint32_t(0);
   ludo::box(*cuby, render_program_p->format, index_index, vertex_index);
 
+  ludo::add(inst, ludo::mesh_instance(), *cuby);
+
   // RUBY
 
   auto ruby_cuby = ludo::add(
@@ -93,6 +96,8 @@ int main()
   ludo::box(*ruby_cuby, render_program_pc->format, index_index, vertex_index);
   ludo::colorize(*ruby_cuby, render_program_pc->format, 0, box_counts.second, ludo::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
+  ludo::add(inst, ludo::mesh_instance(), *ruby_cuby);
+
   // TUBY
 
   auto tuby_cuby = ludo::add(
@@ -107,9 +112,13 @@ int main()
   vertex_index = uint32_t(0);
   ludo::box(*tuby_cuby, render_program_pt->format, index_index, vertex_index);
 
+  ludo::add(inst, ludo::mesh_instance(), *tuby_cuby);
+
   // MINIFIG
 
-  ludo::import(inst, "assets/models/minifig.dae");
+  auto minifig_meshes = ludo::import(inst, "assets/models/minifig.dae");
+
+  ludo::add(inst, ludo::mesh_instance(), minifig_meshes[0]);
 
   // SCRIPTS
 
@@ -118,12 +127,12 @@ int main()
     auto animation = ludo::first<ludo::animation>(inst);
     auto armature = ludo::first<ludo::armature>(inst);
     auto armature_instance = ludo::first<ludo::armature_instance>(inst);
-    auto& meshes = ludo::data<ludo::mesh>(inst);
+    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
-    meshes[0].transform = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    meshes[1].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    meshes[2].transform = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    meshes[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    mesh_instances[0].transform = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    mesh_instances[1].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    mesh_instances[2].transform = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
 
     ludo::interpolate(*animation, *armature, inst.total_time, armature_instance->transforms);
   });
@@ -159,6 +168,7 @@ int main()
   ludo::deallocate<ludo::armature_instance>(inst);
   ludo::deallocate<ludo::body_shape>(inst);
   ludo::deallocate<ludo::mesh>(inst);
+  ludo::deallocate<ludo::mesh_instance>(inst);
   ludo::deallocate<ludo::render_program>(inst);
   ludo::deallocate<ludo::script>(inst);
   ludo::deallocate<ludo::shader>(inst);

@@ -72,10 +72,10 @@ namespace astrum
     }
   }
 
-  void sync_meshes_with_point_masses(ludo::instance& inst, const std::vector<std::string>& partitions)
+  void sync_mesh_instances_with_point_masses(ludo::instance& inst, const std::vector<std::string>& partitions)
   {
     auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
-    auto& meshes = ludo::data<ludo::mesh>(inst);
+    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
     auto& point_masses = ludo::data<point_mass>(inst);
     auto& solar_system = *ludo::first<astrum::solar_system>(inst);
@@ -83,17 +83,17 @@ namespace astrum
     for (auto& partition : partitions)
     {
       auto& partition_point_masses = ludo::find(point_masses, partition)->second;
-      auto& partition_meshes = ludo::find(meshes, partition)->second;
+      auto& partition_mesh_instances = ludo::find(mesh_instances, partition)->second;
 
       for (auto index = 0; index < partition_point_masses.array_size; index++)
       {
-        auto& mesh = partition_meshes[index];
+        auto& mesh_instance = partition_mesh_instances[index];
         auto& point_mass = partition_point_masses[index];
 
-        auto old_transform = mesh.transform;
+        auto old_transform = mesh_instance.transform;
         auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
-        mesh.transform = new_transform;
+        mesh_instance.transform = new_transform;
 
         auto old_position = ludo::position(old_transform);
         auto new_position = ludo::position(new_transform);
@@ -101,8 +101,8 @@ namespace astrum
         auto movement = (new_position - solar_system.center_delta) - old_position;
         if (ludo::length2(movement) > 0.0f)
         {
-          ludo::remove(linear_octree, mesh, old_position);
-          ludo::add(linear_octree, mesh, new_position);
+          ludo::remove(linear_octree, mesh_instance, old_position);
+          ludo::add(linear_octree, mesh_instance, new_position);
         }
       }
     }

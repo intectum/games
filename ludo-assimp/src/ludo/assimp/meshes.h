@@ -14,7 +14,7 @@
 
 namespace ludo
 {
-  void import_meshes(instance& instance, const render_program& render_program, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition);
+  std::vector<mesh> import_meshes(instance& instance, const render_program& render_program, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition);
 }
 
 #endif // LUDO_ASSIMP_MESHES_H

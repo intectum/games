@@ -95,9 +95,9 @@ namespace astrum
       auto& linear_octree = ludo::data<ludo::linear_octree>(inst, "celestial-bodies")[index];
 
       auto& patch = patchwork.patches[patch_index];
-      auto& mesh = *ludo::get<ludo::mesh>(inst, patch.mesh_id);
+      auto& mesh_instance = *ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
 
-      ludo::add(linear_octree, mesh, patchwork.transform.position + patch.center);
+      ludo::add(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
     };
 
     auto on_unload = [&inst, index](const patchwork& patchwork, uint32_t patch_index)
@@ -107,9 +107,9 @@ namespace astrum
       auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
 
       auto& patch = patchwork.patches[patch_index];
-      auto& mesh = *ludo::get<ludo::mesh>(inst, patch.mesh_id);
+      auto& mesh_instance = *ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
 
-      ludo::remove(linear_octree, mesh, patchwork.transform.position + patch.center);
+      ludo::remove(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
 
       unload_static_body(inst, celestial_body, patchwork, patch_index);
     };
@@ -563,8 +563,8 @@ namespace astrum
   {
     auto& anchor_patch = patchwork.patches[anchor_patch_index];
     auto& patch = patchwork.patches[patch_index];
-    auto& anchor_mesh = *ludo::get<ludo::mesh>(inst, anchor_patch.mesh_id);
-    auto& mesh = *ludo::get<ludo::mesh>(inst, patch.mesh_id);
+    auto& anchor_mesh_instance = *ludo::get<ludo::mesh_instance>(inst, anchor_patch.mesh_instance_id);
+    auto& mesh_instance = *ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
 
     assert(anchor_patch.variant_index <= patch.variant_index && "anchor patch LOD level must be equal or less than the aligning patch LOD level");
 
@@ -573,8 +573,8 @@ namespace astrum
     auto& anchor_border_indices = border_indices(patchwork, anchor_patch_index, patch_index);
     auto& aligning_border_indices = border_indices(patchwork, patch_index, anchor_patch_index);
 
-    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + position_offset);
-    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + position_offset);
+    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + position_offset);
+    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh_instance.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + position_offset);
     auto reverse_borders = !ludo::near(anchor_border_position_0, aligning_border_position_0);
 
     if (anchor_patch.variant_index == patch.variant_index)
@@ -591,11 +591,11 @@ namespace astrum
           anchor_index_0 = anchor_border_indices.size() - 1 - anchor_index_0;
         }
 
-        auto position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
+        auto position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
 
-        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
-        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
-        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
 
         anchor_index += 3;
       }
@@ -619,25 +619,25 @@ namespace astrum
           anchor_index_1 = anchor_border_indices.size() - 1 - anchor_index_1;
         }
 
-        auto start_position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
-        auto end_position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + position_offset);
+        auto start_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
+        auto end_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + position_offset);
         auto alignment_vector = end_position - start_position;
 
         for (auto division_index = 0; division_index < divisions_per_anchor; division_index++)
         {
           auto alignment_position = start_position + alignment_vector * static_cast<float>(division_index + 1) / static_cast<float>(divisions_per_anchor + 1);
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
         }
 
         anchor_index += 3;
 
         if (anchor_index < anchor_border_indices.size() - 1)
         {
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
-          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
         }
       }
     }
@@ -705,8 +705,8 @@ namespace astrum
     nearest_patch.locked = true;
     celestial_body.static_body_ids[nearest_patch_index] = body->id;
 
-    auto mesh = ludo::get<ludo::mesh>(inst, "celestial-bodies", nearest_patch.mesh_id);
-    auto build_shape = ludo::build_shape(inst, *body, mesh->id, celestial_body.format, 0, mesh->index_buffer.size / sizeof(uint32_t));
+    auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, "celestial-bodies", nearest_patch.mesh_instance_id);
+    auto build_shape = ludo::build_shape(inst, *body, mesh_instance->mesh_id, celestial_body.format, 0, mesh_instance->index_buffer.size / sizeof(uint32_t));
     auto task = [&nearest_patch, build_shape]()
     {
       auto finalizer = build_shape();

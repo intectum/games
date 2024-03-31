@@ -6,7 +6,7 @@
 
 namespace astrum
 {
-  ludo::mesh* add_post_processing_mesh(ludo::instance& inst)
+  ludo::mesh_instance* add_post_processing_mesh_instance(ludo::instance& inst)
   {
     auto mesh_counts = ludo::rectangle_counts();
     auto mesh = ludo::add(
@@ -21,7 +21,7 @@ namespace astrum
     auto vertex_index = uint32_t(0);
     ludo::rectangle(*mesh, ludo::vertex_format_pt, index_index, vertex_index, { .dimensions = { 2.0f,  2.0f, 0.0f } });
 
-    return mesh;
+    return ludo::add(inst, ludo::mesh_instance(), *mesh);
   }
 
   ludo::shader* add_post_processing_vertex_shader(ludo::instance& inst)

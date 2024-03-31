@@ -79,32 +79,6 @@ namespace ludo
     return offset;
   }
 
-  bool operator<(const mesh& lhs, const mesh& rhs)
-  {
-    if (lhs.render_program_id < rhs.render_program_id)
-    {
-      return true;
-    }
-
-    if (lhs.render_program_id == rhs.render_program_id)
-    {
-      if (lhs.id < rhs.id)
-      {
-        return true;
-      }
-    }
-
-    if (lhs.id == rhs.id)
-    {
-      if (lhs.instance_start < rhs.instance_start)
-      {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition)
   {
     auto mesh = add(instance, init, partition);
@@ -134,5 +108,23 @@ namespace ludo
     }
 
     remove(data<mesh>(instance), element, partition);
+  }
+
+  mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition)
+  {
+    auto mesh_instance = add(instance, init, partition);
+
+    mesh_instance->mesh_id = mesh.id;
+    mesh_instance->render_program_id = init.render_program_id ? init.render_program_id : mesh.render_program_id;
+    mesh_instance->texture_id = init.texture_id ? init.texture_id : mesh.texture_id;
+    mesh_instance->index_buffer = mesh.index_buffer;
+    mesh_instance->vertex_buffer = mesh.vertex_buffer;
+
+    if (mesh.armature_id && !mesh_instance->armature_instance_id)
+    {
+      mesh_instance->armature_instance_id = add(instance, armature_instance(), partition)->id;
+    }
+
+    return mesh_instance;
   }
 }

@@ -76,6 +76,7 @@ int main()
   ludo::allocate<ludo::kinematic_body>(inst, 2);
   ludo::allocate<ludo::linear_octree>(inst, 4);
   ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
+  ludo::allocate<ludo::mesh_instance>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
   ludo::allocate<ludo::script>(inst, 35);
   ludo::allocate<ludo::shader>(inst, 19);
@@ -170,13 +171,13 @@ int main()
   });
 
   // Post-processing
-  auto post_processing_mesh = astrum::add_post_processing_mesh(inst);
+  auto post_processing_mesh_instance = astrum::add_post_processing_mesh_instance(inst);
   auto post_processing_vertex_shader = astrum::add_post_processing_vertex_shader(inst);
   astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
   //astrum::write_atmosphere_texture(50, 0.25f, 1.0f, astrum::terra_atmosphere_scale, "assets/effects/atmosphere.tiff", 1024);
-  astrum::add_atmosphere(inst, post_processing_vertex_shader->id, post_processing_mesh->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
-  astrum::add_bloom(inst, post_processing_vertex_shader->id, post_processing_mesh->id, 5, 0.1f);
-  astrum::add_hdr_resolve(inst, post_processing_vertex_shader->id, post_processing_mesh->id);
+  astrum::add_atmosphere(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
+  astrum::add_bloom(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id, 5, 0.1f);
+  astrum::add_hdr_resolve(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id);
   astrum::add_pass(inst, true);
 
   ludo::add<ludo::script>(inst, ludo::wait_for_render);
@@ -197,6 +198,7 @@ int main()
   ludo::deallocate<ludo::kinematic_body>(inst);
   ludo::deallocate<ludo::linear_octree>(inst);
   ludo::deallocate<ludo::mesh>(inst);
+  ludo::deallocate<ludo::mesh_instance>(inst);
   ludo::deallocate<ludo::render_program>(inst);
   ludo::deallocate<ludo::script>(inst);
   ludo::deallocate<ludo::shader>(inst);

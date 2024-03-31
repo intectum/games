@@ -116,7 +116,7 @@ namespace astrum
 
       auto [ index_count, vertex_count ] = patchwork->counts(*patchwork, index, patch.variant_index);
 
-      auto& mesh = *ludo::add(
+      auto mesh = ludo::add(
         inst,
         ludo::mesh { .render_program_id = patchwork->render_program_id },
         index_count,
@@ -125,9 +125,11 @@ namespace astrum
         partition
       );
 
-      mesh.transform = ludo::mat4(patchwork->transform.position, ludo::mat3(patchwork->transform.rotation));
-      patch.mesh_id = mesh.id;
-      patchwork->load(*patchwork, index, patch.variant_index, mesh);
+      patchwork->load(*patchwork, index, patch.variant_index, *mesh);
+
+      auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, partition);
+      mesh_instance->transform = ludo::mat4(patchwork->transform.position, ludo::mat3(patchwork->transform.rotation));
+      patch.mesh_instance_id = mesh_instance->id;
     }
 
     for (auto index = 0; index < patchwork->patches.size(); index++)
@@ -186,25 +188,30 @@ namespace astrum
                 partition_name
               );
 
-              new_mesh.transform = ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation));
+              auto new_mesh_instance = ludo::add(inst, ludo::mesh_instance(), new_mesh, partition_name);
+              new_mesh_instance->transform = ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation));
+
+              auto new_mesh_instance_id = new_mesh_instance->id;
 
               // Purposely take a copy of the new mesh!
               // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
-              ludo::enqueue_background(inst, [&inst, &patchwork, index, new_variant_index, new_mesh, partition_name]()
+              ludo::enqueue_background(inst, [&inst, &patchwork, index, new_variant_index, new_mesh, new_mesh_instance_id, partition_name]()
               {
                 auto local_new_mesh = new_mesh;
                 patchwork.load(patchwork, index, new_variant_index, local_new_mesh);
 
-                return [&inst, &patchwork, index, new_variant_index, local_new_mesh, partition_name]()
+                return [&inst, &patchwork, index, new_variant_index, local_new_mesh, new_mesh_instance_id, partition_name]()
                 {
                   auto& patch = patchwork.patches[index];
 
                   patchwork.on_unload(patchwork, index);
 
-                  auto mesh = ludo::get<ludo::mesh>(inst, patch.mesh_id);
+                  auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
+                  auto mesh = ludo::get<ludo::mesh>(inst, mesh_instance->mesh_id);
+                  ludo::remove(inst, mesh_instance, partition_name);
                   ludo::remove(inst, mesh, partition_name);
 
-                  patch.mesh_id = local_new_mesh.id;
+                  patch.mesh_instance_id = new_mesh_instance_id;
                   patch.variant_index = new_variant_index;
                   patch.locked = false;
 

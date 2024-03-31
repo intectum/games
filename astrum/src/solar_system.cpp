@@ -105,8 +105,10 @@ namespace astrum
 
     //add_trees(inst, 1);
 
+    ludo::import(inst, "assets/models/minifig.dae", {}, "people");
     add_person(inst, { .position = person_initial_position }, person_initial_velocity);
 
+    ludo::import(inst, "assets/models/spaceship.obj", {}, "spaceships");
     auto spaceship_up = spaceship_initial_position - terra_initial_position;
     ludo::normalize(spaceship_up);
     add_spaceship(inst, { .position = spaceship_initial_position, .rotation = ludo::quat(ludo::vec3_unit_y, spaceship_up) }, spaceship_initial_velocity);
@@ -152,7 +154,7 @@ namespace astrum
 
     //ludo::add<ludo::script, uint32_t>(inst, stream_trees, 1);
 
-    ludo::add<ludo::script, std::vector<std::string>>(inst, sync_meshes_with_point_masses, { "people", "spaceships" });
+    ludo::add<ludo::script, std::vector<std::string>>(inst, sync_mesh_instances_with_point_masses, { "people", "spaceships" });
 
     ludo::add<ludo::script, std::vector<std::vector<lod>>>(inst, update_celestial_bodies, { sol_lods, terra_lods, luna_lods });
     ludo::add<ludo::script>(inst, update_patchworks);

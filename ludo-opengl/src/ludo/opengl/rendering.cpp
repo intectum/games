@@ -27,8 +27,8 @@ namespace ludo
     { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
   };
 
-  std::unordered_map<uint64_t, std::vector<mesh>> find_meshes(const instance& instance, const rendering_context& rendering_context, const render_options& options);
-  uint64_t get_render_program_id(const render_options& options, const mesh& mesh);
+  std::unordered_map<uint64_t, std::vector<mesh_instance>> find_mesh_instances(const instance& instance, const rendering_context& rendering_context, const render_options& options);
+  uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance);
   std::array<vec4, 6> frustum_planes(const camera& camera);
   int32_t frustum_test(const std::array<vec4, 6>& planes, const aabb& bounds);
 
@@ -72,30 +72,30 @@ namespace ludo
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
     }
 
-    auto grouped_meshes = find_meshes(instance, *rendering_context, options);
-    for (auto& mesh_group : grouped_meshes)
+    auto grouped_mesh_instances = find_mesh_instances(instance, *rendering_context, options);
+    for (auto& mesh_instance_group : grouped_mesh_instances)
     {
-      auto render_program = find_by_id(render_programs.begin(), render_programs.end(), mesh_group.first);
+      auto render_program = find_by_id(render_programs.begin(), render_programs.end(), mesh_instance_group.first);
       assert(render_program != render_programs.end() && "render program not found");
 
       auto draw_command_start = uint32_t(vram_draw_commands.array_size);
       auto instance_byte_start = uint64_t(vram_instances.array_size);
       auto instance_byte_index = instance_byte_start;
-      auto instance_byte_size = mesh_group.second.size() * (sizeof(mat4) + (count(render_program->format, 't') ? sizeof(uint64_t) : 0));
+      auto instance_byte_size = mesh_instance_group.second.size() * (sizeof(mat4) + (count(render_program->format, 't') ? sizeof(uint64_t) : 0));
       auto animation_byte_start = instance_byte_start + instance_byte_size;
       auto animation_byte_index = animation_byte_start;
-      auto animation_byte_size = mesh_group.second.size() * (count(render_program->format, 'f') ? max_bones_per_armature * sizeof(mat4) : 0);
+      auto animation_byte_size = mesh_instance_group.second.size() * (count(render_program->format, 'f') ? max_bones_per_armature * sizeof(mat4) : 0);
 
-      for (auto& mesh : mesh_group.second)
+      for (auto& mesh_instance : mesh_instance_group.second)
       {
-        write(vram_instances, instance_byte_index, mesh.transform);
+        write(vram_instances, instance_byte_index, mesh_instance.transform);
         instance_byte_index += sizeof(mat4);
 
         if (count(render_program->format, 't'))
         {
-          if (mesh.texture_id)
+          if (mesh_instance.texture_id)
           {
-            auto texture = find_by_id(textures.begin(), textures.end(), mesh.texture_id);
+            auto texture = find_by_id(textures.begin(), textures.end(), mesh_instance.texture_id);
             assert(texture != textures.end() && "texture not found");
 
             write(vram_instances, instance_byte_index, handle(*texture));
@@ -111,7 +111,7 @@ namespace ludo
         // TODO 'f' is a pretty general component, maybe add a 'b' component specifically for bones?
         if (count(render_program->format, 'f'))
         {
-          auto armature_instance = find_by_id(armature_instances.begin(), armature_instances.end(), mesh.armature_instance_id);
+          auto armature_instance = find_by_id(armature_instances.begin(), armature_instances.end(), mesh_instance.armature_instance_id);
           assert(armature_instance != armature_instances.end() && "armature instance not found");
 
           for (auto& transform : armature_instance->transforms)
@@ -124,9 +124,9 @@ namespace ludo
         // TODO combine instance commands where possible?
         add(vram_draw_commands, draw_command
         {
-          .index_count = static_cast<GLuint>(mesh.index_buffer.size / sizeof(uint32_t)),
-          .index_start = static_cast<GLuint>((mesh.index_buffer.data - vram_indices.data) / sizeof(uint32_t)),
-          .vertex_start = static_cast<GLuint>((mesh.vertex_buffer.data - vram_vertices.data) / render_program->format.size),
+          .index_count = static_cast<GLuint>(mesh_instance.index_buffer.size / sizeof(uint32_t)),
+          .index_start = static_cast<GLuint>((mesh_instance.index_buffer.data - vram_indices.data) / sizeof(uint32_t)),
+          .vertex_start = static_cast<GLuint>((mesh_instance.vertex_buffer.data - vram_vertices.data) / render_program->format.size),
           .instance_start = static_cast<GLuint>(vram_draw_commands.array_size)
         });
       }
@@ -165,20 +165,20 @@ namespace ludo
     }
   }
 
-  std::unordered_map<uint64_t, std::vector<mesh>> find_meshes(const instance& instance, const rendering_context& rendering_context, const render_options& options)
+  std::unordered_map<uint64_t, std::vector<mesh_instance>> find_mesh_instances(const instance& instance, const rendering_context& rendering_context, const render_options& options)
   {
-    auto grouped_meshes = std::unordered_map<uint64_t, std::vector<mesh>>();
+    auto grouped_mesh_instances = std::unordered_map<uint64_t, std::vector<mesh_instance>>();
 
-    if (!options.mesh_ids.empty())
+    if (!options.mesh_instance_ids.empty())
     {
-      auto& meshes = data<mesh>(instance);
+      auto& mesh_instances = data<mesh_instance>(instance);
 
-      for (auto mesh_id : options.mesh_ids)
+      for (auto mesh_instance_id : options.mesh_instance_ids)
       {
-        auto mesh = find_by_id(meshes.begin(), meshes.end(), mesh_id);
-        assert(mesh && "mesh not found");
+        auto mesh_instance = find_by_id(mesh_instances.begin(), mesh_instances.end(), mesh_instance_id);
+        assert(mesh_instance && "mesh instance not found");
 
-        grouped_meshes[get_render_program_id(options, *mesh)].push_back(*mesh);
+        grouped_mesh_instances[get_render_program_id(options, *mesh_instance)].push_back(*mesh_instance);
       }
     }
     else if (!options.linear_octree_ids.empty())
@@ -197,7 +197,7 @@ namespace ludo
         {
           return frustum_test(
             planes,
-            // Include neighbouring octants to ensure the meshes that overlap from them into this octant are included.
+            // Include neighbouring octants to ensure the mesh instances that overlap from them into this octant are included.
             {
             .min = bounds.min - octant_size,
             .max = bounds.max + octant_size
@@ -205,27 +205,27 @@ namespace ludo
           );
         });
 
-        for (auto& mesh : results)
+        for (auto& mesh_instance : results)
         {
-          grouped_meshes[get_render_program_id(options, mesh)].push_back(mesh);
+          grouped_mesh_instances[get_render_program_id(options, mesh_instance)].push_back(mesh_instance);
         }
       }
     }
     else if (exists<mesh>(instance))
     {
-      auto& meshes = data<mesh>(instance);
-      for (auto& mesh : meshes)
+      auto& mesh_instances = data<mesh_instance>(instance);
+      for (auto& mesh_instance : mesh_instances)
       {
-        grouped_meshes[get_render_program_id(options, mesh)].push_back(mesh);
+        grouped_mesh_instances[get_render_program_id(options, mesh_instance)].push_back(mesh_instance);
       }
     }
 
-    return grouped_meshes;
+    return grouped_mesh_instances;
   }
 
-  uint64_t get_render_program_id(const render_options& options, const mesh& mesh)
+  uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance)
   {
-    auto render_program_id = options.render_program_id ? options.render_program_id : mesh.render_program_id;
+    auto render_program_id = options.render_program_id ? options.render_program_id : mesh_instance.render_program_id;
     assert(render_program_id && "render program not specified");
 
     return render_program_id;

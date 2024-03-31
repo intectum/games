@@ -63,10 +63,22 @@ namespace ludo
     uint64_t id = 0; ///< The ID of the mesh.
     uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh.
     uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
-    uint64_t armature_instance_id = 0; ///< The ID of the armature instance used to animate this mesh.
+    uint64_t armature_id = 0; ///< The ID of the armature instance used to animate this mesh.
+    std::vector<uint64_t> animation_ids; ///< The ID of the armature instance used to animate this mesh.
 
-    uint32_t instance_start = 0; ///< The starting index of the instances.
-    uint32_t instance_count = 1; ///< The number of instances.
+    buffer index_buffer; ///< A buffer containing the index data.
+    buffer vertex_buffer; ///< A buffer containing the vertex data.
+  };
+
+  ///
+  /// An instance of a mesh.
+  struct LUDO_API mesh_instance
+  {
+    uint64_t id = 0; ///< The ID of the mesh instance.
+    uint64_t mesh_id = 0; ///< The ID of the mesh this instance is based on.
+    uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh instance.
+    uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
+    uint64_t armature_instance_id = 0; ///< The ID of the armature instance used to animate this mesh.
 
     buffer index_buffer; ///< A buffer containing the index data.
     buffer vertex_buffer; ///< A buffer containing the vertex data.
@@ -139,18 +151,6 @@ namespace ludo
   LUDO_API uint32_t offset(const vertex_format& format, char component);
 
   ///
-  /// Determines if the left-hand mesh is less than the right-hand mesh.
-  /// A mesh is considered less than another mesh based on the following properties which appear in order of precedence:
-  /// - mesh_buffer_id
-  /// - id
-  /// - instance_start
-  /// This is to allow sorting for efficient rendering.
-  /// \param lhs The left-hand mesh.
-  /// \param rhs The right-hand mesh.
-  /// \return True if the left-hand mesh is less than the right-hand mesh, false otherwise.
-  bool operator<(const mesh& lhs, const mesh& rhs);
-
-  ///
   /// Adds a mesh to the data of an instance.
   /// Allocates index and vertex buffers based on the options provided.
   /// \param instance The instance to add the mesh to.
@@ -164,6 +164,16 @@ namespace ludo
 
   template<>
   LUDO_API void remove<mesh>(instance& instance, mesh* element, const std::string& partition);
+
+  ///
+  /// Adds a mesh instance based on the given mesh.
+  /// An armature instance will also be added and attached to the mesh instance if one is not already added.
+  /// \param instance The instance to add the mesh instance to.
+  /// \param init The initial state of the new mesh instance.
+  /// \param mesh The mesh to base the mesh instance on.
+  /// \param partition The name of the partition.
+  /// \return A pointer to the new mesh instance. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition = "default");
 }
 
 #endif // LUDO_GEOMETRY_H

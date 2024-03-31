@@ -270,4 +270,15 @@ namespace ludo
     test_equal<void*>("partitioned_buffer: find or create new (data)", new_partition_iter->second.data, reinterpret_cast<int32_t*>(partitioned_buffer_4.data) + 1);
     test_equal("partitioned_buffer: find or create new (array size)", new_partition_iter->second.array_size, 0ul);
   }
+
+  // dummy functions so that buffers compile
+  buffer allocate_vram(uint64_t size, vram_buffer_access_hint access_hint)
+  {
+    return allocate(size);
+  }
+
+  void deallocate_vram(buffer& buffer)
+  {
+    deallocate(buffer);
+  }
 }

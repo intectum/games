@@ -10,7 +10,7 @@
 
 namespace ludo
 {
-  auto buffer_access_hint_map = std::unordered_map<vram_buffer_access_hint, GLenum>
+  auto buffer_access_hints = std::unordered_map<vram_buffer_access_hint, GLenum>
   {
     { vram_buffer_access_hint::READ, GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT },
     { vram_buffer_access_hint::WRITE, GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT },
@@ -31,8 +31,8 @@ namespace ludo
     glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glNamedBufferStorage(buffer.id, static_cast<GLsizeiptr>(size), nullptr, buffer_access_hint_map[access_hint]); check_opengl_error();
-    buffer.data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.id, 0, static_cast<GLsizeiptr>(size), buffer_access_hint_map[access_hint])); check_opengl_error();
+    glNamedBufferStorage(buffer.id, static_cast<GLsizeiptr>(size), nullptr, buffer_access_hints[access_hint]); check_opengl_error();
+    buffer.data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.id, 0, static_cast<GLsizeiptr>(size), buffer_access_hints[access_hint])); check_opengl_error();
 
     return buffer;
   }

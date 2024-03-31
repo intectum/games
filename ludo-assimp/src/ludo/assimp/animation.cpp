@@ -14,7 +14,7 @@ namespace ludo
   animation_node to_animation_node(const aiNodeAnim& original, int32_t bone_index);
   armature to_armature(const aiNode& assimp_node, const aiMesh& assimp_mesh, std::unordered_map<const aiNode*, bool>& bone_path, const mat4& root_matrix = mat4_identity, bool root_found = false);
 
-  void import_armature(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
+  uint64_t import_armature(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
   {
     auto bone_path = std::unordered_map<const aiNode*, bool>();
     find_bone_path(*assimp_scene.mRootNode, assimp_mesh, bone_path);
@@ -26,14 +26,16 @@ namespace ludo
 
     if (bone_path_iter == bone_path.end())
     {
-      return;
+      return 0;
     }
 
-    add(instance, to_armature(*assimp_scene.mRootNode, assimp_mesh, bone_path), partition);
+    return add(instance, to_armature(*assimp_scene.mRootNode, assimp_mesh, bone_path), partition)->id;
   }
 
-  void import_animations(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
+  std::vector<uint64_t> import_animations(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
   {
+    auto animations = std::vector<uint64_t>();
+
     for (auto index = 0; index < assimp_scene.mNumAnimations; index++)
     {
       auto assimp_animation = assimp_scene.mAnimations[index];
@@ -47,9 +49,9 @@ namespace ludo
         nodes.emplace_back(to_animation_node(*assimp_node_anim, find_bone_index(assimp_mesh, std::string(assimp_node_anim->mNodeName.C_Str()))));
       }
 
-      add(
+      auto animation = add(
         instance,
-        animation
+        ludo::animation
         {
           .name = assimp_animation->mName.C_Str(),
           .ticks = static_cast<float>(assimp_animation->mDuration),
@@ -59,7 +61,11 @@ namespace ludo
         },
         partition
       );
+
+      animations.push_back(animation->id);
     }
+
+    return animations;
   }
 
   void find_bone_path(const aiNode& assimp_node, const aiMesh& assimp_mesh, std::unordered_map<const aiNode*, bool>& bone_path)

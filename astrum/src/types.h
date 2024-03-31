@@ -26,7 +26,7 @@ namespace astrum
 
   struct patch
   {
-    uint64_t mesh_id = 0;
+    uint64_t mesh_instance_id = 0;
 
     ludo::vec3 center;
     ludo::vec3 normal;

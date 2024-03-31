@@ -5,7 +5,7 @@
 
 namespace astrum
 {
-  ludo::mesh* add_post_processing_mesh(ludo::instance& inst);
+  ludo::mesh_instance* add_post_processing_mesh_instance(ludo::instance& inst);
 
   ludo::shader* add_post_processing_vertex_shader(ludo::instance& inst);
 

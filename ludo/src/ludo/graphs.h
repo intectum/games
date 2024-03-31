@@ -7,7 +7,6 @@
 
 #include <cmath>
 #include <functional>
-#include <set>
 
 #include "core.h"
 #include "data.h"
@@ -28,8 +27,8 @@ namespace ludo
   /// An element of a dynamic octree.
   struct LUDO_API dynamic_octree_element
   {
-    ludo::mesh mesh; ///< The mesh.
-    aabb bounds; ///< The bounds of the mesh (in world coordinates). // TODO make this local to the mesh?
+    ludo::mesh_instance mesh_instance; ///< The mesh instance.
+    aabb bounds; ///< The bounds of the mesh (in world coordinates). // TODO make this local to the mesh instance?
   };
 
   ///
@@ -46,13 +45,6 @@ namespace ludo
   };
 
   ///
-  /// A hash implementation for dynamic octree 'element nodes'.
-  struct dynamic_octree_element_node_hash
-  {
-    std::size_t operator()(const std::pair<uint64_t, uint32_t>& pair) const noexcept;
-  };
-
-  ///
   /// An pointer-based octree that dynamically adds and removes nodes as needed.
   /// Contained meshes are considered unique based on the combination of their ID and instance start.
   struct LUDO_API dynamic_octree
@@ -63,7 +55,7 @@ namespace ludo
     uint32_t max_depth = 0; ///< The maximum depth of the dynamic octree.
     uint32_t split_threshold = 10; ///< The maximum number of elements to add to a node before splitting it.
 
-    std::unordered_map<std::pair<uint64_t, uint32_t>, dynamic_octree_node*, dynamic_octree_element_node_hash> element_nodes; ///< Used to quickly find the node containing an element.
+    std::unordered_map<uint64_t, dynamic_octree_node*> element_nodes; ///< Used to quickly find the node containing an element.
   };
 
   ///
@@ -78,7 +70,7 @@ namespace ludo
     aabb bounds; ///< The bounds of the linear octree.
     uint8_t depth = 1; ///< The depth of the linear octree (the maximum supported depth is 9).
 
-    std::unordered_map<uint32_t, std::vector<mesh>> octants; ///< The leaf octants of the linear octree. TODO use std::set for faster sorting?
+    std::unordered_map<uint32_t, std::vector<mesh_instance>> octants; ///< The leaf octants of the linear octree. TODO use std::set for faster sorting?
   };
 
   ///
@@ -109,8 +101,11 @@ namespace ludo
   /// \return True if the AABBs intersect, false otherwise.
   LUDO_API bool intersect(const aabb& a, const aabb& b);
 
-  template<>
-  LUDO_API dynamic_octree* add(instance& instance, const dynamic_octree& init, const std::string& partition);
+  ///
+  /// Adds an element to a dynamic octree.
+  /// \param octree The dynamic octree to add the element to.
+  /// \param element The element to add to the dynamic octree.
+  LUDO_API void add(dynamic_octree& octree, const dynamic_octree_element& element);
 
   ///
   /// Removes an element from a dynamic octree.
@@ -122,8 +117,8 @@ namespace ludo
   /// TODO not sure about this...
   /// Retrieves an element from a dynamic octree.
   /// \param octree The dynamic octree to retrieve the element from.
-  /// \param mesh The mesh contained in the element to retrieve from the octree.
-  LUDO_API dynamic_octree_element& get(dynamic_octree& octree, const mesh& mesh);
+  /// \param mesh_instance The mesh instance contained in the element to retrieve from the octree.
+  LUDO_API dynamic_octree_element& get(dynamic_octree& octree, const mesh_instance& mesh_instance);
 
   ///
   /// Updates an element in a dynamic octree.
@@ -137,7 +132,7 @@ namespace ludo
   /// \param octree The dynamic octree to search.
   /// \param test The test to perform against the bounds of the nodes.
   /// \return The matching elements.
-  LUDO_API std::set<mesh> find(const dynamic_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
+  LUDO_API std::vector<mesh_instance> find(const dynamic_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
 
   template<>
   LUDO_API linear_octree* add(instance& instance, const linear_octree& init, const std::string& partition);
@@ -147,15 +142,15 @@ namespace ludo
   /// \param octree The linear octree to add the element to.
   /// \param element The element to add to the linear octree.
   /// \param position The position of the element.
-  LUDO_API void add(linear_octree& octree, const mesh& element, const vec3& position);
+  LUDO_API void add(linear_octree& octree, const mesh_instance& element, const vec3& position);
 
   ///
   /// Removes an element from a linear octree.
   /// \param octree The linear octree to remove the element from.
-  /// \param element The element to remove to the linear octree.
+  /// \param element The element to remove from the linear octree.
   /// \param position The position of the element.
   /// \return True if the the element was removed, false otherwise.
-  LUDO_API bool remove(linear_octree& octree, const mesh& element, const vec3& position);
+  LUDO_API bool remove(linear_octree& octree, const mesh_instance& element, const vec3& position);
 
   ///
   /// Moves a linear octree.
@@ -168,14 +163,14 @@ namespace ludo
   /// \param octree The linear octree to search.
   /// \param test The test to perform against the bounds of the nodes.
   /// \return The matching elements.
-  LUDO_API std::set<mesh> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
+  LUDO_API std::vector<mesh_instance> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
 
   ///
   /// Finds elements within a linear octree using a parallel search across all octants.
   /// \param octree The linear octree to search.
   /// \param test The test to perform against the bounds of the nodes.
   /// \return The matching elements.
-  LUDO_API std::set<mesh> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
+  LUDO_API std::vector<mesh_instance> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
 
   ///
   /// Retrieves the size of an octant in a linear octree.

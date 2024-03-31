@@ -5,7 +5,7 @@
 
 namespace astrum
 {
-  void add_hdr_resolve(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_id)
+  void add_hdr_resolve(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto& previous_frame_buffer = frame_buffers[frame_buffers.array_size - 1];
@@ -26,7 +26,7 @@ namespace astrum
     {
       .frame_buffer_id = add_post_processing_frame_buffer(inst)->id,
       .render_program_id = render_program->id,
-      .mesh_ids = { mesh_id },
+      .mesh_instance_ids = { mesh_instance_id },
       .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], 0)
     });
   }

@@ -5,14 +5,13 @@ namespace astrum
 {
   void add_spaceship(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
-    auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
+    auto linear_octree = ludo::first<ludo::linear_octree>(inst, "default");
+    auto mesh = ludo::first<ludo::mesh>(inst, "spaceships");
 
-    ludo::import(inst, "assets/models/spaceship.obj", {}, "spaceships");
-    auto& mesh = *ludo::first<ludo::mesh>(inst, "spaceships");
+    auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "spaceships");
 
-    mesh.transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
-
-    ludo::add(linear_octree, mesh, initial_transform.position);
+    mesh_instance->transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
+    ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
 
     ludo::add(
       inst,

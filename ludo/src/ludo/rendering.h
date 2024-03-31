@@ -30,7 +30,7 @@ namespace ludo
     uint64_t frame_buffer_id = 0; ///< The ID of the frame buffer to render to. An ID of 0 will render to the window.
     uint64_t render_program_id = 0; ///< The IDs of the render program to use. Takes precedence over render programs specified by mesh buffers.
 
-    std::vector<uint64_t> mesh_ids; ///< The IDs of the meshes to render. Takes precedence over linear octrees. For better performance, add these meshes to the instance first.
+    std::vector<uint64_t> mesh_instance_ids; ///< The IDs of the mesh instances to render. Takes precedence over linear octrees. For better performance, add these meshes to the instance first.
     std::vector<uint64_t> linear_octree_ids; ///< The IDs of the linear octrees containing meshes to render.
 
     bool clear_frame_buffer = true; ///< Determines if the frame buffer will be cleared before rendering.

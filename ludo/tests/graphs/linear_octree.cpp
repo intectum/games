@@ -26,8 +26,8 @@ namespace ludo
     auto position_1 = vec3 { -0.25f, -0.25f, -0.25f };
     auto position_1_octant_key = 0;
 
-    auto mesh_1 = mesh { .id = 1 };
-    add(*linear_octree_1, mesh_1, position_1);
+    auto mesh_instance_1 = mesh_instance { .id = 1 };
+    add(*linear_octree_1, mesh_instance_1, position_1);
     for (auto& octant : linear_octree_1->octants)
     {
       if (octant.first == position_1_octant_key)
@@ -40,10 +40,10 @@ namespace ludo
       }
     }
 
-    auto mesh_2 = mesh { .id = 2 };
-    add(*linear_octree_1, mesh_2, position_1);
+    auto mesh_instance_2 = mesh_instance { .id = 2 };
+    add(*linear_octree_1, mesh_instance_2, position_1);
 
-    remove(*linear_octree_1, mesh_2, position_1);
+    remove(*linear_octree_1, mesh_instance_2, position_1);
     for (auto& octant : linear_octree_1->octants)
     {
       if (octant.first == position_1_octant_key)

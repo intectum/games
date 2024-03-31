@@ -28,7 +28,7 @@ namespace ludo
     { aiPrimitiveType_TRIANGLE, mesh_primitive::TRIANGLE_LIST }
   };
 
-  void import(instance& instance, const std::string& file_name, const import_options& options, const std::string& partition)
+  std::vector<mesh> import(instance& instance, const std::string& file_name, const import_options& options, const std::string& partition)
   {
     Assimp::Importer importer;
     auto assimp_scene = importer.ReadFile(file_name, aiProcessPreset_TargetRealtime_MaxQuality);
@@ -36,13 +36,18 @@ namespace ludo
     {
       std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
       assert(false && "Assimp error");
-      return;
+      return {};
     }
 
     auto mesh_objects = std::vector<import_object>();
     auto rigid_body_objects = std::vector<import_object>();
     find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity, false);
     validate(*assimp_scene, mesh_objects);
+
+    for (auto& rigid_body_object : rigid_body_objects)
+    {
+      import_body_shape(instance, *assimp_scene, rigid_body_object, partition);
+    }
 
     if (!mesh_objects.empty())
     {
@@ -51,13 +56,10 @@ namespace ludo
       auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format_options);
 
       auto textures = import_textures(instance, *assimp_scene, mesh_objects, partition);
-      import_meshes(instance, *render_program, *assimp_scene, mesh_objects, textures, options, partition);
+      return import_meshes(instance, *render_program, *assimp_scene, mesh_objects, textures, options, partition);
     }
 
-    for (auto& rigid_body_object : rigid_body_objects)
-    {
-      import_body_shape(instance, *assimp_scene, rigid_body_object, partition);
-    }
+    return {};
   }
 
   std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name)

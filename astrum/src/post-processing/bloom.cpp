@@ -5,7 +5,7 @@
 
 namespace astrum
 {
-  void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_id, uint32_t iterations, float final_texture_size)
+  void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id, uint32_t iterations, float final_texture_size)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto original_frame_buffer = &frame_buffers[frame_buffers.array_size - 1];
@@ -53,7 +53,7 @@ namespace astrum
     {
       .frame_buffer_id = current_frame_buffer->id,
       .render_program_id = brightness_render_program->id,
-      .mesh_ids = { mesh_id },
+      .mesh_instance_ids = { mesh_instance_id },
       .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0)
     });
 
@@ -71,7 +71,7 @@ namespace astrum
       {
         .frame_buffer_id = current_frame_buffer->id,
         .render_program_id = gaussian_render_program->id,
-        .mesh_ids = { mesh_id },
+        .mesh_instance_ids = { mesh_instance_id },
         .shader_buffer = horizontal_shader_buffer
       });
 
@@ -85,7 +85,7 @@ namespace astrum
       {
         .frame_buffer_id = current_frame_buffer->id,
         .render_program_id = gaussian_render_program->id,
-        .mesh_ids = { mesh_id },
+        .mesh_instance_ids = { mesh_instance_id },
         .shader_buffer = vertical_shader_buffer
       });
     }
@@ -97,7 +97,7 @@ namespace astrum
     {
       .frame_buffer_id = current_frame_buffer->id,
       .render_program_id = additive_render_program->id,
-      .mesh_ids = { mesh_id },
+      .mesh_instance_ids = { mesh_instance_id },
       .shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0])
     });
   }

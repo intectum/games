@@ -47,7 +47,8 @@ namespace astrum
         ludo::write(mesh->index_buffer, step_index * sizeof(ludo::index_t), step_index);
       }
 
-      ludo::add(always_render_linear_octree, *mesh, ludo::vec3_zero);
+      auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "prediction-paths");
+      ludo::add(always_render_linear_octree, *mesh_instance, ludo::vec3_zero);
     }
   }
 

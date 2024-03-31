@@ -5,7 +5,7 @@
 #ifndef LUDO_IMPORTING_H
 #define LUDO_IMPORTING_H
 
-#include <ludo/core.h>
+#include "ludo/meshes.h"
 
 namespace ludo
 {
@@ -15,13 +15,18 @@ namespace ludo
   };
 
   ///
-  /// Imports animations, armatures, armature instances, body shapes, meshes, and textures from a file.
+  /// Imports body shapes and meshes from a file.
   /// \param instance The instance to import into.
   /// \param file_name The name of the file to import from.
   /// \param options The options used to modify the import behavior.
   /// \param partition The partition to import into.
-  LUDO_API void import(instance& instance, const std::string& file_name, const import_options& options = {}, const std::string& partition = "default");
+  /// \return The imported meshes.
+  LUDO_API std::vector<mesh> import(instance& instance, const std::string& file_name, const import_options& options = {}, const std::string& partition = "default");
 
+  ///
+  /// Determines the total and unique vertex counts in a file.
+  /// \param file_name The name of the file to count the vertices in.
+  /// \return The total and unique vertex counts of a file. Of the form { total, unique }.
   LUDO_API std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name);
 }
 
