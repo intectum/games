@@ -6,7 +6,6 @@
 
 #include "../graphs.h"
 #include "../tasks.h"
-#include "./util.h"
 
 namespace ludo
 {
@@ -58,11 +57,24 @@ namespace ludo
     return false;
   }
 
+  void move(linear_octree& octree, const vec3& movement)
+  {
+    octree.bounds.min += movement;
+    octree.bounds.max += movement;
+
+    for (auto& octant: octree.octants)
+    {
+      for (auto& mesh: octant.second)
+      {
+        position(mesh.transform, position(mesh.transform) + movement);
+      }
+    }
+  }
+
   std::set<mesh> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
     auto meshes = std::set<mesh>();
     find(meshes, octree, 0, octree.bounds, test, false);
-    combine_meshes(meshes);
 
     return meshes;
   }
@@ -129,8 +141,6 @@ namespace ludo
         meshes.insert(task_meshes.begin(), task_meshes.end());
       };
     });
-
-    combine_meshes(meshes);
 
     return meshes;
   }

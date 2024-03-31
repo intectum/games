@@ -79,6 +79,25 @@ namespace ludo
   }
 
   template<typename T>
+  bool exists(const instance& instance)
+  {
+    return instance.data.contains(partitioned_buffer_key<T>());
+  }
+
+  template<typename T>
+  bool exists(const instance& instance, const std::string& partition)
+  {
+    if (!exists<T>(instance))
+    {
+      return false;
+    }
+
+    auto& buffer = data<T>(instance);
+    auto partition_iter = find(buffer, partition);
+    return partition_iter != buffer.partitions.end();
+  }
+
+  template<typename T>
   T* first(instance& instance)
   {
     return const_cast<T*>(first<T>(const_cast<const ludo::instance&>(instance)));

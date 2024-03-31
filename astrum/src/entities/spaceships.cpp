@@ -10,10 +10,9 @@ namespace astrum
     auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
 
     ludo::import(inst, "assets/models/spaceship.obj", {}, "spaceships");
-    auto& mesh_buffer = *ludo::first<ludo::mesh_buffer>(inst, "spaceships");
     auto& mesh = *ludo::first<ludo::mesh>(inst, "spaceships");
 
-    ludo::set_transform(mesh_buffer, 0, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
+    mesh.transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
 
     ludo::add(linear_octree, mesh, initial_transform.position);
 

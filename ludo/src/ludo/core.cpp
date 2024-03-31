@@ -11,6 +11,8 @@
 
 namespace ludo
 {
+  uint64_t next_id = 1;
+
   void play(instance& instance)
   {
     auto total_timer = timer();

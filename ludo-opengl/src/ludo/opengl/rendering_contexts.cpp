@@ -11,6 +11,7 @@ namespace ludo
   rendering_context* add(instance& instance, const rendering_context& init, const std::string& partition)
   {
     auto rendering_context = add(data<ludo::rendering_context>(instance), init, partition);
+    rendering_context->id = next_id++;
 
     // TODO glewExperimental = GL_TRUE;
     glewInit();
@@ -45,7 +46,7 @@ namespace ludo
     auto light_size = 112;
     auto data_size = camera_size + 16 + light_count * light_size;
 
-    rendering_context->data_buffer = allocate_vram(data_size);
+    rendering_context->shader_buffer = allocate_vram(data_size);
 
     // Default camera.
     set_camera(*rendering_context, camera
@@ -54,7 +55,7 @@ namespace ludo
       .projection = perspective(60.0f, 16.0f / 9.0f, 0.1f, 1000.0f)
     });
 
-    write(rendering_context->data_buffer, camera_size, light_count);
+    write(rendering_context->shader_buffer, camera_size, light_count);
 
     // Lights that don't do anything...
     for (auto index = 0; index < light_count; index++)
@@ -78,9 +79,9 @@ namespace ludo
   template<>
   void remove<rendering_context>(instance& instance, rendering_context* element, const std::string& partition)
   {
-    if (element->data_buffer.size)
+    if (element->shader_buffer.size)
     {
-      deallocate_vram(element->data_buffer);
+      deallocate_vram(element->shader_buffer);
     }
 
     // TODO is all this reverting really needed?
@@ -109,14 +110,14 @@ namespace ludo
     // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
 
     auto byte_index = 0;
-    camera.near_clipping_distance = read<float>(rendering_context.data_buffer, byte_index);
+    camera.near_clipping_distance = read<float>(rendering_context.shader_buffer, byte_index);
     byte_index += 4;
-    camera.far_clipping_distance = read<float>(rendering_context.data_buffer, byte_index);
+    camera.far_clipping_distance = read<float>(rendering_context.shader_buffer, byte_index);
     byte_index += 4;
     byte_index += 8; // Padding to 16 bytes
-    camera.view = read<mat4>(rendering_context.data_buffer, byte_index);
+    camera.view = read<mat4>(rendering_context.shader_buffer, byte_index);
     byte_index += 64;
-    camera.projection = read<mat4>(rendering_context.data_buffer, byte_index);
+    camera.projection = read<mat4>(rendering_context.shader_buffer, byte_index);
 
     return camera;
   }
@@ -130,19 +131,19 @@ namespace ludo
     // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
 
     auto byte_index = 0;
-    write(rendering_context.data_buffer, byte_index, camera.near_clipping_distance);
+    write(rendering_context.shader_buffer, byte_index, camera.near_clipping_distance);
     byte_index += 4;
-    write(rendering_context.data_buffer, byte_index, camera.far_clipping_distance);
+    write(rendering_context.shader_buffer, byte_index, camera.far_clipping_distance);
     byte_index += 4;
     byte_index += 8; // Padding to 16 bytes
-    write(rendering_context.data_buffer, byte_index, camera.view);
+    write(rendering_context.shader_buffer, byte_index, camera.view);
     byte_index += 64;
-    write(rendering_context.data_buffer, byte_index, camera.projection);
+    write(rendering_context.shader_buffer, byte_index, camera.projection);
     byte_index += 64;
-    write(rendering_context.data_buffer, byte_index, position(camera.view));
+    write(rendering_context.shader_buffer, byte_index, position(camera.view));
     byte_index += 12;
     byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.data_buffer, byte_index, view_projection);
+    write(rendering_context.shader_buffer, byte_index, view_projection);
   }
 
   light get_light(const rendering_context& rendering_context, uint8_t index)
@@ -152,28 +153,28 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < read<uint32_t>(rendering_context.data_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < read<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
 
     // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
 
     auto byte_index = camera_size + 16 + index * light_size;
-    light.ambient = read<vec4>(rendering_context.data_buffer, byte_index);
+    light.ambient = read<vec4>(rendering_context.shader_buffer, byte_index);
     byte_index += 16;
-    light.diffuse = read<vec4>(rendering_context.data_buffer, byte_index);
+    light.diffuse = read<vec4>(rendering_context.shader_buffer, byte_index);
     byte_index += 16;
-    light.specular = read<vec4>(rendering_context.data_buffer, byte_index);
+    light.specular = read<vec4>(rendering_context.shader_buffer, byte_index);
     byte_index += 16;
-    light.position = read<vec3>(rendering_context.data_buffer, byte_index);
+    light.position = read<vec3>(rendering_context.shader_buffer, byte_index);
     byte_index += 12;
     byte_index += 4; // Padding to 16 bytes
-    light.direction = read<vec3>(rendering_context.data_buffer, byte_index);
+    light.direction = read<vec3>(rendering_context.shader_buffer, byte_index);
     byte_index += 12;
     byte_index += 4; // Padding to 16 bytes
-    light.attenuation = read<vec3>(rendering_context.data_buffer, byte_index);
+    light.attenuation = read<vec3>(rendering_context.shader_buffer, byte_index);
     byte_index += 12;
-    light.strength = read<float>(rendering_context.data_buffer, byte_index);
+    light.strength = read<float>(rendering_context.shader_buffer, byte_index);
     byte_index += 4;
-    light.range = read<float>(rendering_context.data_buffer, byte_index);
+    light.range = read<float>(rendering_context.shader_buffer, byte_index);
 
     return light;
   }
@@ -183,32 +184,32 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < read<uint32_t>(rendering_context.data_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < read<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
 
     // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
 
     auto byte_index = camera_size + 16 + index * light_size;
-    write(rendering_context.data_buffer, byte_index, light.ambient);
+    write(rendering_context.shader_buffer, byte_index, light.ambient);
     byte_index += 16;
-    write(rendering_context.data_buffer, byte_index, light.diffuse);
+    write(rendering_context.shader_buffer, byte_index, light.diffuse);
     byte_index += 16;
-    write(rendering_context.data_buffer, byte_index, light.specular);
+    write(rendering_context.shader_buffer, byte_index, light.specular);
     byte_index += 16;
-    write(rendering_context.data_buffer, byte_index, light.position);
+    write(rendering_context.shader_buffer, byte_index, light.position);
     byte_index += 12;
     byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.data_buffer, byte_index, light.direction);
+    write(rendering_context.shader_buffer, byte_index, light.direction);
     byte_index += 12;
     byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.data_buffer, byte_index, light.attenuation);
+    write(rendering_context.shader_buffer, byte_index, light.attenuation);
     byte_index += 12;
-    write(rendering_context.data_buffer, byte_index, light.strength);
+    write(rendering_context.shader_buffer, byte_index, light.strength);
     byte_index += 4;
-    write(rendering_context.data_buffer, byte_index, light.range);
+    write(rendering_context.shader_buffer, byte_index, light.range);
   }
 
   void bind(const rendering_context& rendering_context)
   {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.data_buffer.id); check_opengl_error();
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.shader_buffer.id); check_opengl_error();
   }
 }

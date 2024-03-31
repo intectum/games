@@ -8,7 +8,7 @@ struct point_t
   vec3 position;
   vec3 normal;
   vec4 color;
-  vec2 tex_coords[1];
+  vec2 tex_coords;
 };
 
 // Input
@@ -29,5 +29,5 @@ out vec4 color;
 
 void main()
 {
-  color = texture(color_sampler_0, point.tex_coords[0]) + texture(color_sampler_1, point.tex_coords[0]);
+  color = texture(color_sampler_0, point.tex_coords) + texture(color_sampler_1, point.tex_coords);
 }

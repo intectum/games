@@ -3,7 +3,9 @@
  */
 
 #include <iostream>
+#include <sstream>
 
+#include "standardized_shaders.h"
 #include "util.h"
 
 namespace ludo
@@ -15,19 +17,10 @@ namespace ludo
     { shader_type::FRAGMENT, GL_FRAGMENT_SHADER }
   };
 
-  template<>
-  shader* add(instance& instance, const shader& init, const std::string& partition)
-  {
-    auto shader = add(data<ludo::shader>(instance), init, partition);
-
-    shader->id = glCreateShader(shader_types[init.type]); check_opengl_error();
-
-    return shader;
-  }
-
-  shader* add(instance& instance, const shader& init, std::istream& code, const std::string& partition)
+  shader* add(instance& instance, const shader& init, shader_type type, std::istream& code, const std::string& partition)
   {
     auto shader = add(instance, init, partition);
+    shader->id = glCreateShader(shader_types[type]); check_opengl_error();
 
     code.seekg(0, std::ios_base::end);
     auto code_string = std::string(code.tellg(), 'x');
@@ -52,6 +45,50 @@ namespace ludo
     }
 
     return shader;
+  }
+
+  shader* add(instance& instance, const shader& init, shader_type type, const vertex_format_options& options, const std::string& partition)
+  {
+    if (type == shader_type::VERTEX)
+    {
+      auto code = std::stringstream();
+      write_header(code, options);
+      write_types(code, options);
+      write_inputs(code, options);
+      write_buffers(code, options);
+      code << std::endl;
+      code << "// Output" << std::endl;
+      code << std::endl;
+      code << "out point_t point;" << std::endl;
+      code << "out sampler2D sampler;" << std::endl;
+      write_vertex_main(code, options);
+
+      return add(instance, init, type, code, partition);
+    }
+
+    if (type == shader_type::FRAGMENT)
+    {
+      auto code = std::stringstream();
+      write_header(code, options);
+      write_types(code, options);
+      code << std::endl;
+      code << "// Input" << std::endl;
+      code << std::endl;
+      code << "in point_t point;" << std::endl;
+      code << "in flat sampler2D sampler;" << std::endl;
+      write_buffers(code, options);
+      code << std::endl;
+      code << "// Output" << std::endl;
+      code << std::endl;
+      code << "out vec4 color;" << std::endl;
+      write_lighting_functions(code, options);
+      write_fragment_main(code, options);
+
+      return add(instance, init, type, code, partition);
+    }
+
+    assert(false && "only vertex and fragment shaders supported");
+    return nullptr;
   }
 
   template<>

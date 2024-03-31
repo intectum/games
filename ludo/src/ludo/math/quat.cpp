@@ -6,7 +6,6 @@
 #include <cmath>
 
 #include "quat.h"
-#include "util.h"
 
 namespace ludo
 {

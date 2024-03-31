@@ -101,6 +101,7 @@ namespace ludo
   physics_context* add(instance& instance, const physics_context& init, const std::string& partition)
   {
     auto physics_context = add(data<ludo::physics_context>(instance), init, partition);
+    physics_context->id = next_id++;
 
     auto config = new btDefaultCollisionConfiguration();
     // config->setConvexConvexMultipointIterations();

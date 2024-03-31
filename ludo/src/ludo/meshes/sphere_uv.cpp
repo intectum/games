@@ -59,7 +59,7 @@ namespace ludo
   {
     auto position_offset = offset(format, 'p');
     auto normal_offset = offset(format, 'n');
-    auto has_normals = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'n'; });
+    auto has_normals = count(format, 'n') > 0;
 
     auto parallel = north ? 1 : divisions - 1;
     auto position_0 = vec3 { 0.0f, north ? radius : -radius, 0.0f };
@@ -108,7 +108,7 @@ namespace ludo
   {
     auto position_offset = offset(format, 'p');
     auto normal_offset = offset(format, 'n');
-    auto has_normals = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'n'; });
+    auto has_normals = count(format, 'n') > 0;
 
     for (auto parallel = 1; parallel < divisions - 1; parallel++)
     {

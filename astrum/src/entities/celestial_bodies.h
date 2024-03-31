@@ -12,6 +12,8 @@ namespace astrum
   void add_celestial_body(ludo::instance& inst, const celestial_body& init, const std::vector<lod>& lods, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity);
 
   void update_celestial_bodies(ludo::instance& inst, const std::vector<std::vector<lod>>& lods);
+
+  std::pair<uint32_t, uint32_t> celestial_body_counts(const std::vector<lod>& lods);
 }
 
 #endif // ASTRUM_ENTITIES_CELESTIAL_BODIES_H

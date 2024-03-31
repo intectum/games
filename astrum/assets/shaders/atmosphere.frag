@@ -54,7 +54,7 @@ struct point_t
   vec3 position;
   vec3 normal;
   vec4 color;
-  vec2 tex_coords[1];
+  vec2 tex_coords;
 };
 
 struct planet_t
@@ -98,8 +98,8 @@ out vec4 color;
 
 float linear_depth()
 {
-  //float depth = texture(depth_sampler, vec3(point.tex_coords[0], 0.0));
-  float depth = texture(depth_sampler, point.tex_coords[0]).r;
+  //float depth = texture(depth_sampler, vec3(point.tex_coords, 0.0));
+  float depth = texture(depth_sampler, point.tex_coords).r;
 
   return camera.near_clipping_distance * camera.far_clipping_distance / (camera.far_clipping_distance + depth * (camera.near_clipping_distance - camera.far_clipping_distance));
 }
@@ -154,7 +154,7 @@ vec2 square_tex_coord(vec2 tex_coord)
 
 vec3 pixel_view_vector()
 {
-  vec4 ndc = vec4(vec3(point.tex_coords[0], 0.0) * 2.0 - 1.0, 1.0);
+  vec4 ndc = vec4(vec3(point.tex_coords, 0.0) * 2.0 - 1.0, 1.0);
 
   mat4 camera_projection_inverse = inverse(camera.projection);
   vec4 view = camera_projection_inverse * ndc;
@@ -254,7 +254,7 @@ vec3 in_scatter(planet_t planet, vec3 ray_origin, vec3 ray_direction, float ray_
 
 void main()
 {
-  color = texture(color_sampler, point.tex_coords[0]);
+  color = texture(color_sampler, point.tex_coords);
 
   vec3 view_direction = normalize(pixel_view_vector());
   vec2 view_ray_intersections = ray_sphere_intersection(camera.position, view_direction, planet.position, planet.atmosphere_radius);
@@ -267,7 +267,7 @@ void main()
     color += vec4(in_scatter(planet, near_position_in_atmosphere, view_direction, atmosphere_depth), 0.0);
 
     // Soften banding effect.
-    vec4 blue_noise = texture(blue_noise_sampler, square_tex_coord(point.tex_coords[0]) * dither_scale);
+    vec4 blue_noise = texture(blue_noise_sampler, square_tex_coord(point.tex_coords) * dither_scale);
     blue_noise = (blue_noise - 0.5) * dither_strength;
     color += blue_noise;
 

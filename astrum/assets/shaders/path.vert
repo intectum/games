@@ -15,29 +15,16 @@ struct camera_t
   mat4 view_projection;
 };
 
-struct light_t
-{
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-
-  vec3 position;
-  vec3 direction;
-  vec3 attenuation;
-  float strength;
-  float range;
-};
-
 struct point_t
 {
   vec3 position;
   vec3 normal;
   vec4 color;
+  vec2 tex_coords;
 };
 
 // Inputs
 
-in vec4 transform_columns[4];
 in vec3 position;
 
 // Buffers
@@ -53,6 +40,11 @@ layout(std430, binding = 2) buffer program_layout
 {
   uint step_count;
   vec4 color[];
+};
+
+layout(std430, binding = 3) buffer instance_layout
+{
+  mat4 transform;
 };
 
 // Output

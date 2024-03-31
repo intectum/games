@@ -13,6 +13,7 @@ namespace astrum
   auto script_names = std::vector<std::string>
   {
     "ludo::update_windows",
+    "ludo::clear_vram_data",
     "ludo::render/geometry",
     "ludo::blit",
     "astrum::update_atmosphere",

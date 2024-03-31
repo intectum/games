@@ -8,8 +8,6 @@
 
 namespace astrum
 {
-  ludo::mesh* allocate(ludo::instance& inst, patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, const std::string& partition);
-  void deallocate(ludo::instance& inst, patchwork& patchwork, uint64_t mesh_id, const std::string& partition);
   void sew(patchwork& patchwork, uint32_t patch_index, bool sew_same_variant);
 
   void save(const patchwork& patchwork, std::ostream& stream)
@@ -107,23 +105,29 @@ namespace astrum
     auto patchwork = ludo::add(ludo::data<astrum::patchwork>(inst), init, partition);
     patchwork->id = ludo::next_id++;
 
-    auto mesh_buffer = ludo::get<ludo::mesh_buffer>(inst, partition, patchwork->mesh_buffer_id);
-    assert(mesh_buffer && "mesh buffer not found");
-
-    patchwork->available_ranges.emplace_back(ludo::mesh {
-      .mesh_buffer_id = mesh_buffer->id,
-      .index_buffer = mesh_buffer->index_buffer,
-      .vertex_buffer = mesh_buffer->vertex_buffer
-    });
+    auto render_program = ludo::get<ludo::render_program>(inst, patchwork->render_program_id);
+    assert(render_program && "render program not found");
 
     for (auto index = 0; index < patchwork->patches.size(); index++)
     {
       auto& patch = patchwork->patches[index];
 
       patch.variant_index = patchwork->variant_index(*patchwork, index);
-      auto mesh = allocate(inst, *patchwork, index, patch.variant_index, partition);
-      patch.mesh_id = mesh->id;
-      patchwork->load(*patchwork, index, patch.variant_index, *mesh);
+
+      auto [ index_count, vertex_count ] = patchwork->counts(*patchwork, index, patch.variant_index);
+
+      auto& mesh = *ludo::add(
+        inst,
+        ludo::mesh { .render_program_id = patchwork->render_program_id },
+        index_count,
+        vertex_count,
+        render_program->format.size,
+        partition
+      );
+
+      mesh.transform = ludo::mat4(patchwork->transform.position, ludo::mat3(patchwork->transform.rotation));
+      patch.mesh_id = mesh.id;
+      patchwork->load(*patchwork, index, patch.variant_index, mesh);
     }
 
     for (auto index = 0; index < patchwork->patches.size(); index++)
@@ -149,6 +153,9 @@ namespace astrum
 
       for (auto& patchwork : partition.second)
       {
+        auto render_program = ludo::get<ludo::render_program>(inst, patchwork.render_program_id);
+        assert(render_program && "render program not found");
+
         auto mutex = std::mutex();
         ludo::divide_and_conquer(patchwork.patches.size(), [&](uint32_t start, uint32_t end)
         {
@@ -167,7 +174,19 @@ namespace astrum
 
               // Multiple concurrent allocations would be bad...
               auto lock = std::lock_guard(mutex);
-              auto& new_mesh = *allocate(inst, patchwork, index, new_variant_index, partition_name);
+
+              auto [ index_count, vertex_count ] = patchwork.counts(patchwork, index, new_variant_index);
+
+              auto& new_mesh = *ludo::add(
+                inst,
+                ludo::mesh { .render_program_id = patchwork.render_program_id },
+                index_count,
+                vertex_count,
+                render_program->format.size,
+                partition_name
+              );
+
+              new_mesh.transform = ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation));
 
               // Purposely take a copy of the new mesh!
               // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
@@ -181,7 +200,9 @@ namespace astrum
                   auto& patch = patchwork.patches[index];
 
                   patchwork.on_unload(patchwork, index);
-                  deallocate(inst, patchwork, patch.mesh_id, partition_name);
+
+                  auto mesh = ludo::get<ludo::mesh>(inst, patch.mesh_id);
+                  ludo::remove(inst, mesh, partition_name);
 
                   patch.mesh_id = local_new_mesh.id;
                   patch.variant_index = new_variant_index;
@@ -198,115 +219,6 @@ namespace astrum
         });
       }
     }
-  }
-
-  ludo::mesh* allocate(ludo::instance& inst, patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, const std::string& partition)
-  {
-    // TODO allocate in the smallest available range that fits it...
-
-    auto [ index_size, vertex_size] = patchwork.size(patchwork, patch_index, variant_index);
-
-    for (auto available_ranges_iter = patchwork.available_ranges.begin(); available_ranges_iter < patchwork.available_ranges.end(); available_ranges_iter++)
-    {
-      auto& available_range = *available_ranges_iter;
-
-      if (available_range.index_buffer.size < index_size || available_range.vertex_buffer.size < vertex_size)
-      {
-        continue;
-      }
-
-      auto mesh = ludo::add(
-        inst,
-        ludo::mesh
-        {
-          .mesh_buffer_id = patchwork.mesh_buffer_id,
-          .index_buffer =
-          {
-            .data = available_range.index_buffer.data,
-            .size = index_size,
-          },
-          .vertex_buffer =
-          {
-            .data = available_range.vertex_buffer.data,
-            .size = vertex_size
-          }
-        },
-        partition
-      );
-
-      if (available_range.index_buffer.size == index_size && available_range.vertex_buffer.size == vertex_size)
-      {
-        patchwork.available_ranges.erase(available_ranges_iter);
-      }
-      else
-      {
-        available_range.index_buffer.data += index_size;
-        available_range.index_buffer.size -= index_size;
-        available_range.vertex_buffer.data += vertex_size;
-        available_range.vertex_buffer.size -= vertex_size;
-      }
-
-      return mesh;
-    }
-
-    assert(false && "could not fit mesh");
-  }
-
-  void deallocate(ludo::instance& inst, patchwork& patchwork, uint64_t mesh_id, const std::string& partition)
-  {
-    auto mesh = ludo::get<ludo::mesh>(inst, mesh_id);
-    assert(mesh && "mesh not found");
-
-    for (auto available_ranges_iter = patchwork.available_ranges.begin(); available_ranges_iter < patchwork.available_ranges.end(); available_ranges_iter++)
-    {
-      auto& available_range = *available_ranges_iter;
-
-      if (available_range.index_buffer.data == mesh->index_buffer.data + mesh->index_buffer.size &&
-          available_range.vertex_buffer.data == mesh->vertex_buffer.data + mesh->vertex_buffer.size)
-      {
-        available_range.index_buffer.data = mesh->index_buffer.data;
-        available_range.index_buffer.size += mesh->index_buffer.size;
-        available_range.vertex_buffer.data = mesh->vertex_buffer.data;
-        available_range.vertex_buffer.size += mesh->vertex_buffer.size;
-
-        ludo::remove<ludo::mesh>(inst, mesh, partition);
-        return;
-      }
-
-      if (available_range.index_buffer.data + available_range.index_buffer.size == mesh->index_buffer.data &&
-          available_range.vertex_buffer.data + available_range.vertex_buffer.size == mesh->vertex_buffer.data)
-      {
-        available_range.index_buffer.size += mesh->index_buffer.size;
-        available_range.vertex_buffer.size += mesh->vertex_buffer.size;
-
-        if (available_ranges_iter + 1 != patchwork.available_ranges.end())
-        {
-          auto& next_available_range = *(available_ranges_iter + 1);
-          if (next_available_range.index_buffer.data == mesh->index_buffer.data + mesh->index_buffer.size &&
-              next_available_range.vertex_buffer.data == mesh->vertex_buffer.data + mesh->vertex_buffer.size)
-          {
-            available_range.index_buffer.size += next_available_range.index_buffer.size;
-            available_range.vertex_buffer.size += next_available_range.vertex_buffer.size;
-            patchwork.available_ranges.erase(available_ranges_iter + 1);
-          }
-        }
-
-        ludo::remove<ludo::mesh>(inst, mesh, partition);
-        return;
-      }
-    }
-
-    auto new_available_mesh = *mesh;
-    new_available_mesh.id = 0;
-    ludo::remove<ludo::mesh>(inst, mesh, partition);
-
-    patchwork.available_ranges.emplace_back(new_available_mesh);
-    std::sort(patchwork.available_ranges.begin(), patchwork.available_ranges.end(),
-      [](const ludo::mesh& a, const ludo::mesh& b)
-      {
-        return a.index_buffer.data < b.index_buffer.data;
-      }
-    );
   }
 
   void sew(patchwork& patchwork, uint32_t patch_index, bool sew_same_variant)

@@ -11,8 +11,6 @@
 
 namespace ludo
 {
-  extern uint64_t next_id;
-
   ///
   /// A buffer
   struct LUDO_API buffer
@@ -147,21 +145,27 @@ namespace ludo
   /// Allocates a buffer within a heap buffer.
   /// \param buffer The heap buffer to allocate a buffer within.
   /// \param size The size of the buffer to allocate.
-  LUDO_API buffer allocate(heap_buffer& buffer, uint64_t size);
+  /// \param byte_alignment The byte alignment within the heap buffer to allocate the buffer at.
+  /// \return The buffer.
+  LUDO_API buffer allocate(heap_buffer& buffer, uint64_t size, uint8_t byte_alignment = 1);
 
   ///
   /// Allocates an array buffer within a heap buffer.
   /// \param buffer The heap buffer to allocate an array buffer within.
   /// \param capacity The maximum number of elements that can be contained by the array buffer.
+  /// \param byte_alignment The byte alignment within the heap buffer to allocate the array buffer at.
+  /// \return The array buffer.
   template<typename T>
-  LUDO_API array_buffer<T> allocate_array(heap_buffer& buffer, uint64_t capacity);
+  LUDO_API array_buffer<T> allocate_array(heap_buffer& buffer, uint64_t capacity, uint8_t byte_alignment = 1);
 
   ///
   /// Allocates a partitioned buffer within a heap buffer.
   /// \param buffer The heap buffer to allocate a partitioned buffer within.
   /// \param capacity The maximum number of elements that can be contained by the partitioned buffer.
+  /// \param byte_alignment The byte alignment within the heap buffer to allocate the partitioned buffer at.
+  /// \return The partitioned buffer.
   template<typename T>
-  LUDO_API partitioned_buffer<T> allocate_partitioned(heap_buffer& buffer, uint64_t capacity);
+  LUDO_API partitioned_buffer<T> allocate_partitioned(heap_buffer& buffer, uint64_t capacity, uint8_t byte_alignment = 1);
 
   ///
   /// Deallocates a buffer from within a heap buffer.

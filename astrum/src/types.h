@@ -44,14 +44,15 @@ namespace astrum
   struct patchwork
   {
     uint64_t id = 0;
-    uint64_t mesh_buffer_id = 0;
+    uint64_t render_program_id = 0;
+
+    ludo::transform transform;
 
     std::vector<patch_variant> variants;
     std::vector<patch> patches;
-    std::vector<ludo::mesh> available_ranges;
 
     std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> variant_index;
-    std::function<std::pair<uint32_t, uint32_t>(const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index)> size;
+    std::function<std::pair<uint32_t, uint32_t>(const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index)> counts;
     std::function<void(const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)> load;
     std::function<void(const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)> sew;
     std::function<void(const patchwork& patchwork, uint32_t patch_index)> on_load = [](const patchwork& patchwork, uint32_t patch_index) {};

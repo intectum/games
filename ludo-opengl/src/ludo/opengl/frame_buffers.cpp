@@ -71,6 +71,18 @@ namespace ludo
 
   void blit(const frame_buffer& source, const frame_buffer& dest)
   {
+    auto mask = GL_COLOR_BUFFER_BIT;
+
+    if (source.depth_texture_id && dest.depth_texture_id)
+    {
+      mask |= GL_DEPTH_BUFFER_BIT;
+    }
+
+    if (source.stencil_texture_id && dest.stencil_texture_id)
+    {
+      mask |= GL_STENCIL_BUFFER_BIT;
+    }
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, source.id); check_opengl_error();
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dest.id); check_opengl_error();
     glBlitFramebuffer(
@@ -82,7 +94,7 @@ namespace ludo
       0,
       static_cast<GLint>(dest.width),
       static_cast<GLint>(dest.height),
-      GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+      mask,
       GL_NEAREST
     ); check_opengl_error();
   }

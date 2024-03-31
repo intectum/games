@@ -14,7 +14,7 @@ struct point_t
   vec3 position;
   vec3 normal;
   vec4 color;
-  vec2 tex_coords[1];
+  vec2 tex_coords;
 };
 
 // Input
@@ -34,7 +34,7 @@ out vec4 color;
 
 void main()
 {
-  vec3 color3 = texture(color_sampler, point.tex_coords[0]).rgb;
+  vec3 color3 = texture(color_sampler, point.tex_coords).rgb;
 
   // Tone mapping (transform HDR to LDR).
   //color3 = color3 / (color3 + vec3(1.0)); // Reinhard

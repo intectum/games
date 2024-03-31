@@ -1,5 +1,6 @@
 #include <future>
 
+#include <ludo/api.h>
 #include <ludo/assimp/api.h>
 
 #include "constants.h"

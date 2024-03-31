@@ -7,13 +7,19 @@
 
 #include <vector>
 
+#include "data.h"
 #include "math/mat.h"
 #include "math/transform.h"
 
 namespace ludo
 {
-  struct armature
+  const uint32_t max_bone_weights_per_vertex = 4;
+  const uint32_t max_bones_per_armature = 8;
+
+  struct LUDO_API armature
   {
+    uint64_t id; ///< The ID of the armature.
+
     mat4 transform;
 
     int32_t bone_index = -1;
@@ -22,7 +28,14 @@ namespace ludo
     std::vector<armature> children;
   };
 
-  struct animation_node
+  struct LUDO_API armature_instance
+  {
+    uint64_t id; ///< The ID of the armature instance.
+
+    mat4 transforms[max_bones_per_armature];
+  };
+
+  struct LUDO_API animation_node
   {
     int32_t bone_index = -1;
 
@@ -31,8 +44,10 @@ namespace ludo
     std::vector<std::pair<float, vec3>> scale_keyframes;
   };
 
-  struct animation
+  struct LUDO_API animation
   {
+    uint64_t id; ///< The ID of the animation.
+
     std::string name;
     float ticks = 0.0f;
     float ticks_per_second = 0.0f;
@@ -40,9 +55,16 @@ namespace ludo
     std::vector<animation_node> nodes;
   };
 
-  const uint8_t max_bone_weights_per_vertex = 4;
+  LUDO_API void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms);
 
-  void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transform_matrices);
+  template<>
+  LUDO_API armature* add(instance& instance, const armature& init, const std::string& partition);
+
+  template<>
+  LUDO_API armature_instance* add(instance& instance, const armature_instance& init, const std::string& partition);
+
+  template<>
+  LUDO_API animation* add(instance& instance, const animation& init, const std::string& partition);
 }
 
 #endif // LUDO_ANIMATION_H

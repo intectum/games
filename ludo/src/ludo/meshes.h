@@ -12,6 +12,10 @@
 
 namespace ludo
 {
+  using instance_t = std::byte;
+  using index_t = uint32_t;
+  using vertex_t = std::byte;
+
   ///
   /// A mesh primitive.
   enum class mesh_primitive
@@ -43,49 +47,31 @@ namespace ludo
   };
 
   ///
+  /// A set of options for building a standardized vertex format.
+  struct LUDO_API vertex_format_options
+  {
+    bool normals = false; ///< Determines if normals will be included in the vertex format.
+    bool colors = false; ///< Determines if colors will be included in the vertex format.
+    bool texture = false; ///< Determines if texture coordinates will be included in the vertex format.
+    bool bones = false; ///< Determines if bone indices and weights will be included in the vertex format.
+  };
+
+  ///
   /// A mesh.
   struct LUDO_API mesh
   {
     uint64_t id = 0; ///< The ID of the mesh.
-    uint64_t mesh_buffer_id = 0; ///< The ID of the mesh buffer this mesh is within.
+    uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh.
+    uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
+    uint64_t armature_instance_id = 0; ///< The ID of the armature instance used to animate this mesh.
 
     uint32_t instance_start = 0; ///< The starting index of the instances.
     uint32_t instance_count = 1; ///< The number of instances.
 
     buffer index_buffer; ///< A buffer containing the index data.
     buffer vertex_buffer; ///< A buffer containing the vertex data.
-  };
 
-  ///
-  /// A mesh buffer.
-  struct LUDO_API mesh_buffer
-  {
-    uint64_t id = 0; ///< The ID of the mesh buffer.
-    uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh buffer.
-
-    mesh_primitive primitive = mesh_primitive::TRIANGLE_LIST; ///< The primitive the mesh is comprised of.
-    vertex_format format;
-
-    buffer command_buffer; ///< A buffer containing the draw commands.
-    buffer index_buffer; ///< A buffer containing the index data.
-    buffer vertex_buffer; ///< A buffer containing the vertex data.
-    std::vector<buffer> data_buffers; ///< Buffers containing data available to the render program while rendering the mesh buffer.
-  };
-
-  ///
-  /// A set of options for building a standard set of mesh buffer data.
-  struct mesh_buffer_options
-  {
-    uint32_t instance_count = 1; ///< The number of instances in the mesh buffer.
-
-    uint32_t index_count = 0; ///< The number of indices to include in the mesh buffer.
-    uint32_t vertex_count = 0; ///< The number of vertices to include in the mesh buffer.
-
-    bool normals = false; ///< Determines if normals will be included in the mesh buffer.
-    bool colors = false; ///< Determines if colors will be included in the mesh buffer.
-
-    uint32_t texture_count = 0; ///< The number of textures to include in the mesh buffer.
-    uint32_t bone_count = 0; ///< The number of bones to include in the mesh buffer.
+    mat4 transform; ///< The transform of this mesh.
   };
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information
@@ -131,6 +117,28 @@ namespace ludo
   };
 
   ///
+  /// Creates a vertex format based on the options provided.
+  /// It will be of the form p3[n3][c4][t2_0...t2_n][u4f4] where the optional components are only included if the relevant options are specified.
+  /// The last component [u4f4] is only included if the bone count is greater than 0.
+  /// \param options The options used to build the vertex format.
+  /// \return A vertex format based on the options provided.
+  LUDO_API vertex_format format(const vertex_format_options& options);
+
+  ///
+  /// Determines the primitive count of the given component.
+  /// \param format The format to find the primitive count within.
+  /// \param component The component to find the primitive count of.
+  /// \return The primitive count of the given component (or 0 if it is not found).
+  uint32_t count(const vertex_format& format, char component);
+
+  ///
+  /// Determines the byte offset to the given component.
+  /// \param format The format to find the offset within.
+  /// \param component The component to find the offset to.
+  /// \return The byte offset to the given component.
+  LUDO_API uint32_t offset(const vertex_format& format, char component);
+
+  ///
   /// Determines if the left-hand mesh is less than the right-hand mesh.
   /// A mesh is considered less than another mesh based on the following properties which appear in order of precedence:
   /// - mesh_buffer_id
@@ -145,66 +153,20 @@ namespace ludo
   template<>
   LUDO_API mesh* add(instance& instance, const mesh& init, const std::string& partition);
 
-  template<>
-  LUDO_API mesh_buffer* add(instance& instance, const mesh_buffer& init, const std::string& partition);
-
   ///
-  /// Adds a mesh buffer to the data of an instance.
-  /// Allocates data buffers (and selects a built-in render program if none is provided) based on the options provided.
-  /// The mesh buffer will be created via the add(instance& instance, const mesh_buffer& init, const vertex_format& format, uint32_t vertex_count, uint32_t index_count = 0, const std::string& partition) function.
-  /// The vertex format will be created via the format(const mesh_buffer_options& options) function.
-  /// The data buffers will be of the form:
-  ///   0: <texture_0>...<texture_n>
-  ///   1: <transform>
-  ///   2: <bone_transform_0>...<bone_transform_n>
-  /// \param instance The instance to add the mesh buffer to.
-  /// \param init The initial state of the new mesh buffer.
-  /// \param options The options used to initialize the mesh buffer.
+  /// Adds a mesh to the data of an instance.
+  /// Allocates index and vertex buffers based on the options provided.
+  /// \param instance The instance to add the mesh to.
+  /// \param init The initial state of the new mesh.
+  /// \param index_count The number of indices to allocate.
+  /// \param vertex_count The number of vertices to allocate.
+  /// \param vertex_size The size of each vertex in bytes.
   /// \param partition The name of the partition.
-  /// \return A pointer to the new mesh buffer. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API mesh_buffer* add(instance& instance, const mesh_buffer& init, const mesh_buffer_options& options, const std::string& partition = "default");
+  /// \return A pointer to the new mesh. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition = "default");
 
   template<>
-  LUDO_API void remove<mesh_buffer>(instance& instance, mesh_buffer* element, const std::string& partition);
-
-  ///
-  /// Creates a vertex format based on the options provided.
-  /// It will be of the form p3[n3][c4][t2_0...t2_n][u4f4] where the optional components are only included if the relevant options are specified.
-  /// The last component [u4f4] is only included if the bone count is greater than 0.
-  /// \param options The options used to initialize a mesh buffer.
-  /// \return A vertex format based on the options provided.
-  LUDO_API vertex_format format(const mesh_buffer_options& options);
-
-  ///
-  /// Determines the byte offset to the given component.
-  /// \param format The format to find the offset within.
-  /// \param component The component to find the offset to.
-  /// \return The byte offset to the given component.
-  LUDO_API uint8_t offset(const vertex_format& format, char component);
-
-  ///
-  /// Retrieves a transform from a mesh buffer.
-  /// The data buffers must be of the form of those created via the add(context& context, const mesh_buffer& init, const mesh_options& options, const std::string& partition) function.
-  /// \param mesh_buffer The mesh buffer to retrieve the transform from.
-  /// \param instance_index The index of the instance within the mesh buffer.
-  /// \return The transform.
-  LUDO_API mat4 get_transform(const mesh_buffer& mesh_buffer, uint32_t instance_index);
-
-  ///
-  /// Sets a transform of a mesh buffer.
-  /// The data buffers must be of the form of those created via the add(context& context, const mesh_buffer& init, const mesh_options& options, const std::string& partition) function.
-  /// \param mesh_buffer The mesh buffer to set the transform of.
-  /// \param instance_index The index of the instance within the mesh buffer.
-  /// \param transform The transform.
-  LUDO_API void set_transform(mesh_buffer& mesh_buffer, uint32_t instance_index, const mat4& transform);
-
-  ///
-  /// Sets a texture of a mesh buffer.
-  /// The data buffers must be of the form of those created via the add(context& context, const mesh_buffer& init, const mesh_options& options, const std::string& partition) function.
-  /// \param mesh_buffer The mesh buffer to set the texture of.
-  /// \param texture The texture.
-  /// \param index The index of the texture within the mesh buffer.
-  LUDO_API void set_texture(mesh_buffer& mesh_buffer, const struct texture& texture, uint8_t index);
+  LUDO_API void remove<mesh>(instance& instance, mesh* element, const std::string& partition);
 }
 
 #endif // LUDO_GEOMETRY_H

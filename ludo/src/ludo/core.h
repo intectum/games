@@ -29,6 +29,10 @@
 namespace ludo
 {
   ///
+  /// A counter used to provide unique IDs.
+  extern uint64_t next_id;
+
+  ///
   /// An instance of ludo.
   struct LUDO_API instance
   {

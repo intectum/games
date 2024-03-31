@@ -3,7 +3,6 @@
  */
 
 #include "../graphs.h"
-#include "./util.h"
 
 namespace ludo
 {
@@ -146,7 +145,6 @@ namespace ludo
   {
     auto meshes = std::set<mesh>();
     find(meshes, octree.root, test, false);
-    combine_meshes(meshes);
 
     return meshes;
   }

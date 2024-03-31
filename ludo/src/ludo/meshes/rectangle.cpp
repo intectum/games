@@ -92,8 +92,8 @@ namespace ludo
     auto position_offset = offset(format, 'p');
     auto normal_offset = offset(format, 'n');
     auto tex_coord_offset = offset(format, 't');
-    auto has_normals = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'n'; });
-    auto has_tex_coords = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 't'; });
+    auto has_normals = count(format, 'n') > 0;
+    auto has_tex_coords = count(format, 't') > 0;
 
     auto normal = cross(position_delta_right, position_delta_top);
     normalize(normal);

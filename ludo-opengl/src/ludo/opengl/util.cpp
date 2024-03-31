@@ -19,12 +19,4 @@ namespace ludo
       assert(false && "OpenGL error");
     }
   }
-
-  uint64_t handle(texture& texture)
-  {
-    auto handle = glGetTextureHandleARB(texture.id); check_opengl_error();
-    glMakeTextureHandleResidentARB(handle); check_opengl_error();
-
-    return handle;
-  }
 }

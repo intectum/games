@@ -139,7 +139,7 @@ namespace ludo
   {
     auto position_offset = offset(format, 'p');
     auto normal_offset = offset(format, 'n');
-    auto has_normals = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'n'; });
+    auto has_normals = count(format, 'n') > 0;
 
     auto normal_0 = positions[0];
     auto normal_1 = positions[1];

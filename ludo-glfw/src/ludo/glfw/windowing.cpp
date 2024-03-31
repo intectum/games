@@ -59,6 +59,7 @@ namespace ludo
   windowing_context* add(instance& instance, const windowing_context& init, const std::string& partition)
   {
     auto windowing_context = add(data<ludo::windowing_context>(instance), init, partition);
+    windowing_context->id = next_id++;
 
     glfwSetErrorCallback([](int error, const char* description)
     {

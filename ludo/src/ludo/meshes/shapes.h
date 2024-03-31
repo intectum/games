@@ -10,7 +10,7 @@
 namespace ludo
 {
   ///
-  /// A set of options for building a shape mesh.
+  /// A set of options for building a shape.
   struct shape_options
   {
     vec3 center = vec3_zero; ///< The center position of the shape.
@@ -24,103 +24,110 @@ namespace ludo
   };
 
   ///
-  /// Appends a box to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the box to.
+  /// Builds a box within a mesh.
+  /// \param mesh The mesh to build the box in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the box.
-  LUDO_API void box(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void box(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a box.
   /// \param options The options used to build the box.
   /// \return The total and unique vertex counts of a box. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> box_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> box_counts(const shape_options& options = {});
 
   ///
-  /// Appends a circle to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the circle to.
+  /// Builds a circle within a mesh.
+  /// \param mesh The mesh to build the circle in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the circle.
-  LUDO_API void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a circle.
   /// \param options The options used to build the circle.
   /// \return The total and unique vertex counts of a circle. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> circle_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> circle_counts(const shape_options& options = {});
 
   ///
-  /// Appends a cylinder to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the cylinder to.
+  /// Builds a cylinder within a mesh.
+  /// \param mesh The mesh to build the cylinder in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the cylinder.
-  LUDO_API void cylinder(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void cylinder(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a cylinder.
   /// \param options The options used to build the cylinder.
   /// \return The total and unique vertex counts of a cylinder. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> cylinder_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> cylinder_counts(const shape_options& options = {});
 
   ///
-  /// Appends a rectangle to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the rectangle to.
+  /// Builds a rectangle within a mesh.
+  /// \param mesh The mesh to build the rectangle in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the rectangle.
-  LUDO_API void rectangle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void rectangle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a rectangle.
   /// \param options The options used to build the rectangle.
   /// \return The total and unique vertex counts of a rectangle. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> rectangle_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> rectangle_counts(const shape_options& options = {});
 
   ///
-  /// Appends a cube-based sphere to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the sphere to.
+  /// Builds a cube-based sphere within a mesh.
+  /// \param mesh The mesh to build the sphere in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the sphere.
   /// \param spherified Determines if the points of the cube should be 'spherified' instead of just normalized.
-  LUDO_API void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options, bool spherified = true);
+  LUDO_API void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {}, bool spherified = true);
 
   ///
   /// Determines the total and unique vertex counts in a cube-based sphere.
   /// \param options The options used to build the sphere.
   /// \return The total and unique vertex counts of a cube-based sphere. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> sphere_cube_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_cube_counts(const shape_options& options = {});
 
   ///
-  /// Appends an icosahedron-based sphere to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the sphere to.
+  /// Builds a icosahedron-based sphere within a mesh.
+  /// \param mesh The mesh to build the sphere in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the sphere.
-  LUDO_API void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in an icosahedron-based sphere.
   /// \param options The options used to build the sphere.
   /// \return The total and unique vertex counts of an icosahedron-based sphere. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> sphere_ico_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_ico_counts(const shape_options& options = {});
 
   ///
-  /// Appends a UV sphere to the end of the given mesh.
-  /// \param mesh_buffer The mesh buffer containing the mesh.
-  /// \param format The vertex format of the mesh buffer.
-  /// \param mesh The mesh to append the sphere to.
+  /// Builds a UV sphere within a mesh.
+  /// \param mesh The mesh to build the sphere in.
+  /// \param format The vertex format of the mesh.
+  /// \param index_index The index of the indices.
+  /// \param vertex_index The index of the vertices.
   /// \param options The options used to build the sphere.
-  LUDO_API void sphere_uv(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options);
+  LUDO_API void sphere_uv(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a UV sphere.
   /// \param options The options used to build the sphere.
   /// \return The total and unique vertex counts of a UV sphere. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> sphere_uv_counts(const shape_options& options);
+  LUDO_API std::pair<uint32_t, uint32_t> sphere_uv_counts(const shape_options& options = {});
 }
 
 #endif // LUDO_MESHES_SHAPES_H

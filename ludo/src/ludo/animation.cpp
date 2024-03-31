@@ -10,22 +10,54 @@
 
 namespace ludo
 {
-  void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform_matrix, mat4* final_transform_matrices);
+  void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform, mat4* final_transforms);
   vec3 interpolate_position(float tick_time, const animation_node& animation_node);
   quat interpolate_rotation(float tick_time, const animation_node& animation_node);
   vec3 interpolate_scale(float tick_time, const animation_node& animation_node);
 
   // This function is based on this tutorial for Assimp animation: https://ogldev.org/www/tutorial38/tutorial38.html
-  void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transform_matrices)
+  void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms)
   {
     auto tick_time = std::fmod(time * animation.ticks_per_second, animation.ticks);
 
-    interpolate(animation, armature, tick_time, mat4_identity, final_transform_matrices);
+    interpolate(animation, armature, tick_time, mat4_identity, final_transforms);
   }
 
-  void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform_matrix, mat4* final_transform_matrices)
+  template<>
+  armature* add(instance& instance, const armature& init, const std::string& partition)
   {
-    auto transform_matrix = parent_transform_matrix;
+    auto armature = add(data<ludo::armature>(instance), init, partition);
+    armature->id = next_id++;
+
+    return armature;
+  }
+
+  template<>
+  armature_instance* add(instance& instance, const armature_instance& init, const std::string& partition)
+  {
+    auto armature_instance = add(data<ludo::armature_instance>(instance), init, partition);
+    armature_instance->id = next_id++;
+
+    for (auto& transform : armature_instance->transforms)
+    {
+      transform = mat4_identity;
+    }
+
+    return armature_instance;
+  }
+
+  template<>
+  animation* add(instance& instance, const animation& init, const std::string& partition)
+  {
+    auto animation = add(data<ludo::animation>(instance), init, partition);
+    animation->id = next_id++;
+
+    return animation;
+  }
+
+  void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform, mat4* final_transforms)
+  {
+    auto transform = parent_transform;
 
     auto animation_node_iter = std::find_if(animation.nodes.begin(), animation.nodes.end(), [&armature](const ludo::animation_node& animation_node)
     {
@@ -39,18 +71,18 @@ namespace ludo
       auto scale_matrix = mat4_identity;
       scale_abs(scale_matrix, interpolate_scale(tick_time, *animation_node_iter));
 
-      transform_matrix *= position_matrix * rotation_matrix * scale_matrix;
+      transform *= position_matrix * rotation_matrix * scale_matrix;
 
-      final_transform_matrices[armature.bone_index] = transform_matrix * armature.bone_offset;
+      final_transforms[armature.bone_index] = transform * armature.bone_offset;
     }
     else
     {
-      transform_matrix *= armature.transform;
+      transform *= armature.transform;
     }
 
     for (auto& child : armature.children)
     {
-      interpolate(animation, child, tick_time, transform_matrix, final_transform_matrices);
+      interpolate(animation, child, tick_time, transform, final_transforms);
     }
   }
 

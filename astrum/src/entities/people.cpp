@@ -12,10 +12,9 @@ namespace astrum
     auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
 
     ludo::import(inst, "assets/models/minifig.dae", {}, "people");
-    auto& mesh_buffer = *ludo::first<ludo::mesh_buffer>(inst, "people");
     auto& mesh = *ludo::first<ludo::mesh>(inst, "people");
 
-    ludo::set_transform(mesh_buffer, 0, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
+    mesh.transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
 
     ludo::add(linear_octree, mesh, initial_transform.position);
 
@@ -53,18 +52,17 @@ namespace astrum
 
     auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-    auto& mesh_buffers = ludo::data<ludo::mesh_buffer>(inst, "people");
-
     auto& person_controls_list = ludo::data<astrum::person_controls>(inst, "people");
     auto& people = ludo::data<astrum::person>(inst, "people");
     auto& point_masses = ludo::data<astrum::point_mass>(inst, "people");
+    auto& armature_instances = ludo::data<ludo::armature_instance>(inst, "people");
 
     for (auto index = 0; index < people.array_size; index++)
     {
       auto& person_controls = person_controls_list[index];
       auto& person = people[index];
       auto& point_mass = point_masses[index];
-      auto& mesh_buffer = mesh_buffers[index];
+      auto& armature_instance = armature_instances[index];
 
       if (!person.standing)
       {
@@ -104,7 +102,7 @@ namespace astrum
         person.walk_animation_time = 0.25f;
       }
 
-      ludo::interpolate(animation, armature, person.walk_animation_time, reinterpret_cast<ludo::mat4*>(mesh_buffer.data_buffers[2].data));
+      ludo::interpolate(animation, armature, person.walk_animation_time, armature_instance.transforms);
     }
   }
 

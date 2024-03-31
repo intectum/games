@@ -32,7 +32,7 @@ set(SRC_FILES
     src/entities/sol.cpp
     src/entities/spaceships.cpp
     src/entities/terra.cpp
-    src/entities/trees.cpp
+    #src/entities/trees.cpp
     src/main.cpp
     src/meshes/patchwork.cpp
     src/meshes/sphere_ico.cpp
@@ -77,3 +77,17 @@ ENDIF(UNIX)
 #########################
 add_custom_command(TARGET astrum PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/assets ${PROJECT_SOURCE_DIR}/build/assets)
+
+# Spinny Cube Target
+#########################
+add_executable(spinny-cube src/spinny_cube.cpp)
+set_target_properties(spinny-cube PROPERTIES INSTALL_RPATH "./lib")
+
+# Spinny Cube Target Dependencies
+#########################
+
+# ludo
+target_link_libraries(spinny-cube ludo-assimp)
+target_link_libraries(spinny-cube ludo-glfw)
+target_link_libraries(spinny-cube ludo-opengl)
+target_link_libraries(spinny-cube ludo)

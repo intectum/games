@@ -1,7 +1,5 @@
 #include <fstream>
 
-#include <ludo/opengl/built_ins.h>
-
 #include "constants.h"
 #include "paths.h"
 #include "physics/gravity.h"
@@ -16,72 +14,47 @@ namespace astrum
 
     auto path_count = static_cast<uint32_t>(colors.size());
 
-    auto mesh_buffer_options = ludo::mesh_buffer_options
-    {
-      .instance_count = path_count,
-      .index_count = path_count * path_steps,
-      .vertex_count = path_count * path_steps
-    };
-
     auto vertex_source = std::ifstream("assets/shaders/path.vert");
-    auto vertex_shader = ludo::add(inst, ludo::shader { .type = ludo::shader_type::VERTEX }, vertex_source);
-    auto render_program = ludo::add(inst, ludo::render_program { .vertex_shader_id = vertex_shader->id, .fragment_shader_id = ludo::built_in_shader(inst, mesh_buffer_options, ludo::shader_type::FRAGMENT) });
-    render_program->data_buffer = ludo::allocate_vram(16 + path_count * sizeof(ludo::vec4));
+    auto vertex_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::VERTEX, vertex_source);
+    auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, {});
+    auto render_program = ludo::add(inst, ludo::render_program { .vertex_shader_id = vertex_shader->id, .fragment_shader_id = fragment_shader->id });
+    render_program->primitive = ludo::mesh_primitive::LINE_STRIP;
+    render_program->format = ludo::vertex_format_p;
+    render_program->shader_buffer = ludo::allocate_vram(16 + path_count * sizeof(ludo::vec4));
 
     auto byte_index = 0;
-    write(render_program->data_buffer, byte_index, path_steps);
+    write(render_program->shader_buffer, byte_index, path_steps);
     byte_index += 16;
     for (auto index = 0; index < path_count; index++)
     {
-      write(render_program->data_buffer, byte_index, colors[index]);
+      write(render_program->shader_buffer, byte_index, colors[index]);
       byte_index += sizeof(ludo::vec4);
     }
 
-    auto mesh_buffer = ludo::add(
-      inst,
-      ludo::mesh_buffer
-      {
-        .render_program_id = render_program->id,
-        .primitive = ludo::mesh_primitive::LINE_STRIP
-      },
-      mesh_buffer_options,
-      "prediction-paths"
-    );
-
-    for (auto index = 0; index < path_count; index++)
+    for (auto path_index = 0; path_index < path_count; path_index++)
     {
       auto mesh = ludo::add(
         inst,
-        ludo::mesh
-          {
-            .mesh_buffer_id = mesh_buffer->id,
-            .index_buffer =
-            {
-              .data = mesh_buffer->index_buffer.data + (index * path_steps) * sizeof(uint32_t),
-              .size = path_steps * sizeof(uint32_t),
-            },
-            .vertex_buffer =
-            {
-              .data = mesh_buffer->vertex_buffer.data + (index * path_steps) * mesh_buffer->format.size,
-              .size = path_steps * mesh_buffer->format.size,
-            }
-          },
+        ludo::mesh { .render_program_id = render_program->id },
+        path_steps,
+        path_steps,
+        ludo::vertex_format_p.size,
         "prediction-paths"
       );
 
-      ludo::add(always_render_linear_octree, *mesh, ludo::vec3_zero);
-    }
+      for (auto step_index = ludo::index_t(0); step_index < path_steps; step_index++)
+      {
+        ludo::write(mesh->index_buffer, step_index * sizeof(ludo::index_t), step_index);
+      }
 
-    for (auto index = uint32_t(0); index < path_count * path_steps; index++)
-    {
-      ludo::write(mesh_buffer->index_buffer, index * sizeof(uint32_t), index);
+      ludo::add(always_render_linear_octree, *mesh, ludo::vec3_zero);
     }
   }
 
   void update_prediction_paths(ludo::instance& inst)
   {
     auto& dynamic_bodies = ludo::data<ludo::dynamic_body>(inst);
-    auto& mesh_buffer = *ludo::first<ludo::mesh_buffer>(inst, "prediction-paths");
+    auto& meshes = ludo::data<ludo::mesh>(inst, "prediction-paths");
 
     auto& point_masses = ludo::data<point_mass>(inst);
     auto& solar_system = *ludo::first<astrum::solar_system>(inst);
@@ -127,7 +100,8 @@ namespace astrum
 
     for (auto step = uint32_t(0); step < path_steps; step++)
     {
-      auto byte_index = step * mesh_buffer.format.size;
+      auto path_index = uint32_t(0);
+      auto byte_index = step * ludo::vertex_format_p.size;
 
       auto relative_position = ludo::vec3_zero;
       if (path_central_index != -1)
@@ -137,14 +111,16 @@ namespace astrum
 
       for (auto& prediction_body : prediction_dynamic_bodies)
       {
-        ludo::write(mesh_buffer.vertex_buffer, byte_index, prediction_body.transform.position - relative_position);
-        byte_index += path_steps * mesh_buffer.format.size;
+        ludo::write(meshes[path_index].vertex_buffer, byte_index, prediction_body.transform.position - relative_position);
+        path_index++;
+        byte_index += path_steps * ludo::vertex_format_p.size;
       }
 
       for (auto& prediction_point_mass : prediction_point_masses)
       {
-        ludo::write(mesh_buffer.vertex_buffer, byte_index, prediction_point_mass.transform.position - relative_position);
-        byte_index += path_steps * mesh_buffer.format.size;
+        ludo::write(meshes[path_index].vertex_buffer, byte_index, prediction_point_mass.transform.position - relative_position);
+        path_index++;
+        byte_index += path_steps * ludo::vertex_format_p.size;
       }
 
       prediction_inst.delta_time = path_delta_time;

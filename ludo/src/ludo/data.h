@@ -54,6 +54,16 @@ namespace ludo
   LUDO_API const array_buffer<T>& data(const instance& instance, const std::string& partition);
 
   ///
+  /// Determines if a buffer for a particular type of data exists within an instance.
+  /// \param instance The instance to search.
+  /// \param partition The name of the partition.
+  /// \return True if the buffer exists, false otherwise.
+  template<typename T>
+  LUDO_API bool exists(const instance& instance);
+  template<typename T>
+  LUDO_API bool exists(const instance& instance, const std::string& partition);
+
+  ///
   /// Retrieves the first element of a particular type of data within an instance.
   /// \param instance The instance containing the data.
   /// \param partition The name of the partition.

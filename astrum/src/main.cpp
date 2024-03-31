@@ -2,15 +2,17 @@
 #include <iostream>
 
 #include <ludo/api.h>
+#include <ludo/assimp/api.h>
+#include <ludo/opengl/util.h>
 
 #include "constants.h"
+#include "entities/celestial_bodies.h"
 #include "post-processing/atmosphere.h"
 #include "post-processing/bloom.h"
 #include "post-processing/hdr_resolve.h"
 #include "post-processing/pass.h"
 #include "post-processing/util.h"
 #include "solar_system.h"
-#include "types.h"
 #include "util.h"
 
 int main()
@@ -19,24 +21,67 @@ int main()
 
   auto inst = ludo::instance();
 
+  auto post_processing_rectangle_counts = ludo::rectangle_counts();
+  auto sol_mesh_counts = astrum::celestial_body_counts(astrum::sol_lods);
+  auto terra_mesh_counts = astrum::celestial_body_counts(astrum::terra_lods);
+  auto luna_mesh_counts = astrum::celestial_body_counts(astrum::luna_lods);
+  auto person_mesh_counts = ludo::import_counts("assets/models/minifig.dae");
+  auto spaceship_mesh_counts = ludo::import_counts("assets/models/spaceship.obj");
+  auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { 10000000, 10000000 };
+
+  auto max_rendered_instances =
+    1 + // post-processing rectangle
+    3 * (5120 * 2); // celestial bodies (doubled to account for re-allocations)
+    1 + // person
+    1; // spaceship
+  auto max_indices =
+    post_processing_rectangle_counts.first +
+    sol_mesh_counts.first +
+    terra_mesh_counts.first +
+    luna_mesh_counts.first +
+    person_mesh_counts.first +
+    spaceship_mesh_counts.first;
+  auto max_vertices =
+    post_processing_rectangle_counts.second +
+    sol_mesh_counts.second +
+    terra_mesh_counts.second +
+    luna_mesh_counts.second +
+    person_mesh_counts.second +
+    spaceship_mesh_counts.second;
+
+  if (astrum::show_paths)
+  {
+    max_rendered_instances += 5;
+    max_indices += astrum::path_steps * 5;
+    max_vertices += astrum::path_steps * 5;
+  }
+
+  if (astrum::visualize_physics)
+  {
+    max_rendered_instances++;
+    max_indices += bullet_debug_counts.first;
+    max_vertices += bullet_debug_counts.second;
+  }
+
+  ludo::allocate<ludo::physics_context>(inst, 1);
+  ludo::allocate<ludo::rendering_context>(inst, 1);
+  ludo::allocate<ludo::windowing_context>(inst, 1);
+
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
+  ludo::allocate<ludo::armature_instance>(inst, 1);
   ludo::allocate<ludo::dynamic_body>(inst, 0);
   ludo::allocate<ludo::frame_buffer>(inst, 16);
   ludo::allocate<ludo::ghost_body>(inst, 1);
   ludo::allocate<ludo::kinematic_body>(inst, 2);
   ludo::allocate<ludo::linear_octree>(inst, 5);
-  ludo::allocate<ludo::mesh>(inst, 5 + 3 * (5120 * 2));
-  ludo::allocate<ludo::mesh_buffer>(inst, 8);
-  ludo::allocate<ludo::physics_context>(inst, 1);
+  ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
-  ludo::allocate<ludo::rendering_context>(inst, 1);
   ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::shader>(inst, 19);
   ludo::allocate<ludo::static_body>(inst, 25); // TODO bit of a guess really since they're loaded dynamically
   ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
-  ludo::allocate<ludo::windowing_context>(inst, 1);
 
   ludo::allocate<astrum::celestial_body>(inst, 3);
   ludo::allocate<astrum::game_controls>(inst, 1);
@@ -55,6 +100,11 @@ int main()
   //ludo::capture_mouse(*window);
 
   ludo::add(inst, ludo::rendering_context(), 1);
+
+  ludo::allocate_vram<ludo::draw_command>(inst, max_rendered_instances);
+  ludo::allocate_vram<ludo::instance_t>(inst, max_rendered_instances * sizeof(ludo::mat4) + 10 * sizeof(uint64_t) + ludo::max_bones_per_armature * sizeof(ludo::mat4));
+  ludo::allocate_heap_vram<ludo::index_t>(inst, max_indices);
+  ludo::allocate_heap_vram<ludo::vertex_t>(inst, max_vertices * ludo::vertex_format_pnc.size);
 
   ludo::add(
     inst,
@@ -91,25 +141,34 @@ int main()
 
   if (astrum::visualize_physics)
   {
-    auto bullet_debug_mesh_buffer = ludo::add(
+    auto bullet_debug_render_program = ludo::add(
       inst,
-      ludo::mesh_buffer { .primitive = ludo::mesh_primitive::LINE_LIST },
-      { .index_count = 10000000, .vertex_count = 10000000, .colors = true },
+      ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST },
+      { .colors = true },
       "ludo-bullet::visualizations"
     );
+
     ludo::add(
       inst,
-      ludo::mesh
-      {
-        .mesh_buffer_id = bullet_debug_mesh_buffer->id,
-        .index_buffer = bullet_debug_mesh_buffer->index_buffer,
-        .vertex_buffer = bullet_debug_mesh_buffer->vertex_buffer
-      },
+      ludo::mesh { .render_program_id = bullet_debug_render_program->id },
+      bullet_debug_counts.first,
+      bullet_debug_counts.second,
+      bullet_debug_render_program->format.size,
       "ludo-bullet::visualizations"
     );
   }
 
   ludo::add<ludo::script>(inst, ludo::update_windows);
+
+  // TODO Maybe find a better way to do this?
+  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
+  {
+    auto& vram_draw_commands = data<ludo::draw_command>(inst);
+    auto& vram_instances = data<ludo::instance_t>(inst);
+
+    ludo::clear(vram_draw_commands);
+    ludo::clear(vram_instances);
+  });
 
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
   {
@@ -118,11 +177,12 @@ int main()
 
   // Post-processing
   auto post_processing_mesh = astrum::add_post_processing_mesh(inst);
+  auto post_processing_vertex_shader = astrum::add_post_processing_vertex_shader(inst);
   astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
   //astrum::write_atmosphere_texture(50, 0.25f, 1.0f, astrum::terra_atmosphere_scale, "assets/effects/atmosphere.tiff", 1024);
-  astrum::add_atmosphere(inst, post_processing_mesh->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
-  astrum::add_bloom(inst, post_processing_mesh->id, 5, 0.1f);
-  astrum::add_hdr_resolve(inst, post_processing_mesh->id);
+  astrum::add_atmosphere(inst, post_processing_vertex_shader->id, post_processing_mesh->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
+  astrum::add_bloom(inst, post_processing_vertex_shader->id, post_processing_mesh->id, 5, 0.1f);
+  astrum::add_hdr_resolve(inst, post_processing_vertex_shader->id, post_processing_mesh->id);
   astrum::add_pass(inst, true);
 
   ludo::add<ludo::script>(inst, ludo::wait_for_render);
@@ -137,13 +197,13 @@ int main()
 
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
+  ludo::deallocate<ludo::armature_instance>(inst);
   ludo::deallocate<ludo::dynamic_body>(inst);
   ludo::deallocate<ludo::frame_buffer>(inst);
   ludo::deallocate<ludo::ghost_body>(inst);
   ludo::deallocate<ludo::kinematic_body>(inst);
   ludo::deallocate<ludo::linear_octree>(inst);
   ludo::deallocate<ludo::mesh>(inst);
-  ludo::deallocate<ludo::mesh_buffer>(inst);
   ludo::deallocate<ludo::render_program>(inst);
   ludo::deallocate<ludo::script>(inst);
   ludo::deallocate<ludo::shader>(inst);
@@ -166,6 +226,11 @@ int main()
   ludo::deallocate<astrum::spaceship_controls>(inst);
 
   ludo::deallocate<std::vector<ludo::vec3>>(inst);
+
+  ludo::deallocate_vram<ludo::draw_command>(inst);
+  ludo::deallocate_vram<ludo::mat4>(inst);
+  ludo::deallocate_heap_vram<ludo::index_t>(inst);
+  ludo::deallocate_heap_vram<ludo::vertex_t>(inst);
 
   return 0;
 }

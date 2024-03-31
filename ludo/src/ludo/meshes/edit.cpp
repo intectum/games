@@ -9,8 +9,7 @@ namespace ludo
 {
   void colorize(mesh& mesh, const vertex_format& format, uint32_t vertex_start, uint32_t vertex_count, const vec4& color, bool debug)
   {
-    auto has_colors = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'c'; });
-    if (!has_colors)
+    if (!count(format, 'c'))
     {
       return;
     }
@@ -102,7 +101,7 @@ namespace ludo
 
   void flip(mesh& mesh, const vertex_format& format, const std::vector<std::array<uint32_t, 3>>& triangles)
   {
-    auto has_normals = std::any_of(format.components.begin(), format.components.end(), [](const char& component) { return component == 'n'; });
+    auto has_normals = count(format, 'n') > 0;
     auto position_offset = offset(format, 'p');
     auto normal_offset = offset(format, 'n');
 

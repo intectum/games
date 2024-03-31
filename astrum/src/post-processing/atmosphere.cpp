@@ -2,7 +2,7 @@
 
 #include <FreeImagePlus.h>
 
-#include <ludo/opengl/built_ins.h>
+#include <ludo/opengl/textures.h>
 
 #include "../constants.h"
 #include "../physics/point_masses.h"
@@ -16,15 +16,24 @@ namespace astrum
   float atmospheric_density(float scale_height, float altitude);
   float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position);
 
-  void add_atmosphere(ludo::instance& inst, uint64_t mesh_id, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
+  void add_atmosphere(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_id, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto& previous_frame_buffer = frame_buffers[frame_buffers.array_size - 1];
 
     auto fragment_stream = std::ifstream("assets/shaders/atmosphere.frag");
-    auto fragment_shader = ludo::add(inst, ludo::shader { .type = ludo::shader_type::FRAGMENT }, fragment_stream);
-    auto render_program = ludo::add(inst, ludo::render_program { .vertex_shader_id = ludo::post_processing_vertex_shader(inst), .fragment_shader_id = fragment_shader->id }, "atmosphere");
-    render_program->data_buffer = ludo::allocate_vram(16 * 3);
+    auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream);
+    auto render_program = ludo::add(
+      inst,
+      ludo::render_program
+      {
+        .vertex_shader_id = vertex_shader_id,
+        .fragment_shader_id = fragment_shader->id,
+        .format = ludo::vertex_format_pt,
+        .shader_buffer = ludo::allocate_vram(16 * 3)
+      },
+      "atmosphere"
+    );
     auto byte_index = 0;
 
     auto atmosphere_image = fipImage();
@@ -33,7 +42,7 @@ namespace astrum
     auto atmosphere_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT32, .width = atmosphere_image.getWidth(), .height = atmosphere_image.getHeight() }, { .clamp = true });
 
     ludo::write(*atmosphere_texture, reinterpret_cast<std::byte*>(atmosphere_image.accessPixels()));
-    ludo::write(render_program->data_buffer, byte_index, *atmosphere_texture);
+    ludo::write(render_program->shader_buffer, byte_index, ludo::handle(*atmosphere_texture));
     byte_index += 8;
 
     auto blue_noise_image = fipImage();
@@ -42,20 +51,20 @@ namespace astrum
     auto blue_noise_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::RGBA, .width = blue_noise_image.getWidth(), .height = blue_noise_image.getHeight() });
 
     ludo::write(*blue_noise_texture, reinterpret_cast<std::byte*>(blue_noise_image.accessPixels()));
-    ludo::write(render_program->data_buffer, byte_index, *blue_noise_texture);
+    ludo::write(render_program->shader_buffer, byte_index, ludo::handle(*blue_noise_texture));
     byte_index += 8;
 
     byte_index += 12; // skip planet_t.position
-    ludo::write(render_program->data_buffer, byte_index, planet_radius);
+    ludo::write(render_program->shader_buffer, byte_index, planet_radius);
     byte_index += 4;
-    ludo::write(render_program->data_buffer, byte_index, atmosphere_radius);
+    ludo::write(render_program->shader_buffer, byte_index, atmosphere_radius);
 
     ludo::add<ludo::script>(inst, [celestial_body_index](ludo::instance& inst)
     {
       auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
       auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-      ludo::write(render_program->data_buffer, 16, celestial_body_point_masses[celestial_body_index].transform.position);
+      ludo::write(render_program->shader_buffer, 16, celestial_body_point_masses[celestial_body_index].transform.position);
     });
 
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
@@ -63,7 +72,7 @@ namespace astrum
       .frame_buffer_id = add_post_processing_frame_buffer(inst)->id,
       .mesh_ids = { mesh_id },
       .render_program_id = render_program->id,
-      .data_buffer = create_post_processing_data_buffer(previous_frame_buffer.color_texture_ids[0], previous_frame_buffer.depth_texture_id)
+      .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], previous_frame_buffer.depth_texture_id)
     });
   }
 

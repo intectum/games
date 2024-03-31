@@ -16,18 +16,11 @@ namespace ludo
   struct import_options
   {
     bool merge = false;
-
-    ludo::mesh_buffer* mesh_buffer = nullptr;
-
-    uint32_t instance_count = 1;
-
-    uint32_t index_start = 0; ///< The starting index of the indices.
-    uint32_t vertex_start = 0; ///< The starting index of the vertices.
   };
 
-  LUDO_API mesh_buffer_options build_mesh_buffer_options(const std::string& file_name, const import_options& options = {});
-
   LUDO_API void import(instance& instance, const std::string& file_name, const import_options& options = {}, const std::string& partition = "default");
+
+  LUDO_API std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name);
 }
 
 #endif // LUDO_ASSIMP_IMPORT_H

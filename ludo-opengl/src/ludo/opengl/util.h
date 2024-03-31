@@ -21,8 +21,6 @@ namespace ludo
   };
 
   void check_opengl_error();
-
-  uint64_t handle(texture& texture);
 }
 
 #endif // LUDO_OPENGL_UTIL_H

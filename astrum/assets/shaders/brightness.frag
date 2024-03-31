@@ -8,7 +8,7 @@ struct point_t
   vec3 position;
   vec3 normal;
   vec4 color;
-  vec2 tex_coords[1];
+  vec2 tex_coords;
 };
 
 // Input
@@ -28,7 +28,7 @@ out vec4 color;
 
 void main()
 {
-  vec4 base_color = texture(color_sampler, point.tex_coords[0]);
+  vec4 base_color = texture(color_sampler, point.tex_coords);
 
   // Luma conversion
   // https://en.wikipedia.org/wiki/Grayscale#Luma_coding_in_video_systems

@@ -115,18 +115,17 @@ namespace ludo
     ); check_opengl_error();
   }
 
-  template<>
-  void write(buffer& buffer, uint64_t position, const texture& value)
+  uint64_t handle(const texture& texture)
   {
-    if (!texture_handles.contains(value.id))
+    if (!texture_handles.contains(texture.id))
     {
-      auto handle = glGetTextureHandleARB(value.id); check_opengl_error();
+      auto handle = glGetTextureHandleARB(texture.id); check_opengl_error();
       glMakeTextureHandleResidentARB(handle); check_opengl_error();
 
-      texture_handles[value.id] = handle;
+      texture_handles[texture.id] = handle;
     }
 
-    write(buffer, position, texture_handles[value.id]);
+    return texture_handles[texture.id];
   }
 
   GLint internal_pixel_format(const texture& texture)

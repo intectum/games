@@ -76,7 +76,6 @@ namespace astrum
   {
     auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
     auto& meshes = ludo::data<ludo::mesh>(inst);
-    auto& mesh_buffers = ludo::data<ludo::mesh_buffer>(inst);
 
     auto& point_masses = ludo::data<point_mass>(inst);
     auto& solar_system = *ludo::first<astrum::solar_system>(inst);
@@ -84,19 +83,17 @@ namespace astrum
     for (auto& partition : partitions)
     {
       auto& partition_point_masses = ludo::find(point_masses, partition)->second;
-      auto& partition_mesh_buffers = ludo::find(mesh_buffers, partition)->second;
       auto& partition_meshes = ludo::find(meshes, partition)->second;
 
       for (auto index = 0; index < partition_point_masses.array_size; index++)
       {
         auto& mesh = partition_meshes[index];
-        auto& mesh_buffer = partition_mesh_buffers[index];
         auto& point_mass = partition_point_masses[index];
 
-        auto old_transform = ludo::get_transform(mesh_buffer, 0);
+        auto old_transform = mesh.transform;
         auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
-        ludo::set_transform(mesh_buffer, 0, new_transform);
+        mesh.transform = new_transform;
 
         auto old_position = ludo::position(old_transform);
         auto new_position = ludo::position(new_transform);

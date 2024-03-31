@@ -12,7 +12,7 @@ struct point_t
   vec3 position;
   vec3 normal;
   vec4 color;
-  vec2 tex_coords[1];
+  vec2 tex_coords;
 };
 
 // Input
@@ -35,22 +35,22 @@ void main()
 {
   vec2 texel_size = 1.0 / textureSize(color_sampler, 0);
 
-  vec3 color3 = texture(color_sampler, point.tex_coords[0]).rgb * weights[0];
+  vec3 color3 = texture(color_sampler, point.tex_coords).rgb * weights[0];
 
   if (horizontal)
   {
     for (int index = 1; index < 5; index++)
     {
-      color3 += texture(color_sampler, point.tex_coords[0] + vec2(texel_size.x * index, 0.0)).rgb * weights[index];
-      color3 += texture(color_sampler, point.tex_coords[0] - vec2(texel_size.x * index, 0.0)).rgb * weights[index];
+      color3 += texture(color_sampler, point.tex_coords + vec2(texel_size.x * index, 0.0)).rgb * weights[index];
+      color3 += texture(color_sampler, point.tex_coords - vec2(texel_size.x * index, 0.0)).rgb * weights[index];
     }
   }
   else
   {
     for (int index = 1; index < 5; index++)
     {
-      color3 += texture(color_sampler, point.tex_coords[0] + vec2(0.0, texel_size.y * index)).rgb * weights[index];
-      color3 += texture(color_sampler, point.tex_coords[0] - vec2(0.0, texel_size.y * index)).rgb * weights[index];
+      color3 += texture(color_sampler, point.tex_coords + vec2(0.0, texel_size.y * index)).rgb * weights[index];
+      color3 += texture(color_sampler, point.tex_coords - vec2(0.0, texel_size.y * index)).rgb * weights[index];
     }
   }
 

@@ -9,6 +9,7 @@
 #include "data.h"
 #include "math/mat.h"
 #include "math/vec.h"
+#include "meshes.h"
 #include "windowing.h"
 
 namespace ludo
@@ -19,7 +20,7 @@ namespace ludo
   {
     uint64_t id = 0; ///< The ID of the render context.
 
-    buffer data_buffer; ///< A buffer containing data available to all render programs within the context.
+    buffer shader_buffer; ///< A buffer containing data available to all render programs within the context.
   };
 
   ///
@@ -27,14 +28,13 @@ namespace ludo
   struct LUDO_API render_options
   {
     uint64_t frame_buffer_id = 0; ///< The ID of the frame buffer to render to. An ID of 0 will render to the window.
-    uint64_t window_id = 0; ///< The ID of the window to render to. An ID of 0 will render to the first window in the instance.
 
     std::vector<uint64_t> mesh_ids; ///< The IDs of the meshes to render. Takes precedence over linear octrees. For better performance, add these meshes to the instance first.
     std::vector<uint64_t> linear_octree_ids; ///< The IDs of the linear octrees containing meshes to render.
 
     uint64_t render_program_id; ///< The IDs of the render program to use. Takes precedence over render programs specified by mesh buffers.
 
-    buffer data_buffer; ///< A buffer containing data available to all render programs.
+    buffer shader_buffer; ///< A buffer containing data available to all render programs.
   };
 
   ///
@@ -46,7 +46,10 @@ namespace ludo
     uint64_t geometry_shader_id = 0; ///< The ID of the geometry shader.
     uint64_t fragment_shader_id = 0; ///< The ID of the fragment shader.
 
-    buffer data_buffer; ///< A buffer containing data available to the render program.
+    mesh_primitive primitive = mesh_primitive::TRIANGLE_LIST; ///< The primitive the render program will render.
+    vertex_format format; ///< The vertex format the render program expects.
+
+    buffer shader_buffer; ///< A buffer containing data available to the render program.
   };
 
   ///
@@ -63,7 +66,6 @@ namespace ludo
   struct LUDO_API shader
   {
     uint64_t id = 0; ///< The ID of the shader.
-    shader_type type = shader_type::VERTEX; ///< The type of the shader. TODO remove this and add it as a parameter to the add() function?
   };
 
   ///
@@ -167,8 +169,8 @@ namespace ludo
 
   ///
   /// Adds a rendering context to the data of an instance.
-  /// Allocates a data buffer based on the options provided.
-  /// The data buffer will be of the form: <camera><light_count><light_0>...<light_n>
+  /// Allocates a shader buffer based on the options provided.
+  /// The shader buffer will be of the form: <camera><light_count><light_0>...<light_n>
   /// \param instance The instance to add the rendering context to.
   /// \param init The initial state of the new rendering context.
   /// \param light_count The number of lights the rendering context can contain.
@@ -181,21 +183,21 @@ namespace ludo
 
   ///
   /// Retrieves a camera from a rendering context.
-  /// The data buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to retrieve the camera from.
   /// \return The camera.
   LUDO_API camera get_camera(const rendering_context& rendering_context);
 
   ///
   /// Sets a camera of a rendering context.
-  /// The data buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to set the camera of.
   /// \param camera The camera.
   LUDO_API void set_camera(rendering_context& rendering_context, const camera& camera);
 
   ///
   /// Retrieves a light from a rendering context.
-  /// The data buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to retrieve the light from.
   /// \param index The index of the light within the rendering context.
   /// \return The light.
@@ -203,7 +205,7 @@ namespace ludo
 
   ///
   /// Sets a light of a rendering context.
-  /// The data buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to set the light of.
   /// \param light The light.
   /// \param index The index of the light within the rendering context.
@@ -212,20 +214,46 @@ namespace ludo
   template<>
   LUDO_API render_program* add(instance& instance, const render_program& init, const std::string& partition);
 
-  template<>
-  LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
+  ///
+  /// Adds a render program to the data of an instance.
+  /// \param instance The instance to add the render program to.
+  /// \param init The initial state of the new render program.
+  /// \param vertex_shader_file_name The name of the file containing the vertex shader code.
+  /// \param fragment_shader_file_name The name of the file containing the fragment shader code.
+  /// \param partition The name of the partition.
+  /// \return A pointer to the new render program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API render_program* add(instance& instance, const render_program& init, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, const std::string& partition = "default");
+
+  ///
+  /// Adds a render program to the data of an instance.
+  /// \param instance The instance to add the render program to.
+  /// \param init The initial state of the new render program.
+  /// \param options The options used to build the vertex and fragment shaders of the render program.
+  /// \param partition The name of the partition.
+  /// \return A pointer to the new render program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API render_program* add(instance& instance, const render_program& init, const vertex_format_options& options, const std::string& partition = "default");
 
   template<>
-  LUDO_API shader* add(instance& instance, const shader& init, const std::string& partition);
+  LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
 
   ///
   /// Adds a shader to the data of an instance.
   /// \param instance The instance to add the shader to.
   /// \param init The initial state of the new shader.
+  /// \param type The type of the shader.
   /// \param code The source code of the shader.
   /// \param partition The name of the partition.
   /// \return A pointer to the new shader. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API shader* add(instance& instance, const shader& init, std::istream& code, const std::string& partition = "default");
+  LUDO_API shader* add(instance& instance, const shader& init, shader_type type, std::istream& code, const std::string& partition = "default");
+
+  ///
+  /// Adds a shader to the data of an instance.
+  /// \param instance The instance to add the shader to.
+  /// \param init The initial state of the new shader.
+  /// \param options The options used to build the shader.
+  /// \param partition The name of the partition.
+  /// \return A pointer to the new shader. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API shader* add(instance& instance, const shader& init, shader_type type, const vertex_format_options& options, const std::string& partition = "default");
 
   template<>
   LUDO_API void remove<shader>(instance& instance, shader* element, const std::string& partition);
@@ -268,9 +296,6 @@ namespace ludo
   /// \param texture The texture.
   /// \param data The texture data.
   LUDO_API void write(texture& texture, const std::byte* data);
-
-  template<>
-  LUDO_API void write(buffer& buffer, uint64_t position, const texture& value);
 
   ///
   /// Determines the size (in bytes) of a pixel in a texture.

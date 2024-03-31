@@ -164,6 +164,12 @@ namespace ludo
   LUDO_API bool remove(linear_octree& octree, const mesh& element, const vec3& position);
 
   ///
+  /// Moves a linear octree.
+  /// \param octree The linear octree to move.
+  /// \param movement The movement to apply to the linear octree.
+  LUDO_API void move(linear_octree& octree, const vec3& movement);
+
+  ///
   /// Finds elements within a linear octree using a hierarchical search.
   /// \param octree The linear octree to search.
   /// \param test The test to perform against the bounds of the nodes.

@@ -26,8 +26,7 @@ namespace astrum
 
     for (auto& linear_octree: linear_octrees)
     {
-      linear_octree.bounds.min += solar_system.center_delta;
-      linear_octree.bounds.max += solar_system.center_delta;
+      ludo::move(linear_octree, solar_system.center_delta);
     }
 
     for (auto& body: static_bodies)
