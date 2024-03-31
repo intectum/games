@@ -75,10 +75,10 @@ int main()
   ludo::allocate<ludo::frame_buffer>(inst, 16);
   ludo::allocate<ludo::ghost_body>(inst, 1);
   ludo::allocate<ludo::kinematic_body>(inst, 2);
-  ludo::allocate<ludo::linear_octree>(inst, 5);
+  ludo::allocate<ludo::linear_octree>(inst, 4);
   ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
-  ludo::allocate<ludo::script>(inst, 36);
+  ludo::allocate<ludo::script>(inst, 35);
   ludo::allocate<ludo::shader>(inst, 19);
   ludo::allocate<ludo::static_body>(inst, 25); // TODO bit of a guess really since they're loaded dynamically
   ludo::allocate<ludo::texture>(inst, 21);
@@ -118,20 +118,6 @@ int main()
       }
   );
 
-  // Meshes in this linear octree should always render
-  ludo::add(
-    inst,
-    ludo::linear_octree
-    {
-      .bounds =
-      {
-        .min = { -2.0f * astrum::astronomical_unit, -2.0f * astrum::astronomical_unit, -2.0f * astrum::astronomical_unit },
-        .max = { 2.0f * astrum::astronomical_unit, 2.0f * astrum::astronomical_unit, 2.0f * astrum::astronomical_unit }
-      },
-      .depth = 0
-    }
-  );
-
   auto msaa_color_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT16, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
   auto msaa_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::DEPTH, .datatype = ludo::pixel_datatype::FLOAT32, .width = window->width, .height = window->height }, { .samples = astrum::msaa_samples });
   auto msaa_frame_buffer = ludo::add(inst, ludo::frame_buffer { .width = window->width, .height = window->height, .color_texture_ids = { msaa_color_texture->id }, .depth_texture_id = msaa_depth_texture->id });
@@ -157,6 +143,8 @@ int main()
     );
   }
 
+  astrum::add_solar_system(inst);
+
   ludo::add<ludo::script>(inst, ludo::update_windows);
 
   // TODO Maybe find a better way to do this?
@@ -169,9 +157,17 @@ int main()
     ludo::clear(vram_instances);
   });
 
+  auto& linear_octrees = data<ludo::linear_octree>(inst);
+  auto linear_octree_ids = std::vector<uint64_t>();
+  for (auto& linear_octree : linear_octrees)
+  {
+    linear_octree_ids.push_back(linear_octree.id);
+  }
+
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
   {
-    .frame_buffer_id = msaa_frame_buffer->id
+    .frame_buffer_id = msaa_frame_buffer->id,
+    .linear_octree_ids = linear_octree_ids
   });
 
   // Post-processing
@@ -185,8 +181,6 @@ int main()
   astrum::add_pass(inst, true);
 
   ludo::add<ludo::script>(inst, ludo::wait_for_render);
-
-  astrum::add_solar_system(inst);
 
   ludo::add<ludo::script>(inst, astrum::print_timings);
 

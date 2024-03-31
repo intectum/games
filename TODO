@@ -6,7 +6,6 @@
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
 - Vertex types? Only trouble could be things like render and import which need to know the vertex info (esp. render which needs to render diff vertex types separately - render program contains vertex info?).
 - split import.cpp into multiple files
-- remove default of using all linear octrees in rendering (and prevent need for them to be allocated if not using them)
 - split mesh into mesh and mesh_instance
 - remove all global state from ludo
 - switch to bazel

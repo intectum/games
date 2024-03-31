@@ -67,7 +67,10 @@ namespace ludo
       bind(frame_buffer { .width = window->width, .height = window->height });
     }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
+    if (options.clear_frame_buffer)
+    {
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
+    }
 
     auto grouped_meshes = find_meshes(instance, *rendering_context, options);
     for (auto& mesh_group : grouped_meshes)
@@ -169,6 +172,7 @@ namespace ludo
     if (!options.mesh_ids.empty())
     {
       auto& meshes = data<mesh>(instance);
+
       for (auto mesh_id : options.mesh_ids)
       {
         auto mesh = find_by_id(meshes.begin(), meshes.end(), mesh_id);
@@ -177,32 +181,26 @@ namespace ludo
         grouped_meshes[get_render_program_id(options, *mesh)].push_back(*mesh);
       }
     }
-    else if (exists<linear_octree>(instance))
+    else if (!options.linear_octree_ids.empty())
     {
       auto& linear_octrees = data<linear_octree>(instance);
       auto planes = frustum_planes(get_camera(rendering_context));
 
-      for (auto& linear_octree : linear_octrees)
+      for (auto linear_octree_id : options.linear_octree_ids)
       {
-        if (!options.linear_octree_ids.empty())
-        {
-          auto linear_octree_iter = find_by_id(linear_octrees.begin(), linear_octrees.end(), linear_octree.id);
-          if (linear_octree_iter == linear_octrees.end())
-          {
-            continue;
-          }
-        }
+        auto linear_octree = find_by_id(linear_octrees.begin(), linear_octrees.end(), linear_octree_id);
+        assert(linear_octree && "linear octree not found");
 
-        auto octant_size = ludo::octant_size(linear_octree);
+        auto octant_size = ludo::octant_size(*linear_octree);
 
-        auto results = find_parallel(linear_octree, [&planes, &octant_size](const aabb& bounds)
+        auto results = find_parallel(*linear_octree, [&planes, &octant_size](const aabb& bounds)
         {
           return frustum_test(
             planes,
             // Include neighbouring octants to ensure the meshes that overlap from them into this octant are included.
             {
-              .min = bounds.min - octant_size,
-              .max = bounds.max + octant_size
+            .min = bounds.min - octant_size,
+            .max = bounds.max + octant_size
             }
           );
         });

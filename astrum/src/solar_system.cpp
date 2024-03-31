@@ -137,19 +137,6 @@ namespace astrum
 
     ludo::add<ludo::script, float, float>(inst, ludo::simulate_physics, 1.0f / 60.0f, game_speed);
 
-    if (visualize_physics)
-    {
-      ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-      {
-        auto& always_render_linear_octree = ludo::data<ludo::linear_octree>(inst, "default")[1];
-        auto& bullet_debug_mesh = *ludo::first<ludo::mesh>(inst, "ludo-bullet::visualizations");
-
-        // TODO Where should this go? The physics system updates the mesh counts each time so we need to update it in the octree too...
-        ludo::remove(always_render_linear_octree, bullet_debug_mesh, ludo::vec3_zero);
-        ludo::add(always_render_linear_octree, bullet_debug_mesh, ludo::vec3_zero);
-      });
-    }
-
     ludo::add<ludo::script>(inst, simulate_gravity);
     ludo::add<ludo::script>(inst, relativize_to_nearest_celestial_body);
     ludo::add<ludo::script, std::vector<std::string>>(inst, simulate_point_mass_physics, { "people", "spaceships" });

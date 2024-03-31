@@ -25,8 +25,8 @@ namespace astrum
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
     {
       .frame_buffer_id = add_post_processing_frame_buffer(inst)->id,
-      .mesh_ids = { mesh_id },
       .render_program_id = render_program->id,
+      .mesh_ids = { mesh_id },
       .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], 0)
     });
   }

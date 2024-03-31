@@ -52,8 +52,8 @@ namespace astrum
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
     {
       .frame_buffer_id = current_frame_buffer->id,
-      .mesh_ids = { mesh_id },
       .render_program_id = brightness_render_program->id,
+      .mesh_ids = { mesh_id },
       .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0)
     });
 
@@ -70,8 +70,8 @@ namespace astrum
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {
         .frame_buffer_id = current_frame_buffer->id,
-        .mesh_ids = { mesh_id },
         .render_program_id = gaussian_render_program->id,
+        .mesh_ids = { mesh_id },
         .shader_buffer = horizontal_shader_buffer
       });
 
@@ -84,8 +84,8 @@ namespace astrum
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {
         .frame_buffer_id = current_frame_buffer->id,
-        .mesh_ids = { mesh_id },
         .render_program_id = gaussian_render_program->id,
+        .mesh_ids = { mesh_id },
         .shader_buffer = vertical_shader_buffer
       });
     }
@@ -96,8 +96,8 @@ namespace astrum
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
     {
       .frame_buffer_id = current_frame_buffer->id,
-      .mesh_ids = { mesh_id },
       .render_program_id = additive_render_program->id,
+      .mesh_ids = { mesh_id },
       .shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0])
     });
   }
