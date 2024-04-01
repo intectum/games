@@ -20,6 +20,13 @@ namespace ludo
     uint64_t id = 0; ///< The ID of the windowing context.
   };
 
+  ///
+  /// The buttons on a window frame
+  enum class window_frame_button
+  {
+    CLOSE
+  };
+
   struct LUDO_API window
   {
     uint64_t id = 0; ///< The ID of the window.
@@ -31,6 +38,9 @@ namespace ludo
 
     bool fullscreen = false;
     bool v_sync = true;
+    bool stop_on_close = true;
+
+    std::unordered_map<window_frame_button, button_state> active_window_frame_button_states;
 
     std::unordered_map<keyboard_button, button_state> active_keyboard_button_states;
 

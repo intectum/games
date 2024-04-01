@@ -45,6 +45,19 @@ namespace ludo
         }
       }
 
+      for (auto& active_window_frame_button_states : window.active_window_frame_button_states)
+      {
+        if (active_window_frame_button_states.second == button_state::UP)
+        {
+          active_window_frame_button_states.second = button_state::NONE;
+
+          if (window.stop_on_close)
+          {
+            stop(instance);
+          }
+        }
+      }
+
       window.mouse_movement = { 0, 0 };
 
       window.scroll = { 0.0f, 0.0f };
@@ -175,7 +188,9 @@ namespace ludo
 
     glfwSetWindowCloseCallback(glfw_window, [](GLFWwindow* glfw_window)
     {
-      // TODO how to handle this?
+      auto& window = *static_cast<ludo::window*>(glfwGetWindowUserPointer(glfw_window));
+
+      window.active_window_frame_button_states[window_frame_button::CLOSE] = button_state::UP;
     });
 
     return window;
