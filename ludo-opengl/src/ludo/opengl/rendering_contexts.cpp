@@ -13,7 +13,6 @@ namespace ludo
     auto rendering_context = add(data<ludo::rendering_context>(instance), init, partition);
     rendering_context->id = next_id++;
 
-    // TODO glewExperimental = GL_TRUE;
     glewInit();
 
     // Sometimes glewInit() gives false negatives. Let's clear the OpenGL error, so it doesn't confuse us elsewhere.
@@ -83,22 +82,6 @@ namespace ludo
     {
       deallocate_vram(element->shader_buffer);
     }
-
-    // TODO is all this reverting really needed?
-
-    // Revert blending settings
-    glBlendFunc(GL_ONE, GL_ZERO); check_opengl_error();
-    glDisable(GL_BLEND); check_opengl_error();
-
-    // Revert clearing settings
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); check_opengl_error();
-
-    // Revert depth test settings
-    glDepthFunc(GL_LESS); check_opengl_error();
-    glDisable(GL_DEPTH_TEST); check_opengl_error();
-
-    // Revert face culling settings
-    glDisable(GL_CULL_FACE); check_opengl_error();
 
     remove(data<rendering_context>(instance), element, partition);
   }

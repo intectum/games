@@ -100,35 +100,48 @@ namespace ludo
     glUseProgram(render_program.id); check_opengl_error();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.id); check_opengl_error();
 
+    // Convert b4 to u4f4
+    auto format = render_program.format;
+    for (auto index = 0; index < format.components.size(); index++)
+    {
+      if (format.components[index] == 'b')
+      {
+        format.components[index] = 'u';
+        index++;
+        format.components.insert(format.components.begin() + index, 'f');
+        format.component_counts.insert(format.component_counts.begin() + index, 4);
+      }
+    }
+
     auto offset = uint32_t(0);
-    for (auto index = 0; index < render_program.format.components.size(); index++)
+    for (auto index = 0; index < format.components.size(); index++)
     {
       glEnableVertexAttribArray(index); check_opengl_error();
 
-      if (render_program.format.components[index] == 'i' || render_program.format.components[index] == 'u')
+      if (format.components[index] == 'i' || format.components[index] == 'u')
       {
         glVertexAttribIPointer(
           index,
-          render_program.format.component_counts[index],
-          render_program.format.components[index] == 'i' ? GL_INT : GL_UNSIGNED_INT,
-          render_program.format.size,
+          format.component_counts[index],
+          format.components[index] == 'i' ? GL_INT : GL_UNSIGNED_INT,
+          format.size,
           reinterpret_cast<void*>(offset)
         ); check_opengl_error();
 
-        offset += render_program.format.component_counts[index] * sizeof(uint32_t);
+        offset += format.component_counts[index] * sizeof(uint32_t);
       }
       else
       {
         glVertexAttribPointer(
           index,
-          render_program.format.component_counts[index],
+          format.component_counts[index],
           GL_FLOAT,
           GL_FALSE,
-          render_program.format.size,
+          format.size,
           reinterpret_cast<void*>(offset)
         ); check_opengl_error();
 
-        offset += render_program.format.component_counts[index] * sizeof(float);
+        offset += format.component_counts[index] * sizeof(float);
       }
     }
   }

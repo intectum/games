@@ -30,12 +30,13 @@ namespace ludo
   ///
   /// A vertex format
   /// Possible components are:
-  ///   p: position,
-  ///   n: normal,
-  ///   c: color,
-  ///   t: texture coordinate,
-  ///   i: int,
-  ///   u: unsigned int,
+  ///   p: position
+  ///   n: normal
+  ///   c: color
+  ///   t: texture coordinate
+  ///   b: bone indices and weights
+  ///   i: int
+  ///   u: unsigned int
   ///   f: float
   /// All components except for i and u represent floats. i and u represent int32_t and uint32_t respectively.
   /// Component counts represent the number of float/int32_t/uint32_t values within the component e.g. the component p3 represents a position consisting of 3 floats.

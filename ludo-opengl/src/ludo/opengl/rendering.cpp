@@ -4,7 +4,6 @@
 
 #include <GL/glew.h>
 
-#include <ludo/algorithm.h>
 #include <ludo/animation.h>
 #include <ludo/graphs.h>
 
@@ -34,11 +33,8 @@ namespace ludo
 
   void render(instance& instance, const render_options& options)
   {
-    // TODO crashes without armature instances!
-    auto& armature_instances = data<armature_instance>(instance);
     auto& render_programs = data<render_program>(instance);
     auto rendering_context = first<ludo::rendering_context>(instance);
-    auto& textures = data<texture>(instance);
 
     auto& vram_draw_commands = data<draw_command>(instance);
     auto& vram_instances = data<instance_t>(instance);
@@ -84,7 +80,7 @@ namespace ludo
       auto instance_byte_size = mesh_instance_group.second.size() * (sizeof(mat4) + (count(render_program->format, 't') ? sizeof(uint64_t) : 0));
       auto animation_byte_start = instance_byte_start + instance_byte_size;
       auto animation_byte_index = animation_byte_start;
-      auto animation_byte_size = mesh_instance_group.second.size() * (count(render_program->format, 'f') ? max_bones_per_armature * sizeof(mat4) : 0);
+      auto animation_byte_size = mesh_instance_group.second.size() * (count(render_program->format, 'b') ? max_bones_per_armature * sizeof(mat4) : 0);
 
       for (auto& mesh_instance : mesh_instance_group.second)
       {
@@ -95,10 +91,7 @@ namespace ludo
         {
           if (mesh_instance.texture_id)
           {
-            auto texture = find_by_id(textures.begin(), textures.end(), mesh_instance.texture_id);
-            assert(texture != textures.end() && "texture not found");
-
-            write(vram_instances, instance_byte_index, handle(*texture));
+            write(vram_instances, instance_byte_index, handle(texture { .id = mesh_instance.texture_id }));
             instance_byte_index += sizeof(uint64_t);
           }
           else
@@ -108,11 +101,10 @@ namespace ludo
           }
         }
 
-        // TODO 'f' is a pretty general component, maybe add a 'b' component specifically for bones?
-        if (count(render_program->format, 'f'))
+        if (count(render_program->format, 'b'))
         {
-          auto armature_instance = find_by_id(armature_instances.begin(), armature_instances.end(), mesh_instance.armature_instance_id);
-          assert(armature_instance != armature_instances.end() && "armature instance not found");
+          auto armature_instance = get<ludo::armature_instance>(instance, mesh_instance.armature_instance_id);
+          assert(armature_instance && "armature instance not found");
 
           for (auto& transform : armature_instance->transforms)
           {

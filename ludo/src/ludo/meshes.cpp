@@ -38,12 +38,9 @@ namespace ludo
 
     if (options.bones)
     {
-      format.components.emplace_back('u');
+      format.components.emplace_back('b');
       format.component_counts.emplace_back(max_bone_weights_per_vertex);
-      format.size += max_bone_weights_per_vertex * sizeof(uint32_t);
-      format.components.emplace_back('f');
-      format.component_counts.emplace_back(max_bone_weights_per_vertex);
-      format.size += max_bone_weights_per_vertex * sizeof(float);
+      format.size += max_bone_weights_per_vertex * (sizeof(uint32_t) + sizeof(float));
     }
 
     return format;
