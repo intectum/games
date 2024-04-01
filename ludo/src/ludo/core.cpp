@@ -35,7 +35,7 @@ namespace ludo
   {
     auto delta_timer = timer();
 
-    // TODO crashes without scripts!
+    assert(exists<ludo::script>(instance) && "scripts not found");
     auto& scripts = data<ludo::script>(instance, "default");
 
     // Make a copy of the scripts array to allow for insert/removal of scripts from within a script.

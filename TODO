@@ -4,7 +4,7 @@
 - Parallel rendering
 - Occlusion culling
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
-- Vertex types? Only trouble could be things like render and import which need to know the vertex info (esp. render which needs to render diff vertex types separately - render program contains vertex info?).
+- Vertex types? Only trouble could be things like render and import which need to know the vertex info
 - remove all global state from ludo
 - switch to bazel
 - remove dynamic containers from data types stored in the instance

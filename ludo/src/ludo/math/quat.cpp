@@ -23,16 +23,16 @@ namespace ludo
   {
     auto cosines = vec3
     {
-      std::cos(x / 2.0f),
-      std::cos(y / 2.0f),
-      std::cos(z / 2.0f)
+      std::cos(x * 0.5f),
+      std::cos(y * 0.5f),
+      std::cos(z * 0.5f)
     };
 
     auto sines = vec3
     {
-      std::sin(x / 2.0f),
-      std::sin(y / 2.0f),
-      std::sin(z / 2.0f)
+      std::sin(x * 0.5f),
+      std::sin(y * 0.5f),
+      std::sin(z * 0.5f)
     };
 
     *this =

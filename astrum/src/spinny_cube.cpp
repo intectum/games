@@ -132,7 +132,10 @@ int main()
     mesh_instances[0].transform = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     mesh_instances[1].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     mesh_instances[2].transform = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    //mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+
+    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(1.0f, 1.0f, 0.0f));
+    //mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::quat(1.0f, 1.0f, 0.0f)));
 
     ludo::interpolate(*animation, *armature, inst.total_time, armature_instance->transforms);
   });
