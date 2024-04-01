@@ -32,14 +32,14 @@ namespace ludo
     auto link_status = GLint();
     glGetProgramiv(render_program->id, GL_LINK_STATUS, &link_status); check_opengl_error();
 
-    if (link_status == 0)
-    {
-      GLchar info_log[1024];
-      glGetProgramInfoLog(render_program->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
+    GLchar info_log[1024];
+    glGetProgramInfoLog(render_program->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-      std::cout << "failed to link shader program: " << info_log << std::endl;
-      assert(false && "failed to link shader program:");
+    if (info_log[0])
+    {
+      std::cout << "render program link log: " << info_log << std::endl;
     }
+    assert(link_status && "failed to link render program");
 
     return render_program;
   }
@@ -83,23 +83,21 @@ namespace ludo
 
   void bind(const render_program& render_program)
   {
-    // TODO Only needed for debugging apparently...
     glValidateProgram(render_program.id); check_opengl_error();
 
     auto validate_status = GLint();
     glGetProgramiv(render_program.id, GL_VALIDATE_STATUS, &validate_status); check_opengl_error();
 
-    if (validate_status == 0)
-    {
-      GLchar info_log[1024];
-      glGetProgramInfoLog(render_program.id, sizeof(info_log), nullptr, info_log); check_opengl_error();
+    GLchar info_log[1024];
+    glGetProgramInfoLog(render_program.id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-      std::cout << "failed to validate shader program: " << info_log << std::endl;
-      assert(false && "failed to validate shader program:");
+    if (info_log[0])
+    {
+      std::cout << "render program validation log: " << info_log << std::endl;
     }
+    assert(validate_status && "failed to validate render program");
 
     glUseProgram(render_program.id); check_opengl_error();
-
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.id); check_opengl_error();
 
     auto offset = uint32_t(0);

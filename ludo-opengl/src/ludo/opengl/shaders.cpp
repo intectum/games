@@ -35,14 +35,14 @@ namespace ludo
     auto compile_status = GLint();
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &compile_status); check_opengl_error();
 
+    GLchar info_log[1024];
+    glGetShaderInfoLog(shader->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
+
     if (compile_status == 0)
     {
-      GLchar info_log[1024];
-      glGetShaderInfoLog(shader->id, sizeof(info_log), nullptr, info_log); check_opengl_error();
-
-      std::cout << "failed to compile shader: " << info_log << std::endl;
-      assert(false && "failed to compile shader");
+      std::cout << "shader compile log: " << info_log << std::endl;
     }
+    assert(compile_status && "failed to compile shader");
 
     return shader;
   }
