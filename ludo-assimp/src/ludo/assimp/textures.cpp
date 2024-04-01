@@ -10,7 +10,7 @@ namespace ludo
 {
   texture* import_texture(instance& instance, const std::string& file_name, const std::string& partition);
 
-  std::vector<ludo::texture*> import_textures(instance& instance, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::string& partition)
+  std::vector<ludo::texture*> import_textures(instance& instance, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::string& partition)
   {
     auto textures = std::vector<ludo::texture*>();
 
@@ -21,8 +21,7 @@ namespace ludo
       assimp_material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
       if (texture_path.length)
       {
-        // TODO not hardcode this path...
-        textures.push_back(import_texture(instance, std::string("assets/models/") + texture_path.C_Str(), partition));
+        textures.push_back(import_texture(instance, folder + texture_path.C_Str(), partition));
       }
       else
       {

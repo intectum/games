@@ -55,7 +55,8 @@ namespace ludo
       auto vertex_format_options = build_vertex_format_options(*assimp_scene, mesh_objects, options);
       auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format_options);
 
-      auto textures = import_textures(instance, *assimp_scene, mesh_objects, partition);
+      auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
+      auto textures = import_textures(instance, folder, *assimp_scene, mesh_objects, partition);
       return import_meshes(instance, *render_program, *assimp_scene, mesh_objects, textures, options, partition);
     }
 
