@@ -113,7 +113,6 @@ namespace astrum
       auto& patch = patchwork->patches[index];
 
       patch.variant_index = patchwork->variant_index(*patchwork, index);
-
       auto [ index_count, vertex_count ] = patchwork->counts(*patchwork, index, patch.variant_index);
 
       auto mesh = ludo::add(
@@ -174,11 +173,10 @@ namespace astrum
             {
               patch.locked = true;
 
-              // Multiple concurrent allocations would be bad...
-              auto lock = std::lock_guard(mutex);
-
               auto [ index_count, vertex_count ] = patchwork.counts(patchwork, index, new_variant_index);
 
+              // Multiple concurrent allocations would be bad...
+              auto lock = std::lock_guard(mutex);
               auto& new_mesh = *ludo::add(
                 inst,
                 ludo::mesh { .render_program_id = patchwork.render_program_id },

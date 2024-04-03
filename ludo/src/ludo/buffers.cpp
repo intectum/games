@@ -199,7 +199,7 @@ namespace ludo
       buffer.free.end(),
       [](const ludo::buffer& a, const ludo::buffer& b)
       {
-        return a.size < b.size || a.data < b.data;
+        return a.size < b.size;
       }
     );
   }
