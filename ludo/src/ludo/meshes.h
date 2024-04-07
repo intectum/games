@@ -84,7 +84,7 @@ namespace ludo
     buffer index_buffer; ///< A buffer containing the index data.
     buffer vertex_buffer; ///< A buffer containing the vertex data.
 
-    mat4 transform; ///< The transform of this mesh.
+    mat4 transform = ludo::mat4_identity; ///< The transform of this mesh.
   };
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information

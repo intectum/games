@@ -78,7 +78,7 @@ int main()
   ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::mesh_instance>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
-  ludo::allocate<ludo::script>(inst, 35);
+  ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::shader>(inst, 19);
   ludo::allocate<ludo::static_body>(inst, 25); // TODO bit of a guess really since they're loaded dynamically
   ludo::allocate<ludo::texture>(inst, 21);
@@ -124,25 +124,6 @@ int main()
 
   ludo::add(inst, ludo::physics_context { .gravity = ludo::vec3_zero, .visualize = astrum::visualize_physics });
 
-  if (astrum::visualize_physics)
-  {
-    auto bullet_debug_render_program = ludo::add(
-      inst,
-      ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST },
-      { .colors = true },
-      "ludo-bullet::visualizations"
-    );
-
-    ludo::add(
-      inst,
-      ludo::mesh { .render_program_id = bullet_debug_render_program->id },
-      bullet_debug_counts.first,
-      bullet_debug_counts.second,
-      bullet_debug_render_program->format.size,
-      "ludo-bullet::visualizations"
-    );
-  }
-
   astrum::add_solar_system(inst);
 
   ludo::add<ludo::script>(inst, ludo::update_windows);
@@ -170,6 +151,34 @@ int main()
     .linear_octree_ids = linear_octree_ids
   });
 
+  if (astrum::visualize_physics)
+  {
+    auto bullet_debug_render_program = ludo::add(
+      inst,
+      ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST },
+      { .colors = true },
+      "ludo-bullet::visualizations"
+    );
+
+    auto bullet_debug_mesh = ludo::add(
+      inst,
+      ludo::mesh { .render_program_id = bullet_debug_render_program->id },
+      bullet_debug_counts.first,
+      bullet_debug_counts.second,
+      bullet_debug_render_program->format.size,
+      "ludo-bullet::visualizations"
+    );
+
+    auto bullet_debug_mesh_ininstance = ludo::add(inst, ludo::mesh_instance(), *bullet_debug_mesh, "ludo-bullet::visualizations");
+
+    ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+    {
+      .frame_buffer_id = msaa_frame_buffer->id,
+      .mesh_instance_ids = { bullet_debug_mesh_ininstance->id },
+      .clear_frame_buffer = false
+    });
+  }
+
   // Post-processing
   auto post_processing_mesh_instance = astrum::add_post_processing_mesh_instance(inst);
   auto post_processing_vertex_shader = astrum::add_post_processing_vertex_shader(inst);
@@ -182,7 +191,7 @@ int main()
 
   ludo::add<ludo::script>(inst, ludo::wait_for_render);
 
-  ludo::add<ludo::script>(inst, astrum::print_timings);
+  //ludo::add<ludo::script>(inst, astrum::print_timings);
 
   std::cout << std::fixed << std::setprecision(2) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
 

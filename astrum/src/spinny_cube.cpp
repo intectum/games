@@ -9,7 +9,7 @@ int main()
 
   // SETUP
 
-  auto max_instance_count = 10;
+  auto instance_count = 4;
   auto box_counts = ludo::box_counts();
   auto minifig_counts = ludo::import_counts("assets/models/minifig.dae");
 
@@ -18,14 +18,14 @@ int main()
 
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
-  ludo::allocate<ludo::armature_instance>(inst, max_instance_count);
+  ludo::allocate<ludo::armature_instance>(inst, instance_count);
   ludo::allocate<ludo::body_shape>(inst, 1);
   ludo::allocate<ludo::mesh>(inst, 4);
-  ludo::allocate<ludo::mesh_instance>(inst, max_instance_count);
-  ludo::allocate<ludo::render_program>(inst, max_instance_count);
+  ludo::allocate<ludo::mesh_instance>(inst, instance_count);
+  ludo::allocate<ludo::render_program>(inst, instance_count);
   ludo::allocate<ludo::script>(inst, 5);
-  ludo::allocate<ludo::shader>(inst, max_instance_count * 2);
-  ludo::allocate<ludo::texture>(inst, max_instance_count);
+  ludo::allocate<ludo::shader>(inst, instance_count * 2);
+  ludo::allocate<ludo::texture>(inst, instance_count);
   ludo::allocate<ludo::window>(inst, 1);
 
   ludo::add(inst, ludo::windowing_context());
@@ -33,10 +33,10 @@ int main()
 
   auto rendering_context = ludo::add(inst, ludo::rendering_context(), 1);
 
-  ludo::allocate_vram<ludo::draw_command>(inst, max_instance_count);
-  ludo::allocate_vram<ludo::instance_t>(inst, max_instance_count * (sizeof(ludo::mat4) + sizeof(uint64_t) + ludo::max_bones_per_armature * sizeof(ludo::mat4)));
-  ludo::allocate_heap_vram<ludo::index_t>(inst, box_counts.first * max_instance_count + minifig_counts.first);
-  ludo::allocate_heap_vram<ludo::vertex_t>(inst, box_counts.second * max_instance_count * ludo::vertex_format_pnc.size + minifig_counts.second * 80);
+  ludo::allocate_vram<ludo::draw_command>(inst, instance_count);
+  ludo::allocate_vram<ludo::instance_t>(inst, instance_count * (sizeof(ludo::mat4) + sizeof(uint64_t) + ludo::max_bones_per_armature * sizeof(ludo::mat4)));
+  ludo::allocate_heap_vram<ludo::index_t>(inst, box_counts.first * instance_count + minifig_counts.first);
+  ludo::allocate_heap_vram<ludo::vertex_t>(inst, box_counts.second * instance_count * ludo::vertex_format_pnc.size + minifig_counts.second * 80);
 
   // LIGHTS
 

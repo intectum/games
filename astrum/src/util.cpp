@@ -12,6 +12,20 @@ namespace astrum
 
   auto script_names = std::vector<std::string>
   {
+    "ludo::finalize_background",
+    "astrum::center_universe",
+    "ludo::simulate_physics",
+    "astrum::simulate_gravity",
+    "astrum::relativize_to_nearest_celestial_body",
+    "astrum::simulate_point_mass_physics",
+    "astrum::simulate_people",
+    "astrum::simulate_spaceships",
+    "astrum::control_game",
+    //"astrum::stream_trees",
+    "astrum::sync_meshes_with_point_masses",
+    "astrum::update_celestial_bodies",
+    "astrum::update_patchworks",
+    "astrum::sync_light_with_sol",
     "ludo::update_windows",
     "ludo::clear_vram_data",
     "ludo::render/geometry",
@@ -33,20 +47,6 @@ namespace astrum
     "ludo::render/hdr_resolve",
     "ludo::blit",
     "ludo::wait_for_render",
-    "ludo::finalize_background",
-    "astrum::center_universe",
-    "ludo::simulate_physics",
-    "astrum::simulate_gravity",
-    "astrum::relativize_to_nearest_celestial_body",
-    "astrum::simulate_point_mass_physics",
-    "astrum::simulate_people",
-    "astrum::simulate_spaceships",
-    "astrum::control_game",
-    //"astrum::stream_trees",
-    "astrum::sync_meshes_with_point_masses",
-    "astrum::update_celestial_bodies",
-    "astrum::update_patchworks",
-    "astrum::sync_light_with_sol",
     "astrum::print_timings"
   };
 
@@ -59,7 +59,7 @@ namespace astrum
       auto final_script_names = script_names;
       if (visualize_physics)
       {
-        final_script_names.insert(final_script_names.begin() + 23, "astrum::update_physics_visualization_mesh");
+        final_script_names.insert(final_script_names.begin() + 16, "ludo::render/physics");
       }
       if (show_paths)
       {
