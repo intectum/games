@@ -5,40 +5,23 @@
 
 namespace astrum
 {
-  ludo::contact* deepest_contact(std::vector<ludo::contact>& contacts, const ludo::body* other_body)
+  std::vector<ludo::contact> deepest_contacts(const std::vector<ludo::contact>& contacts)
   {
-    ludo::contact* deepest_contact = nullptr;
+    auto deepest_contacts = std::vector<ludo::contact>();
     for (auto& contact : contacts)
     {
-      if (contact.body_b == other_body)
+      auto deepest_contact_iter = std::find_if(deepest_contacts.begin(), deepest_contacts.end(), [&contact](const ludo::contact& deepest_contact)
       {
-        if (!deepest_contact || contact.distance < deepest_contact->distance)
-        {
-          deepest_contact = &contact;
-        }
-      }
-    }
-
-    return deepest_contact;
-  }
-
-  std::vector<ludo::contact*> deepest_contacts(std::vector<ludo::contact>& contacts)
-  {
-    auto deepest_contacts = std::vector<ludo::contact*>();
-    for (auto& contact : contacts)
-    {
-      auto deepest_contact_iter = std::find_if(deepest_contacts.begin(), deepest_contacts.end(), [&contact](const ludo::contact* deepest_contact)
-      {
-        return deepest_contact->body_b == contact.body_b;
+        return deepest_contact.body_b == contact.body_b;
       });
 
       if (deepest_contact_iter == deepest_contacts.end())
       {
-        deepest_contacts.emplace_back(&contact);
+        deepest_contacts.emplace_back(contact);
       }
-      else if (contact.distance < (*deepest_contact_iter)->distance)
+      else if (contact.distance < (*deepest_contact_iter).distance)
       {
-        *deepest_contact_iter = &contact;
+        *deepest_contact_iter = contact;
       }
     }
 

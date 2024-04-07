@@ -36,16 +36,21 @@ namespace astrum
             auto deepest_contacts = astrum::deepest_contacts(contacts);
             for (auto& deepest_contact : deepest_contacts)
             {
-              auto static_body = ludo::find_by_id(static_bodies.begin(), static_bodies.end(), deepest_contact->body_b->id);
+              auto static_body = ludo::find_by_id(static_bodies.begin(), static_bodies.end(), deepest_contact.body_b->id);
               if (static_body == static_bodies.end())
               {
                 continue;
               }
 
-              if (deepest_contact->distance < 0.0f)
+              if (deepest_contact.distance < 0.0f)
               {
-                point_mass.linear_velocity -= ludo::project(point_mass.linear_velocity, deepest_contact->normal_b * -1.0f);
-                point_mass.transform.position += deepest_contact->normal_b * -deepest_contact->distance; // TODO refine this! fast moving objects go right through!
+                // Remove velocity towards the contact
+                auto velocity_toward_contact = ludo::project(point_mass.linear_velocity, deepest_contact.normal_b * -1.0f);
+                point_mass.linear_velocity -= velocity_toward_contact;
+
+                // Since we ar no longer moving toward the contact, we need to advance to the contact
+                point_mass.transform.position += velocity_toward_contact * inst.delta_time * game_speed;
+                point_mass.transform.position += deepest_contact.normal_b * -deepest_contact.distance;
 
                 if (static_body >= &celestial_body_static_bodies[0] && static_body <= &celestial_body_static_bodies[celestial_body_static_bodies.array_size - 1])
                 {
