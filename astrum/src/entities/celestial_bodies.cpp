@@ -706,7 +706,8 @@ namespace astrum
     celestial_body.static_body_ids[nearest_patch_index] = body->id;
 
     auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, "celestial-bodies", nearest_patch.mesh_instance_id);
-    auto build_shape = ludo::build_shape(inst, *body, mesh_instance->mesh_id, celestial_body.format, 0, mesh_instance->index_buffer.size / sizeof(uint32_t));
+    auto mesh = ludo::get<ludo::mesh>(inst, "celestial-bodies", mesh_instance->mesh_id);
+    auto build_shape = ludo::build_shape(inst, *body, *mesh, celestial_body.format, 0, mesh_instance->index_buffer.size / sizeof(uint32_t));
     auto task = [&nearest_patch, build_shape]()
     {
       auto finalizer = build_shape();

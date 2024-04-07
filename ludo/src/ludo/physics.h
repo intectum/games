@@ -160,12 +160,12 @@ namespace ludo
   /// Builds the shape of a static body.
   /// \param instance The instance containing the physical simulation.
   /// \param body The body to build the shape for.
-  /// \param mesh_id The ID of the mesh used to represent the shape of the body.
+  /// \param mesh The mesh used to represent the shape of the body.
   /// \param format The format of the mesh used to represent the shape of the body.
   /// \param index_start The first index within the mesh used to represent the shape of the body.
   /// \param index_count The number of indices within the mesh used to represent the shape of the body.
   /// \return A task that builds the shape of a static body.
-  LUDO_API task build_shape(instance& instance, static_body& body, uint64_t mesh_id, const vertex_format& format, uint32_t index_start, uint32_t index_count);
+  LUDO_API task build_shape(instance& instance, static_body& body, const mesh& mesh, const vertex_format& format, uint32_t index_start, uint32_t index_count);
 
   template<>
   LUDO_API void deallocate<dynamic_body>(instance& instance);

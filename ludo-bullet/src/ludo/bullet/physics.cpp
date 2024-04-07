@@ -256,38 +256,32 @@ namespace ludo
     bullet_body.setWorldTransform(to_btTransform(body.transform));
   }
 
-  task build_shape(instance& instance, static_body& body, uint64_t mesh_id, const vertex_format& format, uint32_t index_start, uint32_t index_count)
+  task build_shape(instance& instance, static_body& body, const mesh& mesh, const vertex_format& format, uint32_t index_start, uint32_t index_count)
   {
-    auto& meshes = data<mesh>(instance);
-
-    auto id = body.id;
-
-    return [&instance, &meshes, id, mesh_id, format, index_start, index_count]()
+    return [&instance, body, mesh, format, index_start, index_count]()
     {
-      auto mesh = find_by_id(meshes.begin(), meshes.end(), mesh_id);
-      assert(mesh != meshes.end() && "mesh not found");
-      assert((index_start + index_count - 1) * sizeof(uint32_t) < mesh->index_buffer.size && "indexes out of range");
+      assert((index_start + index_count) * sizeof(uint32_t) <= mesh.index_buffer.size && "indexes out of range");
 
       auto bullet_mesh_interface = new btTriangleIndexVertexArray();
 
       auto bullet_mesh = btIndexedMesh();
-      bullet_mesh.m_vertexBase = reinterpret_cast<u_char*>(mesh->vertex_buffer.data);
+      bullet_mesh.m_vertexBase = reinterpret_cast<u_char*>(mesh.vertex_buffer.data);
       bullet_mesh.m_vertexStride = format.size;
       bullet_mesh.m_numVertices = static_cast<int32_t>(index_count);
-      bullet_mesh.m_triangleIndexBase = reinterpret_cast<u_char*>(mesh->index_buffer.data + index_start * sizeof(uint32_t));
+      bullet_mesh.m_triangleIndexBase = reinterpret_cast<u_char*>(mesh.index_buffer.data + index_start * sizeof(uint32_t));
       bullet_mesh.m_triangleIndexStride = 3 * sizeof(uint32_t);
       bullet_mesh.m_numTriangles = static_cast<int32_t>(index_count / 3);
       bullet_mesh_interface->addIndexedMesh(bullet_mesh);
 
       auto bullet_shape = new btBvhTriangleMeshShape(bullet_mesh_interface, true);
 
-      return [&instance, id, bullet_shape]()
+      return [&instance, body, bullet_shape]()
       {
         auto physics_context = first<ludo::physics_context>(instance);
         assert(physics_context && "physics context not found");
 
         auto& bullet_world = *reinterpret_cast<btDiscreteDynamicsWorld*>(physics_context->id);
-        auto bullet_body = reinterpret_cast<btRigidBody*>(id);
+        auto bullet_body = reinterpret_cast<btRigidBody*>(body.id);
 
         bullet_world.removeRigidBody(bullet_body);
         bullet_body->setCollisionShape(bullet_shape);
