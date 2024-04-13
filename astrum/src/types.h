@@ -5,6 +5,7 @@
 
 namespace astrum
 {
+  struct lod;
   struct patch;
   struct tree;
 
@@ -16,8 +17,10 @@ namespace astrum
     float radius = 0.0f;
     float mass = 0.0f;
     ludo::vertex_format format;
+    std::vector<lod> lods;
 
     std::unordered_map<uint32_t, uint64_t> static_body_ids;
+    std::unordered_map<uint32_t, uint64_t> static_body_mesh_ids;
 
     std::function<float(const ludo::vec3& position)> height_func;
     std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color_func;

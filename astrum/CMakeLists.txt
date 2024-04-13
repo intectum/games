@@ -36,6 +36,7 @@ set(SRC_FILES
     src/main.cpp
     src/meshes/patchwork.cpp
     src/meshes/sphere_ico.cpp
+    src/meshes/sphere_ico_find.cpp
     src/paths.cpp
     src/physics/centering.cpp
     src/physics/gravity.cpp

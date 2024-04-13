@@ -9,9 +9,9 @@ namespace astrum
 {
   void relativize_to_nearest_celestial_body(ludo::instance& inst);
 
-  void add_celestial_body(ludo::instance& inst, const celestial_body& init, const std::vector<lod>& lods, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity);
+  void add_celestial_body(ludo::instance& inst, const celestial_body& init, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity);
 
-  void update_celestial_bodies(ludo::instance& inst, const std::vector<std::vector<lod>>& lods);
+  void update_celestial_bodies(ludo::instance& inst);
 
   std::pair<uint32_t, uint32_t> celestial_body_counts(const std::vector<lod>& lods);
 }

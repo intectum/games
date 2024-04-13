@@ -4,6 +4,7 @@
 
 #include "ludo/opengl/util.h"
 
+#include "../constants.h"
 #include "celestial_bodies.h"
 #include "meshes/patchwork.h"
 #include "meshes/sphere_ico.h"
@@ -19,8 +20,7 @@ namespace astrum
   void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh);
   void sew_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t anchor_patch_index, uint32_t patch_index);
   const std::vector<uint32_t>& border_indices(const patchwork& patchwork, uint32_t patch_index, uint32_t adjacent_patch_index);
-  void load_nearest_static_body(ludo::instance& inst, celestial_body& celestial_body, patchwork& patchwork, const ludo::vec3& mesh_position, const ludo::vec3& to_camera, bool background);
-  void unload_static_body(ludo::instance& inst, celestial_body& celestial_body, const patchwork& patchwork, uint32_t patch_index);
+  void update_static_bodies(ludo::instance& inst, celestial_body& celestial_body, const patchwork& patchwork);
 
   void relativize_to_nearest_celestial_body(ludo::instance& inst)
   {
@@ -56,7 +56,7 @@ namespace astrum
     }
   }
 
-  void add_celestial_body(ludo::instance& inst, const celestial_body& init, const std::vector<lod>& lods, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
+  void add_celestial_body(ludo::instance& inst, const celestial_body& init, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
@@ -68,26 +68,25 @@ namespace astrum
 
     auto camera = ludo::get_camera(rendering_context);
     auto camera_position = ludo::position(camera.view);
-    auto camera_relative_position = camera_position - initial_transform.position;
 
-    auto counts = [&inst, lods, index](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index)
+    auto counts = [init](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index)
     {
-      auto count = static_cast<uint32_t>(20 * 3 * std::pow(4, lods[variant_index].level - 1)) / static_cast<uint32_t>(patchwork.patches.size());
+      auto count = 3 * static_cast<uint32_t>(std::pow(4, init.lods[variant_index].level - init.lods[0].level));
       return std::pair<uint32_t, uint32_t> { count, count };
     };
 
-    auto load = [&inst, lods, index](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
+    auto load = [&inst, init, index](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
     {
       auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
 
-      load_patch(inst, celestial_body, patchwork, lods, patch_index, variant_index, mesh);
+      load_patch(inst, celestial_body, patchwork, init.lods, patch_index, variant_index, mesh);
     };
 
-    auto sew = [&inst, lods, index](const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)
+    auto sew = [&inst, init, index](const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)
     {
       auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
 
-      sew_patch(inst, celestial_body, patchwork, lods, anchor_patch_index, patch_index);
+      sew_patch(inst, celestial_body, patchwork, init.lods, anchor_patch_index, patch_index);
     };
 
     auto on_load = [&inst, index](const patchwork& patchwork, uint32_t patch_index)
@@ -104,14 +103,10 @@ namespace astrum
     {
       auto& linear_octree = ludo::data<ludo::linear_octree>(inst, "celestial-bodies")[index];
 
-      auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
-
       auto& patch = patchwork.patches[patch_index];
       auto& mesh_instance = *ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
 
       ludo::remove(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
-
-      unload_static_body(inst, celestial_body, patchwork, patch_index);
     };
 
     auto vertex_format_options = ludo::vertex_format_options
@@ -141,7 +136,7 @@ namespace astrum
     {
       .render_program_id = render_program->id,
       .transform = initial_transform,
-      .variant_index = build_variant_index(lods, camera_position, initial_transform.position),
+      .variant_index = build_variant_index(celestial_body->lods, camera_position, initial_transform.position),
       .counts = counts,
       .load = load,
       .sew = sew,
@@ -159,8 +154,8 @@ namespace astrum
     }
     else
     {
-      build_variants(patchwork_init, lods);
-      build_patches(*celestial_body, patchwork_init, lods);
+      build_variants(patchwork_init, celestial_body->lods);
+      build_patches(*celestial_body, patchwork_init, celestial_body->lods);
 
       auto pmesh_ostream = std::ofstream(patchwork_file_name.str(), std::ios::binary);
       save(patchwork_init, pmesh_ostream);
@@ -179,13 +174,10 @@ namespace astrum
       "celestial-bodies"
     );
 
-    if (ludo::length(camera_relative_position) < celestial_body->radius * 2.0f)
-    {
-      load_nearest_static_body(inst, *celestial_body, *patchwork, initial_transform.position, camera_relative_position, false);
-    }
+    update_static_bodies(inst, *celestial_body, *patchwork);
   }
 
-  void update_celestial_bodies(ludo::instance& inst, const std::vector<std::vector<lod>>& lods)
+  void update_celestial_bodies(ludo::instance& inst)
   {
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
@@ -200,35 +192,29 @@ namespace astrum
     auto camera = ludo::get_camera(rendering_context);
     auto camera_position = ludo::position(camera.view);
 
+    ludo::divide_and_conquer(celestial_bodies.array_size, [&](uint32_t start, uint32_t end)
+    {
+      for (auto index = start; index < end; index++)
+      {
+        auto& patchwork = patchworks[index];
+        auto& point_mass = point_masses[index];
+
+        auto movement = (point_mass.transform.position - solar_system.center_delta) - patchwork.transform.position;
+        if (ludo::length2(movement) > 0.0f)
+        {
+          ludo::move(linear_octrees[index], movement);
+        }
+
+        patchwork.transform = point_mass.transform;
+        patchwork.variant_index = build_variant_index(celestial_bodies[index].lods, camera_position, patchwork.transform.position);
+      }
+
+      return []() {};
+    });
+
     for (auto index = 0; index < celestial_bodies.array_size; index++)
     {
-      auto& linear_octree = linear_octrees[index];
-
-      auto& celestial_body = celestial_bodies[index];
-      auto& patchwork = patchworks[index];
-      auto& point_mass = point_masses[index];
-
-      auto old_transform = patchwork.transform;
-      auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
-
-      auto old_position = old_transform.position;
-      auto new_position = ludo::position(new_transform);
-
-      patchwork.transform = point_mass.transform;
-
-      auto movement = (new_position - solar_system.center_delta) - old_position;
-      if (ludo::length2(movement) > 0.0f)
-      {
-        ludo::move(linear_octree, movement);
-      }
-
-      patchwork.variant_index = build_variant_index(lods[index], camera_position, new_position);
-
-      auto camera_relative_position = camera_position - new_position;
-      if (ludo::length(camera_relative_position) < celestial_body.radius * 2.0f)
-      {
-        load_nearest_static_body(inst, celestial_body, patchwork, new_position, camera_relative_position, true);
-      }
+      update_static_bodies(inst, celestial_bodies[index], patchworks[index]);
     }
   }
 
@@ -660,84 +646,130 @@ namespace astrum
     return patchwork.variants[patch.variant_index].border_indices[0];
   }
 
-  void load_nearest_static_body(ludo::instance& inst, celestial_body& celestial_body, patchwork& patchwork, const ludo::vec3& mesh_position, const ludo::vec3& to_camera, bool background)
+  void update_static_bodies(ludo::instance& inst, celestial_body& celestial_body, const patchwork& patchwork)
   {
-    auto nearest_patch_found = false;
-    auto nearest_patch_index = uint32_t(0);
-    auto nearest_patch_distance_factor = std::numeric_limits<float>::max();
-    for (auto patch_index  = 0; patch_index < patchwork.patches.size(); patch_index++)
+    auto& point_masses = ludo::data<point_mass>(inst);
+
+    auto& most_detailed_lod = celestial_body.lods[celestial_body.lods.size() - 1];
+    auto& second_most_detailed_lod = celestial_body.lods[celestial_body.lods.size() - 2];
+    auto& variant = patchwork.variants[celestial_body.lods.size() - 2];
+
+    auto test_positions = std::vector<ludo::vec3>();
+    for (auto& point_mass : point_masses)
     {
-      auto& patch = patchwork.patches[patch_index];
-      if (patch.locked || celestial_body.static_body_ids.find(patch_index) != celestial_body.static_body_ids.end())
+      if (point_mass.mass > 100.0f * gravitational_constant)
       {
         continue;
       }
 
-      auto distance_factor = ludo::length2(patch.center - to_camera);
-      if (distance_factor < nearest_patch_distance_factor)
+      auto relative_position = point_mass.transform.position - patchwork.transform.position;
+      if (ludo::length(relative_position) > celestial_body.radius * 1.25f)
       {
-        nearest_patch_found = true;
-        nearest_patch_index = patch_index;
-        nearest_patch_distance_factor = distance_factor;
+        continue;
+      }
+
+      ludo::normalize(relative_position);
+      test_positions.push_back(relative_position);
+    }
+
+    auto sections = find_ico_sections(second_most_detailed_lod.level, [&](const std::array<ludo::vec3, 3>& triangle)
+    {
+      auto center = (triangle[0] + triangle[1] + triangle[2]) / 3.0f;
+      auto range = ludo::length(triangle[1] - triangle[0]);
+
+      return std::any_of(test_positions.begin(), test_positions.end(), [&center, range](const ludo::vec3& test_position)
+      {
+        return ludo::length(test_position - center) < range;
+      });
+    });
+
+    for (auto& section : sections)
+    {
+      if (!celestial_body.static_body_ids.contains(section.first))
+      {
+        auto mesh_count = 3 * static_cast<uint32_t>(std::pow(4, most_detailed_lod.level - second_most_detailed_lod.level));
+        auto mesh = ludo::add(
+          inst,
+          ludo::mesh(),
+          "celestial-bodies"
+        );
+
+        mesh->index_buffer = ludo::allocate(mesh_count * sizeof(uint32_t));
+        mesh->vertex_buffer = ludo::allocate(mesh_count * ludo::vertex_format_p.size);
+
+        ico_section(*mesh, ludo::vertex_format_p, 0, 0, 0, most_detailed_lod.level - second_most_detailed_lod.level, ludo::offset(ludo::vertex_format_p, 'p'), section.second);
+
+        auto heights = std::vector<float>(mesh_count);
+        for (auto index = 0; index < mesh_count; index += 3)
+        {
+          auto index_0 = ludo::read<uint32_t>(mesh->index_buffer, index * sizeof(uint32_t));
+          auto index_1 = ludo::read<uint32_t>(mesh->index_buffer, (index + 1) * sizeof(uint32_t));
+          auto index_2 = ludo::read<uint32_t>(mesh->index_buffer, (index + 2) * sizeof(uint32_t));
+
+          auto position_0 = ludo::read<ludo::vec3>(mesh->vertex_buffer, index_0 * ludo::vertex_format_p.size);
+          auto position_1 = ludo::read<ludo::vec3>(mesh->vertex_buffer, index_1 * ludo::vertex_format_p.size);
+          auto position_2 = ludo::read<ludo::vec3>(mesh->vertex_buffer, index_2 * ludo::vertex_format_p.size);
+
+          if (variant.first_unique_indices[index] == index)
+          {
+            heights[index] = celestial_body.height_func(position_0);
+          }
+          if (variant.first_unique_indices[index + 1] == index + 1)
+          {
+            heights[index + 1] = celestial_body.height_func(position_1);
+          }
+          if (variant.first_unique_indices[index + 2] == index + 2)
+          {
+            heights[index + 2] = celestial_body.height_func(position_2);
+          }
+
+          auto height_0 = heights[variant.first_unique_indices[index]];
+          auto height_1 = heights[variant.first_unique_indices[index + 1]];
+          auto height_2 = heights[variant.first_unique_indices[index + 2]];
+
+          position_0 *= height_0 * celestial_body.radius;
+          position_1 *= height_1 * celestial_body.radius;
+          position_2 *= height_2 * celestial_body.radius;
+
+          ludo::write(mesh->vertex_buffer, index_0 * ludo::vertex_format_p.size, position_0);
+          ludo::write(mesh->vertex_buffer, index_1 * ludo::vertex_format_p.size, position_1);
+          ludo::write(mesh->vertex_buffer, index_2 * ludo::vertex_format_p.size, position_2);
+        }
+
+        auto body = ludo::add(
+          inst,
+          ludo::static_body{ { .transform = { .position = patchwork.transform.position } } },
+          "celestial-bodies"
+        );
+
+        auto build_shape = ludo::build_shape(inst, *body, *mesh, ludo::vertex_format_p, 0, mesh->index_buffer.size / sizeof(uint32_t));
+        ludo::execute(build_shape);
+
+        celestial_body.static_body_ids[section.first] = body->id;
+        celestial_body.static_body_mesh_ids[section.first] = mesh->id;
       }
     }
 
-    if (!nearest_patch_found)
+    for (auto static_body_iter = celestial_body.static_body_ids.begin(); static_body_iter != celestial_body.static_body_ids.end();)
     {
-      return;
-    }
-
-    auto& nearest_patch = patchwork.patches[nearest_patch_index];
-    auto distance_from_camera = ludo::length(nearest_patch.center - to_camera);
-
-    auto patch_size = ludo::length(patchwork.patches[0].center - patchwork.patches[1].center);
-    if (distance_from_camera > patch_size)
-    {
-      return;
-    }
-
-    auto body = ludo::add(
-      inst,
-      ludo::static_body{ { .transform = { .position = mesh_position } } },
-      "celestial-bodies"
-    );
-
-    nearest_patch.locked = true;
-    celestial_body.static_body_ids[nearest_patch_index] = body->id;
-
-    auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, "celestial-bodies", nearest_patch.mesh_instance_id);
-    auto mesh = ludo::get<ludo::mesh>(inst, "celestial-bodies", mesh_instance->mesh_id);
-    auto build_shape = ludo::build_shape(inst, *body, *mesh, celestial_body.format, 0, mesh_instance->index_buffer.size / sizeof(uint32_t));
-    auto task = [&nearest_patch, build_shape]()
-    {
-      auto finalizer = build_shape();
-
-      return [&nearest_patch, finalizer]()
+      if (!sections.contains(static_body_iter->first))
       {
-        finalizer();
-        nearest_patch.locked = false;
-      };
-    };
+        auto mesh = ludo::get<ludo::mesh>(inst, "celestial-bodies", celestial_body.static_body_mesh_ids[static_body_iter->first]);
 
-    if (background)
-    {
-      ludo::enqueue_background(inst, task);
-    }
-    else
-    {
-      ludo::execute(task);
-    }
-  }
+        ludo::deallocate(mesh->index_buffer);
+        ludo::deallocate(mesh->vertex_buffer);
 
-  void unload_static_body(ludo::instance& inst, celestial_body& celestial_body, const patchwork& patchwork, uint32_t patch_index)
-  {
-    if (celestial_body.static_body_ids.find(patch_index) == celestial_body.static_body_ids.end())
-    {
-      return;
-    }
+        ludo::remove(inst, mesh, "celestial-bodies");
+        celestial_body.static_body_mesh_ids.erase(static_body_iter->first);
 
-    auto static_body = ludo::get<ludo::static_body>(inst, "celestial-bodies", celestial_body.static_body_ids[patch_index]);
-    ludo::remove(inst, static_body, "celestial-bodies");
-    celestial_body.static_body_ids.erase(patch_index);
+        auto static_body = ludo::get<ludo::static_body>(inst, "celestial-bodies", static_body_iter->second);
+        ludo::remove(inst, static_body, "celestial-bodies");
+        static_body_iter = celestial_body.static_body_ids.erase(static_body_iter);
+      }
+      else
+      {
+        static_body_iter++;
+      }
+    }
   }
 }

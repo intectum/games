@@ -86,14 +86,17 @@ namespace ludo
       return;
     }
 
-    auto& meshes = data<ludo::mesh>(instance, "ludo-bullet::visualizations");
-    if (meshes.array_size == 0)
+    auto mesh = first<ludo::mesh>(instance, "ludo-bullet::visualizations");
+    if (!mesh)
     {
       return;
     }
 
+    std::memset(mesh->index_buffer.data, 0, mesh->index_buffer.size);
+    std::memset(mesh->vertex_buffer.data, 0, mesh->vertex_buffer.size);
+
     // TODO if we implement 'refs' it could be used instead of this?
-    dynamic_cast<debug_drawer*>(bullet_world.getDebugDrawer())->mesh = &meshes[0];
+    dynamic_cast<debug_drawer*>(bullet_world.getDebugDrawer())->mesh = mesh;
     bullet_world.debugDrawWorld();
   }
 

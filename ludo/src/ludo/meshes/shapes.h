@@ -115,6 +115,11 @@ namespace ludo
   LUDO_API std::pair<uint32_t, uint32_t> sphere_ico_counts(const shape_options& options = {});
 
   ///
+  /// Retrieves the base faces of an icosahedron-based sphere.
+  /// \return The base faces of an icosahedron-based sphere.
+  LUDO_API const std::array<std::array<ludo::vec3, 3>, 20>& sphere_ico_faces();
+
+  ///
   /// Builds a UV sphere within a mesh.
   /// \param mesh The mesh to build the sphere in.
   /// \param format The vertex format of the mesh.

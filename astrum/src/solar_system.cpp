@@ -55,16 +55,16 @@ namespace astrum
     add_celestial_body(
       inst,
       celestial_body
-        {
-          .name = "sol",
-          .radius = sol_radius,
-          .mass = sol_mass,
-          .format = ludo::vertex_format_p,
-          .height_func = sol_height,
-          .color_func = sol_color,
-          .tree_func = sol_tree
-        },
-      sol_lods,
+      {
+        .name = "sol",
+        .radius = sol_radius,
+        .mass = sol_mass,
+        .format = ludo::vertex_format_p,
+        .lods = sol_lods,
+        .height_func = sol_height,
+        .color_func = sol_color,
+        .tree_func = sol_tree
+      },
       {},
       ludo::vec3_zero
     );
@@ -72,16 +72,16 @@ namespace astrum
     add_celestial_body(
       inst,
       celestial_body
-        {
-          .name = "terra",
-          .radius = terra_radius,
-          .mass = terra_mass,
-          .format = ludo::vertex_format_pnc,
-          .height_func = terra_height,
-          .color_func = terra_color,
-          .tree_func = terra_tree
-        },
-      terra_lods,
+      {
+        .name = "terra",
+        .radius = terra_radius,
+        .mass = terra_mass,
+        .format = ludo::vertex_format_pnc,
+        .lods = terra_lods,
+        .height_func = terra_height,
+        .color_func = terra_color,
+        .tree_func = terra_tree
+      },
       { .position = terra_initial_position },
       terra_initial_velocity
     );
@@ -89,16 +89,16 @@ namespace astrum
     add_celestial_body(
       inst,
       celestial_body
-        {
-          .name = "luna",
-          .radius = luna_radius,
-          .mass = luna_mass,
-          .format = ludo::vertex_format_pn,
-          .height_func = luna_height,
-          .color_func = luna_color,
-          .tree_func = luna_tree
-        },
-      luna_lods,
+      {
+        .name = "luna",
+        .radius = luna_radius,
+        .mass = luna_mass,
+        .format = ludo::vertex_format_pn,
+        .lods = luna_lods,
+        .height_func = luna_height,
+        .color_func = luna_color,
+        .tree_func = luna_tree
+      },
       { .position = luna_initial_position },
       luna_initial_velocity
     );
@@ -156,7 +156,7 @@ namespace astrum
 
     ludo::add<ludo::script, std::vector<std::string>>(inst, sync_mesh_instances_with_point_masses, { "people", "spaceships" });
 
-    ludo::add<ludo::script, std::vector<std::vector<lod>>>(inst, update_celestial_bodies, { sol_lods, terra_lods, luna_lods });
+    ludo::add<ludo::script>(inst, update_celestial_bodies);
     ludo::add<ludo::script>(inst, update_patchworks);
     ludo::add<ludo::script>(inst, sync_light_with_sol);
   }

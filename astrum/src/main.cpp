@@ -20,13 +20,14 @@ int main()
 
   auto inst = ludo::instance();
 
+  auto max_terrain_chunks = 25;
   auto post_processing_rectangle_counts = ludo::rectangle_counts();
   auto sol_mesh_counts = astrum::celestial_body_counts(astrum::sol_lods);
   auto terra_mesh_counts = astrum::celestial_body_counts(astrum::terra_lods);
   auto luna_mesh_counts = astrum::celestial_body_counts(astrum::luna_lods);
   auto person_mesh_counts = ludo::import_counts("assets/models/minifig.dae");
   auto spaceship_mesh_counts = ludo::import_counts("assets/models/spaceship.obj");
-  auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { 10000000, 10000000 };
+  auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_chunks * 48 * 2, max_terrain_chunks * 48 * 2 };
 
   auto max_rendered_instances =
     1 + // post-processing rectangle
@@ -80,7 +81,7 @@ int main()
   ludo::allocate<ludo::render_program>(inst, 12);
   ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::shader>(inst, 19);
-  ludo::allocate<ludo::static_body>(inst, 25); // TODO bit of a guess really since they're loaded dynamically
+  ludo::allocate<ludo::static_body>(inst, max_terrain_chunks);
   ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
 
@@ -191,7 +192,7 @@ int main()
 
   ludo::add<ludo::script>(inst, ludo::wait_for_render);
 
-  //ludo::add<ludo::script>(inst, astrum::print_timings);
+  ludo::add<ludo::script>(inst, astrum::print_timings);
 
   std::cout << std::fixed << std::setprecision(2) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
 
