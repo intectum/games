@@ -11,14 +11,14 @@
 
 namespace astrum
 {
-  void build_variants(patchwork& patchwork, const std::vector<lod>& lods);
-  void build_patches(celestial_body& celestial_body, patchwork& patchwork, const std::vector<lod>& lods);
+  void build_variants(const celestial_body& celestial_body, patchwork& patchwork);
+  void build_patches(const celestial_body& celestial_body, patchwork& patchwork);
   std::vector<ludo::vec3> build_positions(uint32_t index, uint32_t patch_divisions, uint32_t divisions);
   void raw_positions(std::vector<ludo::vec3>& positions, const std::array<ludo::vec3, 3>& corner_positions, uint32_t divisions);
   int32_t nearest_celestial_body_index(const ludo::vec3& target_position, ludo::array_buffer<point_mass>& point_masses);
-  std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> build_variant_index(const std::vector<lod>& lods, const ludo::vec3& camera_position, const ludo::vec3& position);
-  void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh);
-  void sew_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t anchor_patch_index, uint32_t patch_index);
+  std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> build_variant_index(const celestial_body& celestial_body, const ludo::vec3& camera_position, const ludo::vec3& position);
+  void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh);
+  void sew_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index);
   const std::vector<uint32_t>& border_indices(const patchwork& patchwork, uint32_t patch_index, uint32_t adjacent_patch_index);
   void update_static_bodies(ludo::instance& inst, celestial_body& celestial_body, const patchwork& patchwork);
 
@@ -75,18 +75,18 @@ namespace astrum
       return std::pair<uint32_t, uint32_t> { count, count };
     };
 
-    auto load = [&inst, init, index](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
+    auto load = [&inst, index](const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
     {
       auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
 
-      load_patch(inst, celestial_body, patchwork, init.lods, patch_index, variant_index, mesh);
+      load_patch(inst, celestial_body, patchwork, patch_index, variant_index, mesh);
     };
 
-    auto sew = [&inst, init, index](const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)
+    auto sew = [&inst, index](const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)
     {
       auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[index];
 
-      sew_patch(inst, celestial_body, patchwork, init.lods, anchor_patch_index, patch_index);
+      sew_patch(inst, celestial_body, patchwork, anchor_patch_index, patch_index);
     };
 
     auto on_load = [&inst, index](const patchwork& patchwork, uint32_t patch_index)
@@ -136,7 +136,7 @@ namespace astrum
     {
       .render_program_id = render_program->id,
       .transform = initial_transform,
-      .variant_index = build_variant_index(celestial_body->lods, camera_position, initial_transform.position),
+      .variant_index = build_variant_index(*celestial_body, camera_position, initial_transform.position),
       .counts = counts,
       .load = load,
       .sew = sew,
@@ -154,8 +154,8 @@ namespace astrum
     }
     else
     {
-      build_variants(patchwork_init, celestial_body->lods);
-      build_patches(*celestial_body, patchwork_init, celestial_body->lods);
+      build_variants(*celestial_body, patchwork_init);
+      build_patches(*celestial_body, patchwork_init);
 
       auto pmesh_ostream = std::ofstream(patchwork_file_name.str(), std::ios::binary);
       save(patchwork_init, pmesh_ostream);
@@ -181,8 +181,6 @@ namespace astrum
   {
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
-    auto& solar_system = *ludo::first<astrum::solar_system>(inst);
-
     auto& linear_octrees = ludo::data<ludo::linear_octree>(inst, "celestial-bodies");
 
     auto& celestial_bodies = ludo::data<celestial_body>(inst, "celestial-bodies");
@@ -199,14 +197,14 @@ namespace astrum
         auto& patchwork = patchworks[index];
         auto& point_mass = point_masses[index];
 
-        auto movement = (point_mass.transform.position - solar_system.center_delta) - patchwork.transform.position;
+        auto movement = point_mass.transform.position - patchwork.transform.position;
         if (ludo::length2(movement) > 0.0f)
         {
           ludo::move(linear_octrees[index], movement);
         }
 
         patchwork.transform = point_mass.transform;
-        patchwork.variant_index = build_variant_index(celestial_bodies[index].lods, camera_position, patchwork.transform.position);
+        patchwork.variant_index = build_variant_index(celestial_bodies[index], camera_position, patchwork.transform.position);
       }
 
       return []() {};
@@ -232,12 +230,12 @@ namespace astrum
     return { total, unique };
   }
 
-  void build_variants(patchwork& patchwork, const std::vector<lod>& lods)
+  void build_variants(const celestial_body& celestial_body, patchwork& patchwork)
   {
-    auto& lowest_detail_lod = lods[0];
-    patchwork.variants.reserve(lods.size());
+    auto& lowest_detail_lod = celestial_body.lods[0];
+    patchwork.variants.reserve(celestial_body.lods.size());
 
-    for (auto& lod : lods)
+    for (auto& lod : celestial_body.lods)
     {
       auto positions = std::vector<ludo::vec3>();
       raw_positions(positions, { ludo::vec3_zero, ludo::vec3_unit_x, ludo::vec3_unit_y }, lod.level - lowest_detail_lod.level);
@@ -308,9 +306,9 @@ namespace astrum
     }
   }
 
-  void build_patches(celestial_body& celestial_body, patchwork& patchwork, const std::vector<lod>& lods)
+  void build_patches(const celestial_body& celestial_body, patchwork& patchwork)
   {
-    auto& lowest_detail_lod = lods[0];
+    auto& lowest_detail_lod = celestial_body.lods[0];
     auto positions = std::unordered_map<uint32_t, std::vector<ludo::vec3>>();
 
     auto patch_count = 20 * static_cast<uint32_t>(std::pow(4, lowest_detail_lod.level - 1));
@@ -439,9 +437,9 @@ namespace astrum
     return central_index;
   }
 
-  std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> build_variant_index(const std::vector<lod>& lods, const ludo::vec3& camera_position, const ludo::vec3& position)
+  std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> build_variant_index(const celestial_body& celestial_body, const ludo::vec3& camera_position, const ludo::vec3& position)
   {
-    return [lods, camera_position, position](const patchwork& patchwork, uint32_t patch_index)
+    return [celestial_body, camera_position, position](const patchwork& patchwork, uint32_t patch_index)
     {
       auto& patch = patchwork.patches[patch_index];
 
@@ -456,9 +454,9 @@ namespace astrum
 
       auto distance_from_camera = ludo::length(to_camera);
 
-      for (auto variant_index = uint32_t(lods.size() - 1); variant_index < lods.size(); variant_index--)
+      for (auto variant_index = uint32_t(celestial_body.lods.size() - 1); variant_index < celestial_body.lods.size(); variant_index--)
       {
-        if (lods[variant_index].max_distance == 0.0f || distance_from_camera < lods[variant_index].max_distance)
+        if (celestial_body.lods[variant_index].max_distance == 0.0f || distance_from_camera < celestial_body.lods[variant_index].max_distance)
         {
           return variant_index;
         }
@@ -470,7 +468,7 @@ namespace astrum
     };
   }
 
-  void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
+  void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
   {
     auto position_offset = ludo::offset(celestial_body.format, 'p');
     auto normal_offset = ludo::offset(celestial_body.format, 'n');
@@ -479,8 +477,8 @@ namespace astrum
     auto has_colors = ludo::count(celestial_body.format, 'c') > 0;
 
     auto& variant = patchwork.variants[variant_index];
-    auto& lowest_detail_lod = lods[0];
-    auto& lod = lods[variant_index];
+    auto& lowest_detail_lod = celestial_body.lods[0];
+    auto& lod = celestial_body.lods[variant_index];
     auto index_count = mesh.index_buffer.size / sizeof(uint32_t);
     auto heights = std::vector<float>(index_count);
 
@@ -545,7 +543,7 @@ namespace astrum
   }
 
   // TODO currently this makes no attempt to update normals, should it?
-  void sew_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, const std::vector<lod>& lods, uint32_t anchor_patch_index, uint32_t patch_index)
+  void sew_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)
   {
     auto& anchor_patch = patchwork.patches[anchor_patch_index];
     auto& patch = patchwork.patches[patch_index];
@@ -588,7 +586,7 @@ namespace astrum
     }
     else
     {
-      auto lod_level_diff = lods[patch.variant_index].level - lods[anchor_patch.variant_index].level;
+      auto lod_level_diff = celestial_body.lods[patch.variant_index].level - celestial_body.lods[anchor_patch.variant_index].level;
       auto divisions_per_anchor = std::pow(lod_level_diff - 1, 2) + lod_level_diff;
 
       // Each mid-point along the edge has 3 indices referring to it (since 3 triangles meet at them). The two end-points have only 1 index referring to them.

@@ -149,8 +149,7 @@ namespace ludo
   /// \param octree The linear octree to remove the element from.
   /// \param element The element to remove from the linear octree.
   /// \param position The position of the element.
-  /// \return True if the the element was removed, false otherwise.
-  LUDO_API bool remove(linear_octree& octree, const mesh_instance& element, const vec3& position);
+  LUDO_API void remove(linear_octree& octree, const mesh_instance& element, const vec3& position);
 
   ///
   /// Moves a linear octree.

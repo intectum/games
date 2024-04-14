@@ -94,6 +94,7 @@ namespace ludo
 
     buffer.data = nullptr;
     buffer.size = 0;
+    buffer.free.clear();
   }
 
   buffer allocate(heap_buffer& buffer, uint64_t size, uint8_t byte_alignment)

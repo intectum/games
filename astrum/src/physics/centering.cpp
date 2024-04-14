@@ -10,6 +10,7 @@ namespace astrum
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
     auto& static_bodies = ludo::data<ludo::static_body>(inst);
 
+    auto& patchworks = ludo::data<patchwork>(inst);
     auto& point_masses = ludo::data<point_mass>(inst);
     auto& solar_system = *ludo::first<astrum::solar_system>(inst);
 
@@ -39,6 +40,11 @@ namespace astrum
     {
       body.transform.position += solar_system.center_delta;
       ludo::push(body);
+    }
+
+    for (auto& patchwork: patchworks)
+    {
+      patchwork.transform.position += solar_system.center_delta;
     }
 
     for (auto& point_mass : point_masses)

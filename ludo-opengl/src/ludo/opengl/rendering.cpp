@@ -203,7 +203,7 @@ namespace ludo
         }
       }
     }
-    else if (exists<mesh>(instance))
+    else if (exists<mesh_instance>(instance))
     {
       auto& mesh_instances = data<mesh_instance>(instance);
       for (auto& mesh_instance : mesh_instances)

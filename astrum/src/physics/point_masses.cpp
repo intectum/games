@@ -100,10 +100,10 @@ namespace astrum
 
         mesh_instance.transform = new_transform;
 
-        auto old_position = ludo::position(old_transform);
+        auto old_position = ludo::position(old_transform) + solar_system.center_delta;
         auto new_position = ludo::position(new_transform);
 
-        auto movement = (new_position - solar_system.center_delta) - old_position;
+        auto movement = new_position - old_position;
         if (ludo::length2(movement) > 0.0f)
         {
           ludo::remove(linear_octree, mesh_instance, old_position);

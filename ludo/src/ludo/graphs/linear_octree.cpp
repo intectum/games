@@ -9,8 +9,10 @@ namespace ludo
 {
   void find(std::vector<mesh_instance>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
   std::array<ludo::aabb, 8> calculate_child_bounds(const aabb& bounds);
+  std::array<uint32_t, 3> to_octant_coordinates(uint32_t key);
+  std::array<uint32_t, 3> to_octant_coordinates(const linear_octree& octree, const vec3& position);
+  uint32_t to_key(const std::array<uint32_t, 3>& octant_coordinates);
   uint32_t to_key(const linear_octree& octree, const vec3& position);
-  uint32_t to_key(uint32_t x, uint32_t y, uint32_t z);
 
   template<>
   linear_octree* add(instance& instance, const linear_octree& init, const std::string& partition)
@@ -21,13 +23,13 @@ namespace ludo
     octree->id = next_id++;
 
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree->depth));
-    for (auto x = 0; x < octant_count_1d; x++)
+    for (auto x = uint32_t(0); x < octant_count_1d; x++)
     {
-      for (auto y = 0; y < octant_count_1d; y++)
+      for (auto y = uint32_t(0); y < octant_count_1d; y++)
       {
-        for (auto z = 0; z < octant_count_1d; z++)
+        for (auto z = uint32_t(0); z < octant_count_1d; z++)
         {
-          octree->octants[to_key(x, y, z)] = std::vector<mesh_instance>();
+          octree->octants[to_key({ x, y, z })] = std::vector<mesh_instance>();
         }
       }
     }
@@ -40,19 +42,60 @@ namespace ludo
     octree.octants[to_key(octree, position)].emplace_back(element);
   }
 
-  bool remove(linear_octree& octree, const mesh_instance& element, const vec3& position)
+  void remove(linear_octree& octree, const mesh_instance& element, const vec3& position)
   {
-    auto& elements = octree.octants[to_key(octree, position)];
-    for (auto element_iter = elements.begin(); element_iter < elements.end(); element_iter++)
+    auto octant_coordinates = to_octant_coordinates(octree, position);
+
+    auto& elements = octree.octants[to_key(octant_coordinates)];
+    auto element_iter = std::find_if(elements.begin(), elements.end(), [&](const mesh_instance& the_mesh_instance) { return the_mesh_instance.id == element.id; });
+    if (element_iter != elements.end())
     {
-      if (element_iter->id == element.id)
+      elements.erase(element_iter);
+      return;
+    }
+
+    // Search adjacent octants in case of floating point precision errors
+    auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree.depth));
+    auto offsets = std::array<int32_t, 3> { -1, 0, 1 };
+    for (auto offset_x : offsets)
+    {
+      if ((octant_coordinates[0] == 0 && offset_x == -1) || octant_coordinates[0] == octant_count_1d - 1 && offset_x == 1)
       {
-        elements.erase(element_iter);
-        return true;
+        continue;
+      }
+
+      for (auto offset_y : offsets)
+      {
+        if ((octant_coordinates[1] == 0 && offset_y == -1) || octant_coordinates[1] == octant_count_1d - 1 && offset_y == 1)
+        {
+          continue;
+        }
+
+        for (auto offset_z : offsets)
+        {
+          if ((octant_coordinates[2] == 0 && offset_z == -1) || octant_coordinates[2] == octant_count_1d - 1 && offset_z == 1)
+          {
+            continue;
+          }
+
+          auto adjacent_octant_coordinates = std::array<uint32_t, 3> { octant_coordinates[0] + offset_x, octant_coordinates[1] + offset_y, octant_coordinates[2] + offset_z };
+          if (adjacent_octant_coordinates == octant_coordinates)
+          {
+            continue;
+          }
+
+          auto& adjacent_elements = octree.octants[to_key(adjacent_octant_coordinates)];
+          auto adjacent_element_iter = std::find_if(adjacent_elements.begin(), adjacent_elements.end(), [&](const mesh_instance& the_mesh_instance) { return the_mesh_instance.id == element.id; });
+          if (adjacent_element_iter != adjacent_elements.end())
+          {
+            adjacent_elements.erase(adjacent_element_iter);
+            return;
+          }
+        }
       }
     }
 
-    return false;
+    assert(false && "element not found");
   }
 
   void move(linear_octree& octree, const vec3& movement)
@@ -129,7 +172,7 @@ namespace ludo
 
         if (test(bounds) != -1)
         {
-          auto& octant_meshes = octree.octants.at(to_key(x, y, z));
+          auto& octant_meshes = octree.octants.at(to_key({ x, y, z }));
           task_mesh_instances.insert(task_mesh_instances.end(), octant_meshes.begin(), octant_meshes.end());
         }
       }
@@ -202,7 +245,22 @@ namespace ludo
     };
   }
 
+  uint32_t to_key(const std::array<uint32_t, 3>& octant_coordinates)
+  {
+    return octant_coordinates[0] | octant_coordinates[1] << 10 | octant_coordinates[2] << 20;
+  }
+
   uint32_t to_key(const linear_octree& octree, const vec3& position)
+  {
+    return to_key(to_octant_coordinates(octree, position));
+  }
+
+  std::array<uint32_t, 3> to_octant_coordinates(uint32_t key)
+  {
+    return { key & 0x3FF, (key >> 10) & 0x3FF, (key >> 20) & 0xFFF };
+  }
+
+  std::array<uint32_t, 3> to_octant_coordinates(const linear_octree& octree, const vec3& position)
   {
     assert(position >= octree.bounds.min && position <= octree.bounds.max && "out of bounds!");
 
@@ -213,15 +271,6 @@ namespace ludo
     octant_coordinates[1] = std::floor(octant_coordinates[1]);
     octant_coordinates[2] = std::floor(octant_coordinates[2]);
 
-    return to_key(
-      static_cast<uint32_t>(octant_coordinates[0]),
-      static_cast<uint32_t>(octant_coordinates[1]),
-        static_cast<uint32_t>(octant_coordinates[2])
-    );
-  }
-
-  uint32_t to_key(uint32_t x, uint32_t y, uint32_t z)
-  {
-    return x | y << 10 | z << 20;
+    return { static_cast<uint32_t>(octant_coordinates[0]), static_cast<uint32_t>(octant_coordinates[1]), static_cast<uint32_t>(octant_coordinates[2]) };
   }
 }
