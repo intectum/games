@@ -146,9 +146,9 @@ vec2 ray_sphere_intersection(vec3 ray_origin, vec3 ray_direction, vec3 sphere_ce
 
 vec2 square_tex_coord(vec2 tex_coord)
 {
-  float scale = 1280.0;
-  float x = tex_coord.x * 1280; // TODO
-  float y = tex_coord.y * 720; // TODO
+  float scale = 1280.0; // TODO window width
+  float x = tex_coord.x * 1280; // TODO window width
+  float y = tex_coord.y * 720; // TODO window height
   return vec2(x / scale, y / scale);
 }
 
@@ -269,7 +269,11 @@ void main()
     // Soften banding effect.
     vec4 blue_noise = texture(blue_noise_sampler, square_tex_coord(point.tex_coords) * dither_scale);
     blue_noise = (blue_noise - 0.5) * dither_strength;
-    color += blue_noise;
+
+    float brightness = (color.r + color.g + color.b) / 3;
+
+    // Scale blue_noise by brightness as the pattern is very visible when the atmosphere effect is very dark
+    color += blue_noise * brightness * 50.0;
 
     // TODO combine reflected light too...
   }

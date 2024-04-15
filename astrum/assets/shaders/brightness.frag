@@ -34,5 +34,5 @@ void main()
   // https://en.wikipedia.org/wiki/Grayscale#Luma_coding_in_video_systems
   float brightness = dot(base_color.rgb, vec3(0.2126, 0.7152, 0.0722));
 
-  color = base_color * brightness / 3.0;
+  color = clamp(base_color * brightness / 3.0, 0.0, 1.0);
 }
