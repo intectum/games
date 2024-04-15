@@ -1,10 +1,11 @@
-- Black square flashing on screen. Usually on sun. Something to do with bloom effect?
 - Build render commands on GPU
 - Deferred rendering
 - Parallel rendering
 - Occlusion culling
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
 - Vertex types? Only trouble could be things like render and import which need to know the vertex info
-- remove all global state from ludo
-- switch to bazel
-- remove dynamic containers from data types stored in the instance
+- rRemove all global state from ludo
+- Switch to bazel
+- Remove dynamic containers from data types stored in the instance
+- Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
+- Fix slight head movement in spaceship when rolling

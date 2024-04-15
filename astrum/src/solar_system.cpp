@@ -135,29 +135,27 @@ namespace astrum
     ludo::add<ludo::script>(inst, ludo::finalize_background);
 
     ludo::add<ludo::script>(inst, center_universe);
-
     ludo::add<ludo::script, float, float>(inst, ludo::simulate_physics, 1.0f / 60.0f, game_speed);
-
     ludo::add<ludo::script>(inst, simulate_gravity);
     ludo::add<ludo::script>(inst, relativize_to_nearest_celestial_body);
     ludo::add<ludo::script, std::vector<std::string>>(inst, simulate_point_mass_physics, { "people", "spaceships" });
 
-    if (show_paths)
-    {
-      ludo::add<ludo::script>(inst, update_prediction_paths);
-    }
+    ludo::add<ludo::script>(inst, update_celestial_bodies);
+    ludo::add<ludo::script>(inst, update_patchworks);
+    ludo::add<ludo::script>(inst, sync_light_with_sol);
+
+    //ludo::add<ludo::script, uint32_t>(inst, stream_trees, 1);
 
     ludo::add<ludo::script>(inst, simulate_people);
     ludo::add<ludo::script>(inst, simulate_spaceships);
 
     ludo::add<ludo::script>(inst, control_game);
 
-    //ludo::add<ludo::script, uint32_t>(inst, stream_trees, 1);
-
     ludo::add<ludo::script, std::vector<std::string>>(inst, sync_mesh_instances_with_point_masses, { "people", "spaceships" });
 
-    ludo::add<ludo::script>(inst, update_celestial_bodies);
-    ludo::add<ludo::script>(inst, update_patchworks);
-    ludo::add<ludo::script>(inst, sync_light_with_sol);
+    if (show_paths)
+    {
+      ludo::add<ludo::script>(inst, update_prediction_paths);
+    }
   }
 }
