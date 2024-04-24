@@ -109,13 +109,7 @@ namespace astrum
       ludo::remove(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
     };
 
-    auto vertex_format_options = ludo::vertex_format_options
-    {
-      .normals = ludo::count(celestial_body->format, 'n') > 0,
-      .colors = ludo::count(celestial_body->format, 'c') > 0
-    };
-
-    auto render_program = ludo::add(inst, ludo::render_program(), vertex_format_options, "celestial-bodies");
+    auto render_program = ludo::add(inst, ludo::render_program(), celestial_body->format, "celestial-bodies");
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body->radius * 1.1f, celestial_body->radius * 1.1f, celestial_body->radius * 1.1f };
     ludo::add(
@@ -470,19 +464,13 @@ namespace astrum
 
   void load_patch(ludo::instance& inst, const celestial_body& celestial_body, const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)
   {
-    auto position_offset = ludo::offset(celestial_body.format, 'p');
-    auto normal_offset = ludo::offset(celestial_body.format, 'n');
-    auto color_offset = ludo::offset(celestial_body.format, 'c');
-    auto has_normals = ludo::count(celestial_body.format, 'n') > 0;
-    auto has_colors = ludo::count(celestial_body.format, 'c') > 0;
-
     auto& variant = patchwork.variants[variant_index];
     auto& lowest_detail_lod = celestial_body.lods[0];
     auto& lod = celestial_body.lods[variant_index];
     auto index_count = mesh.index_buffer.size / sizeof(uint32_t);
     auto heights = std::vector<float>(index_count);
 
-    ico_section(mesh, celestial_body.format, 0, patch_index, lowest_detail_lod.level, lod.level, position_offset);
+    ico_section(mesh, celestial_body.format, 0, patch_index, lowest_detail_lod.level, lod.level, celestial_body.format.position_offset);
 
     for (auto index = 0; index < index_count; index += 3)
     {
@@ -490,9 +478,9 @@ namespace astrum
       auto index_1 = ludo::read<uint32_t>(mesh.index_buffer, (index + 1) * sizeof(uint32_t));
       auto index_2 = ludo::read<uint32_t>(mesh.index_buffer, (index + 2) * sizeof(uint32_t));
 
-      auto position_0 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_0 * celestial_body.format.size + position_offset);
-      auto position_1 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_1 * celestial_body.format.size + position_offset);
-      auto position_2 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_2 * celestial_body.format.size + position_offset);
+      auto position_0 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_0 * celestial_body.format.size + celestial_body.format.position_offset);
+      auto position_1 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_1 * celestial_body.format.size + celestial_body.format.position_offset);
+      auto position_2 = ludo::read<ludo::vec3>(mesh.vertex_buffer, index_2 * celestial_body.format.size + celestial_body.format.position_offset);
 
       auto position_0_normalized = position_0;
 
@@ -517,27 +505,27 @@ namespace astrum
       position_1 *= height_1 * celestial_body.radius;
       position_2 *= height_2 * celestial_body.radius;
 
-      ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + position_offset, position_0);
-      ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + position_offset, position_1);
-      ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + position_offset, position_2);
+      ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + celestial_body.format.position_offset, position_0);
+      ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + celestial_body.format.position_offset, position_1);
+      ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + celestial_body.format.position_offset, position_2);
 
       auto normal = ludo::cross(position_1 - position_0, position_2 - position_0);
       ludo::normalize(normal);
 
-      if (has_normals)
+      if (celestial_body.format.has_normal)
       {
-        ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + normal_offset, normal);
-        ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + normal_offset, normal);
-        ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + normal_offset, normal);
+        ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + celestial_body.format.normal_offset, normal);
+        ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + celestial_body.format.normal_offset, normal);
+        ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + celestial_body.format.normal_offset, normal);
       }
 
-      if (has_colors)
+      if (celestial_body.format.has_color)
       {
         auto color = celestial_body.color_func(position_0_normalized[1], { height_0, height_1, height_2 }, ludo::dot(normal, position_0_normalized));
 
-        ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + color_offset, color);
-        ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + color_offset, color);
-        ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + color_offset, color);
+        ludo::write(mesh.vertex_buffer, index_0 * celestial_body.format.size + celestial_body.format.color_offset, color);
+        ludo::write(mesh.vertex_buffer, index_1 * celestial_body.format.size + celestial_body.format.color_offset, color);
+        ludo::write(mesh.vertex_buffer, index_2 * celestial_body.format.size + celestial_body.format.color_offset, color);
       }
     }
   }
@@ -552,13 +540,11 @@ namespace astrum
 
     assert(anchor_patch.variant_index <= patch.variant_index && "anchor patch LOD level must be equal or less than the aligning patch LOD level");
 
-    auto position_offset = offset(celestial_body.format, 'p');
-
     auto& anchor_border_indices = border_indices(patchwork, anchor_patch_index, patch_index);
     auto& aligning_border_indices = border_indices(patchwork, patch_index, anchor_patch_index);
 
-    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + position_offset);
-    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh_instance.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + position_offset);
+    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
+    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh_instance.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
     auto reverse_borders = !ludo::near(anchor_border_position_0, aligning_border_position_0);
 
     if (anchor_patch.variant_index == patch.variant_index)
@@ -575,11 +561,11 @@ namespace astrum
           anchor_index_0 = anchor_border_indices.size() - 1 - anchor_index_0;
         }
 
-        auto position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
+        auto position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
 
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
+        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
 
         anchor_index += 3;
       }
@@ -603,25 +589,25 @@ namespace astrum
           anchor_index_1 = anchor_border_indices.size() - 1 - anchor_index_1;
         }
 
-        auto start_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + position_offset);
-        auto end_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + position_offset);
+        auto start_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
+        auto end_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + celestial_body.format.position_offset);
         auto alignment_vector = end_position - start_position;
 
         for (auto division_index = 0; division_index < divisions_per_anchor; division_index++)
         {
           auto alignment_position = start_position + alignment_vector * static_cast<float>(division_index + 1) / static_cast<float>(divisions_per_anchor + 1);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
         }
 
         anchor_index += 3;
 
         if (anchor_index < anchor_border_indices.size() - 1)
         {
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
+          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
         }
       }
     }
@@ -695,7 +681,7 @@ namespace astrum
         mesh->index_buffer = ludo::allocate(mesh_count * sizeof(uint32_t));
         mesh->vertex_buffer = ludo::allocate(mesh_count * ludo::vertex_format_p.size);
 
-        ico_section(*mesh, ludo::vertex_format_p, 0, 0, 0, most_detailed_lod.level - second_most_detailed_lod.level, ludo::offset(ludo::vertex_format_p, 'p'), section.second);
+        ico_section(*mesh, ludo::vertex_format_p, 0, 0, 0, most_detailed_lod.level - second_most_detailed_lod.level, ludo::vertex_format_p.position_offset, section.second);
 
         auto heights = std::vector<float>(mesh_count);
         for (auto index = 0; index < mesh_count; index += 3)

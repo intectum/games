@@ -262,13 +262,6 @@ namespace ludo
   /// \return The angle.
   float angle_between(const vec2& a, const vec2& b);
   float angle_between(const vec3& a, const vec3& b);
-
-  ///
-  /// Projects a vector onto a plane.
-  /// \param vector The vector to project.
-  /// \param target_normal The normal to the target plane (must be unit length).
-  /// \return The projection.
-  vec3 project_onto_plane(const vec3& vector, const vec3& target_normal);
 }
 
 #endif /* LUDO_MATH_VEC_H_ */

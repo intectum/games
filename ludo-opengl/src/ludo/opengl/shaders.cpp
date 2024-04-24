@@ -47,21 +47,21 @@ namespace ludo
     return shader;
   }
 
-  shader* add(instance& instance, const shader& init, shader_type type, const vertex_format_options& options, const std::string& partition)
+  shader* add(instance& instance, const shader& init, shader_type type, const vertex_format& format, const std::string& partition)
   {
     if (type == shader_type::VERTEX)
     {
       auto code = std::stringstream();
-      write_header(code, options);
-      write_types(code, options);
-      write_inputs(code, options);
-      write_buffers(code, options);
+      write_header(code, format);
+      write_types(code, format);
+      write_inputs(code, format);
+      write_buffers(code, format);
       code << std::endl;
       code << "// Output" << std::endl;
       code << std::endl;
       code << "out point_t point;" << std::endl;
       code << "out sampler2D sampler;" << std::endl;
-      write_vertex_main(code, options);
+      write_vertex_main(code, format);
 
       return add(instance, init, type, code, partition);
     }
@@ -69,20 +69,20 @@ namespace ludo
     if (type == shader_type::FRAGMENT)
     {
       auto code = std::stringstream();
-      write_header(code, options);
-      write_types(code, options);
+      write_header(code, format);
+      write_types(code, format);
       code << std::endl;
       code << "// Input" << std::endl;
       code << std::endl;
       code << "in point_t point;" << std::endl;
       code << "in flat sampler2D sampler;" << std::endl;
-      write_buffers(code, options);
+      write_buffers(code, format);
       code << std::endl;
       code << "// Output" << std::endl;
       code << std::endl;
       code << "out vec4 color;" << std::endl;
-      write_lighting_functions(code, options);
-      write_fragment_main(code, options);
+      write_lighting_functions(code, format);
+      write_fragment_main(code, format);
 
       return add(instance, init, type, code, partition);
     }

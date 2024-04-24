@@ -89,12 +89,6 @@ namespace ludo
 
   void rectangle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position_bottom_left, const vec3& position_delta_right, const vec3& position_delta_top, const vec2& tex_coord_min, const vec2& tex_coord_delta, bool unique_only, bool no_normal_check)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto tex_coord_offset = offset(format, 't');
-    auto has_normals = count(format, 'n') > 0;
-    auto has_tex_coords = count(format, 't') > 0;
-
     auto normal = cross(position_delta_right, position_delta_top);
     normalize(normal);
 
@@ -102,12 +96,12 @@ namespace ludo
     auto tex_coord_top_left = tex_coord_min + vec2 { 0.0f, tex_coord_delta[1] };
     auto tex_coord_top_right = tex_coord_min + tex_coord_delta;
 
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left, position_offset, normal, has_normals, normal_offset, tex_coord_min, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left + position_delta_right, position_offset, normal, has_normals, normal_offset, tex_coord_bottom_right, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left + position_delta_top, position_offset, normal, has_normals, normal_offset, tex_coord_top_left, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left, normal, tex_coord_min, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left + position_delta_right, normal, tex_coord_bottom_right, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left + position_delta_top, normal, tex_coord_top_left, unique_only, no_normal_check);
 
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left + position_delta_right, position_offset, normal, has_normals, normal_offset, tex_coord_bottom_right, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left + position_delta_right + position_delta_top, position_offset, normal, has_normals, normal_offset, tex_coord_top_right, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
-    write_vertex(mesh, index_index, vertex_index, format.size, position_bottom_left + position_delta_top, position_offset, normal, has_normals, normal_offset, tex_coord_top_left, has_tex_coords, tex_coord_offset, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left + position_delta_right, normal, tex_coord_bottom_right, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left + position_delta_right + position_delta_top, normal, tex_coord_top_right, unique_only, no_normal_check);
+    write_vertex(mesh, format, index_index, vertex_index, position_bottom_left + position_delta_top, normal, tex_coord_top_left, unique_only, no_normal_check);
   }
 }

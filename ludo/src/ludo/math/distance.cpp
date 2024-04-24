@@ -6,11 +6,6 @@
 
 namespace ludo
 {
-  float distance_point_to_point(const vec3& a, const vec3& b)
-  {
-    return length(b - a);
-  }
-
   /*
    * The equation for the distance from a point to a line:
    *     distance = ||(a - p) - ((a - p).n)n||
@@ -21,7 +16,7 @@ namespace ludo
    * Reference:
    *     http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
    */
-  float distance_point_to_line_segment(const vec3& point, const vec3* line_segment)
+  float distance_point_to_line_segment(const vec3& point, const std::array<vec3, 2>& line_segment)
   {
     auto n = line_segment[1] - line_segment[0];
     auto a_minus_p = line_segment[0] - point;

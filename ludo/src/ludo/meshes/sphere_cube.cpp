@@ -14,10 +14,6 @@ namespace ludo
     assert(options.divisions >= 2 && "must have at-least 2 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
 
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto has_normals = count(format, 'n') > 0;
-
     auto [ vertex_count, index_count ] = sphere_cube_counts(options);
     auto radius = options.dimensions[0] / 2.0f;
 
@@ -31,7 +27,7 @@ namespace ludo
     auto byte_index = vertex_index * format.size;
     for (auto existing_vertex_index = vertex_index; existing_vertex_index < vertex_index + vertex_count; existing_vertex_index++)
     {
-      auto position = read<vec3>(mesh.vertex_buffer, byte_index + position_offset) - options.center;
+      auto position = read<vec3>(mesh.vertex_buffer, byte_index + format.position_offset) - options.center;
 
       if (spherified)
       {
@@ -48,11 +44,11 @@ namespace ludo
         normalize(position);
       }
 
-      write(mesh.vertex_buffer, byte_index + position_offset, options.center + position * radius);
+      write(mesh.vertex_buffer, byte_index + format.position_offset, options.center + position * radius);
       byte_index += format.size;
     }
 
-    if (has_normals)
+    if (format.has_normal)
     {
       byte_index = vertex_index * format.size;
 
@@ -60,11 +56,11 @@ namespace ludo
       {
         for (auto existing_vertex_index = vertex_index; existing_vertex_index < vertex_index + vertex_count; existing_vertex_index++)
         {
-          auto position = read<vec3>(mesh.vertex_buffer, byte_index + position_offset);
+          auto position = read<vec3>(mesh.vertex_buffer, byte_index + format.position_offset);
           auto normal = position - options.center;
           normalize(normal);
 
-          write(mesh.vertex_buffer, byte_index + normal_offset, normal);
+          write(mesh.vertex_buffer, byte_index + format.normal_offset, normal);
           byte_index += format.size;
         }
       }
@@ -76,15 +72,15 @@ namespace ludo
           auto index_1 = read<uint32_t>(mesh.index_buffer, (existing_index_index + 1) * sizeof(uint32_t));
           auto index_2 = read<uint32_t>(mesh.index_buffer, (existing_index_index + 2) * sizeof(uint32_t));
 
-          auto position_0 = read<vec3>(mesh.vertex_buffer, index_0 * format.size + position_offset);
-          auto position_1 = read<vec3>(mesh.vertex_buffer, index_1 * format.size + position_offset);
-          auto position_2 = read<vec3>(mesh.vertex_buffer, index_2 * format.size + position_offset);
+          auto position_0 = read<vec3>(mesh.vertex_buffer, index_0 * format.size + format.position_offset);
+          auto position_1 = read<vec3>(mesh.vertex_buffer, index_1 * format.size + format.position_offset);
+          auto position_2 = read<vec3>(mesh.vertex_buffer, index_2 * format.size + format.position_offset);
           auto normal = cross(position_1 - position_0, position_2 - position_0);
           normalize(normal);
 
-          write(mesh.vertex_buffer, index_0 * format.size + normal_offset, normal);
-          write(mesh.vertex_buffer, index_1 * format.size + normal_offset, normal);
-          write(mesh.vertex_buffer, index_2 * format.size + normal_offset, normal);
+          write(mesh.vertex_buffer, index_0 * format.size + format.normal_offset, normal);
+          write(mesh.vertex_buffer, index_1 * format.size + format.normal_offset, normal);
+          write(mesh.vertex_buffer, index_2 * format.size + format.normal_offset, normal);
         }
       }
     }

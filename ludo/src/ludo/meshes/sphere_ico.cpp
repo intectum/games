@@ -9,9 +9,7 @@
 
 namespace ludo
 {
-  std::array<std::array<ludo::vec3, 3>, 20> ico_faces_cache({ vec3_zero });
-
-  void ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, bool smooth, bool invert, uint32_t divisions);
+  void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 20>& positions, bool smooth, bool invert, uint32_t divisions);
   void face(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 3>& positions, bool smooth, bool invert, uint32_t divisions);
   void face(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 3>& positions, bool smooth, bool invert);
 
@@ -21,15 +19,39 @@ namespace ludo
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
 
     auto radius = options.dimensions[0] / 2.0f;
+    auto t = (1.0f + std::sqrt(5.0f)) / 2.0f;
+
+    auto positions = std::array<vec3, 20>
+    {
+      vec3 { -1.0f, t, 0.0f },
+      vec3 { 1.0f, t, 0.0f },
+      vec3 { -1.0f, -t, 0.0f },
+      vec3 { 1.0f, -t, 0.0f },
+
+      vec3 { 0.0f, -1.0f, t },
+      vec3 { 0.0f, 1.0f, t },
+      vec3 { 0.0f, -1.0f, -t },
+      vec3 { 0.0f, 1.0f, -t },
+
+      vec3 { t, 0.0f, -1.0f },
+      vec3 { t, 0.0f, 1.0f },
+      vec3 { -t, 0.0f, -1.0f },
+      vec3 { -t, 0.0f, 1.0f },
+    };
+
+    for (auto& position : positions)
+    {
+      normalize(position);
+    }
 
     if (options.outward_faces)
     {
-      ico(mesh, format, index_index, vertex_index, options.center, radius, options.smooth, false, options.divisions);
+      sphere_ico(mesh, format, index_index, vertex_index, options.center, radius, positions, options.smooth, false, options.divisions);
     }
 
     if (options.inward_faces)
     {
-      ico(mesh, format, index_index, vertex_index, options.center, radius, options.smooth, true, options.divisions);
+      sphere_ico(mesh, format, index_index, vertex_index, options.center, radius, positions, options.smooth, true, options.divisions);
     }
   }
 
@@ -61,101 +83,35 @@ namespace ludo
     return { total, unique };
   }
 
-  const std::array<std::array<ludo::vec3, 3>, 20>& sphere_ico_faces()
+  void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 20>& positions, bool smooth, bool invert, uint32_t divisions)
   {
-    if (ico_faces_cache[0][0] == vec3_zero)
-    {
-      auto t = (1.0f + std::sqrt(5.0f)) / 2.0f;
-
-      auto positions = std::array<ludo::vec3, 20>
-      {
-        ludo::vec3 { -1.0f, t, 0.0f },
-        ludo::vec3 { 1.0f, t, 0.0f },
-        ludo::vec3 { -1.0f, -t, 0.0f },
-        ludo::vec3 { 1.0f, -t, 0.0f },
-
-        ludo::vec3 { 0.0f, -1.0f, t },
-        ludo::vec3 { 0.0f, 1.0f, t },
-        ludo::vec3 { 0.0f, -1.0f, -t },
-        ludo::vec3 { 0.0f, 1.0f, -t },
-
-        ludo::vec3 { t, 0.0f, -1.0f },
-        ludo::vec3 { t, 0.0f, 1.0f },
-        ludo::vec3 { -t, 0.0f, -1.0f },
-        ludo::vec3 { -t, 0.0f, 1.0f },
-      };
-
-      for (auto& position : positions)
-      {
-        normalize(position);
-      }
-
-      ico_faces_cache =
-      {{
-        // 5 faces around point 0.
-        { positions[0], positions[11], positions[5] },
-        { positions[0], positions[5], positions[1] },
-        { positions[0], positions[1], positions[7] },
-        { positions[0], positions[7], positions[10] },
-        { positions[0], positions[10], positions[11] },
-
-        // 5 adjacent faces.
-        { positions[1], positions[5], positions[9] },
-        { positions[5], positions[11], positions[4] },
-        { positions[11], positions[10], positions[2] },
-        { positions[10], positions[7], positions[6] },
-        { positions[7], positions[1], positions[8] },
-
-        // 5 faces around point 3.
-        { positions[3], positions[9], positions[4] },
-        { positions[3], positions[4], positions[2] },
-        { positions[3], positions[2], positions[6] },
-        { positions[3], positions[6], positions[8] },
-        { positions[3], positions[8], positions[9] },
-
-        // 5 adjacent faces.
-        { positions[4], positions[9], positions[5] },
-        { positions[2], positions[4], positions[11] },
-        { positions[6], positions[2], positions[10] },
-        { positions[8], positions[6], positions[7] },
-        { positions[9], positions[8], positions[1] }
-      }};
-    }
-
-    return ico_faces_cache;
-  }
-
-  void ico(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, bool smooth, bool invert, uint32_t divisions)
-  {
-    auto& faces = sphere_ico_faces();
-
     // 5 faces around point 0.
-    face(mesh, format, index_index, vertex_index, center, radius, faces[0], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[1], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[2], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[3], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[4], smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[0], positions[11], positions[5] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[0], positions[5], positions[1] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[0], positions[1], positions[7] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[0], positions[7], positions[10] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[0], positions[10], positions[11] }, smooth, invert, divisions);
 
     // 5 adjacent faces.
-    face(mesh, format, index_index, vertex_index, center, radius, faces[5], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[6], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[7], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[8], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[9], smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[1], positions[5], positions[9] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[5], positions[11], positions[4] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[11], positions[10], positions[2] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[10], positions[7], positions[6] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[7], positions[1], positions[8] }, smooth, invert, divisions);
 
     // 5 faces around point 3.
-    face(mesh, format, index_index, vertex_index, center, radius, faces[10], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[11], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[12], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[13], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[14], smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[3], positions[9], positions[4] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[3], positions[4], positions[2] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[3], positions[2], positions[6] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[3], positions[6], positions[8] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[3], positions[8], positions[9] }, smooth, invert, divisions);
 
     // 5 adjacent faces.
-    face(mesh, format, index_index, vertex_index, center, radius, faces[15], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[16], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[17], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[18], smooth, invert, divisions);
-    face(mesh, format, index_index, vertex_index, center, radius, faces[19], smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[4], positions[9], positions[5] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[2], positions[4], positions[11] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[6], positions[2], positions[10] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[8], positions[6], positions[7] }, smooth, invert, divisions);
+    face(mesh, format, index_index, vertex_index, center, radius, { positions[9], positions[8], positions[1] }, smooth, invert, divisions);
   }
 
   void face(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 3>& positions, bool smooth, bool invert, uint32_t divisions)
@@ -181,22 +137,17 @@ namespace ludo
 
   void face(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, const std::array<vec3, 3>& positions, bool smooth, bool invert)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto has_normals = count(format, 'n') > 0;
-
     auto normal_0 = positions[0];
     auto normal_1 = positions[1];
     auto normal_2 = positions[2];
+
     if (!smooth)
     {
       normal_0 = cross(positions[1] - positions[0], positions[2] - positions[0]);
+      normalize(normal_0);
       normal_1 = normal_0;
       normal_2 = normal_0;
     }
-    normalize(normal_0);
-    normalize(normal_1);
-    normalize(normal_2);
 
     if (invert)
     {
@@ -205,17 +156,17 @@ namespace ludo
       normal_2 *= -1.0f;
     }
 
-    write_vertex(mesh, index_index, vertex_index, format.size, center + positions[0] * radius, position_offset, normal_0, has_normals, normal_offset, vec2(), false, 0, true, false);
+    write_vertex(mesh, format, index_index, vertex_index, center + positions[0] * radius, normal_0, { 0.0f, 0.0f });
 
     if (invert)
     {
-      write_vertex(mesh, index_index, vertex_index, format.size, center + positions[2] * radius, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0, true, false);
-      write_vertex(mesh, index_index, vertex_index, format.size, center + positions[1] * radius, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0, true, false);
+      write_vertex(mesh, format, index_index, vertex_index, center + positions[2] * radius, normal_2, { 0.0f, 0.0f });
+      write_vertex(mesh, format, index_index, vertex_index, center + positions[1] * radius, normal_1, { 0.0f, 0.0f });
     }
     else
     {
-      write_vertex(mesh, index_index, vertex_index, format.size, center + positions[1] * radius, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0, true, false);
-      write_vertex(mesh, index_index, vertex_index, format.size, center + positions[2] * radius, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0, true, false);
+      write_vertex(mesh, format, index_index, vertex_index, center + positions[1] * radius, normal_1, { 0.0f, 0.0f });
+      write_vertex(mesh, format, index_index, vertex_index, center + positions[2] * radius, normal_2, { 0.0f, 0.0f });
     }
   }
 }

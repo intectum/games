@@ -59,15 +59,15 @@ namespace ludo
     return add(instance, render_program, partition);
   }
 
-  render_program* add(instance& instance, const render_program& init, const vertex_format_options& options, const std::string& partition)
+  render_program* add(instance& instance, const render_program& init, const vertex_format& format, const std::string& partition)
   {
     auto render_program = init;
-    render_program.format = format(options);
+    render_program.format = format;
 
-    auto vertex_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::VERTEX, options, partition);
+    auto vertex_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::VERTEX, format, partition);
     render_program.vertex_shader_id = vertex_shader->id;
 
-    auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, options, partition);
+    auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, format, partition);
     render_program.fragment_shader_id = fragment_shader->id;
 
     return add(instance, render_program, partition);
@@ -104,12 +104,11 @@ namespace ludo
     auto format = render_program.format;
     for (auto index = 0; index < format.components.size(); index++)
     {
-      if (format.components[index] == 'b')
+      if (format.components[index].first == 'b')
       {
-        format.components[index] = 'u';
+        format.components[index].first = 'u';
         index++;
-        format.components.insert(format.components.begin() + index, 'f');
-        format.component_counts.insert(format.component_counts.begin() + index, 4);
+        format.components.insert(format.components.begin() + index, { 'f', max_bone_weights_per_vertex });
       }
     }
 
@@ -118,30 +117,30 @@ namespace ludo
     {
       glEnableVertexAttribArray(index); check_opengl_error();
 
-      if (format.components[index] == 'i' || format.components[index] == 'u')
+      if (format.components[index].first == 'i' || format.components[index].first == 'u')
       {
         glVertexAttribIPointer(
           index,
-          format.component_counts[index],
-          format.components[index] == 'i' ? GL_INT : GL_UNSIGNED_INT,
-          format.size,
+          static_cast<GLint>(format.components[index].second),
+          format.components[index].first == 'i' ? GL_INT : GL_UNSIGNED_INT,
+          static_cast<GLsizei>(format.size),
           reinterpret_cast<void*>(offset)
         ); check_opengl_error();
 
-        offset += format.component_counts[index] * sizeof(uint32_t);
+        offset += format.components[index].second * sizeof(uint32_t);
       }
       else
       {
         glVertexAttribPointer(
           index,
-          format.component_counts[index],
+          static_cast<GLint>(format.components[index].second),
           GL_FLOAT,
           GL_FALSE,
-          format.size,
+          static_cast<GLsizei>(format.size),
           reinterpret_cast<void*>(offset)
         ); check_opengl_error();
 
-        offset += format.component_counts[index] * sizeof(float);
+        offset += format.components[index].second * sizeof(float);
       }
     }
   }

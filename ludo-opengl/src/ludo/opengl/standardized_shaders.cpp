@@ -8,7 +8,7 @@
 
 namespace ludo
 {
-  void write_header(std::ostream& stream, const vertex_format_options& options)
+  void write_header(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -17,7 +17,7 @@ R"--(
 )--";
   }
 
-  void write_types(std::ostream& stream, const vertex_format_options& options)
+  void write_types(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -53,7 +53,7 @@ struct instance_t
   mat4 transform;
 )--";
 
-  if (options.texture) stream << "  sampler2D sampler;" << std::endl;
+  if (format.has_texture_coordinate) stream << "  sampler2D sampler;" << std::endl;
 
   stream <<
 R"--(
@@ -69,7 +69,7 @@ struct point_t
 )--";
   }
 
-  void write_inputs(std::ostream& stream, const vertex_format_options& options)
+  void write_inputs(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -77,14 +77,14 @@ R"--(
 
 in vec3 position;
 )--";
-    if (options.normals) stream << "in vec3 normal;" << std::endl;
-    if (options.colors) stream << "in vec4 color;" << std::endl;
-    if (options.texture) stream << "in vec2 tex_coords;" << std::endl;
-    if (options.bones) stream << "in ivec4 bone_indices;" << std::endl;
-    if (options.bones) stream << "in vec4 bone_weights;" << std::endl;
+    if (format.has_normal) stream << "in vec3 normal;" << std::endl;
+    if (format.has_color) stream << "in vec4 color;" << std::endl;
+    if (format.has_texture_coordinate) stream << "in vec2 tex_coords;" << std::endl;
+    if (format.has_bone_weights) stream << "in ivec4 bone_indices;" << std::endl;
+    if (format.has_bone_weights) stream << "in vec4 bone_weights;" << std::endl;
   }
 
-  void write_buffers(std::ostream& stream, const vertex_format_options& options)
+  void write_buffers(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -113,7 +113,7 @@ layout(std430, binding = 4) buffer animation_layout
 )--";
   }
 
-  void write_vertex_main(std::ostream& stream, const vertex_format_options& options)
+  void write_vertex_main(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -123,7 +123,7 @@ void main()
   mat4 world_transform = instance.transform;
 )--";
 
-    if (options.bones)
+    if (format.has_bone_weights)
     {
       stream <<
 R"--(
@@ -139,7 +139,7 @@ R"--(
     stream << std::endl;
     stream << "  vec4 world_position = world_transform * vec4(position, 1.0);" << std::endl;
 
-    if (options.normals)
+    if (format.has_normal)
     {
       stream <<
 R"--(
@@ -154,17 +154,17 @@ R"--(
 
     stream << std::endl;
     stream << "  point.position = world_position.xyz;" << std::endl;
-    stream << "  point.color = " << (options.colors ? "color" : "vec4(1.0, 1.0, 1.0, 1.0)") << ";" << std::endl;
-    if (options.normals) stream << "  point.normal = world_normal.xyz;" << std::endl;
-    if (options.texture) stream << "  point.tex_coords = tex_coords;" << std::endl;
+    stream << "  point.color = " << (format.has_color ? "color" : "vec4(1.0, 1.0, 1.0, 1.0)") << ";" << std::endl;
+    if (format.has_normal) stream << "  point.normal = world_normal.xyz;" << std::endl;
+    if (format.has_texture_coordinate) stream << "  point.tex_coords = tex_coords;" << std::endl;
     stream << std::endl;
-    if (options.texture) stream << "  sampler = instance.sampler;" << std::endl;
+    if (format.has_texture_coordinate) stream << "  sampler = instance.sampler;" << std::endl;
     stream << std::endl;
     stream << "  gl_Position = camera.view_projection * world_position;" << std::endl;
     stream << "}" << std::endl;
   }
 
-  void write_lighting_functions(std::ostream& stream, const vertex_format_options& options)
+  void write_lighting_functions(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -245,7 +245,7 @@ vec4 apply_spot_light(point_t point, light_t light, camera_t camera)
 )--";
   }
 
-  void write_fragment_main(std::ostream& stream, const vertex_format_options& options)
+  void write_fragment_main(std::ostream& stream, const vertex_format& format)
   {
     stream <<
 R"--(
@@ -255,8 +255,8 @@ void main()
 
 )--";
 
-    if (options.texture) stream << "  local_point.color = texture(sampler, point.tex_coords);" << std::endl;
-    if (options.normals) stream << "  local_point.color = apply_point_light(local_point, lights[0], camera);" << std::endl;
+    if (format.has_texture_coordinate) stream << "  local_point.color = texture(sampler, point.tex_coords);" << std::endl;
+    if (format.has_normal) stream << "  local_point.color = apply_point_light(local_point, lights[0], camera);" << std::endl;
 
     stream <<
 R"--(

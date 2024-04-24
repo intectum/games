@@ -46,10 +46,6 @@ namespace ludo
 
   void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool invert)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto has_normals = count(format, 'n') > 0;
-
     auto normal = vec3 { 0.0f, 0.0f, 1.0f };
     if (invert)
     {
@@ -61,17 +57,17 @@ namespace ludo
       auto angle_0 = -two_pi * static_cast<float>(division) / static_cast<float>(divisions);
       auto angle_1 = -two_pi * static_cast<float>(division + 1) / static_cast<float>(divisions);
 
-      write_vertex(mesh, index_index, vertex_index, format.size, center, position_offset, normal, has_normals, normal_offset, vec2(), false, 0);
+      write_vertex(mesh, format, index_index, vertex_index, center, normal, { 0.0f, 0.0f });
 
       if (invert)
       {
-        write_vertex(mesh, index_index, vertex_index, format.size, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, position_offset, normal, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, position_offset, normal, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, { 0.0f, 0.0f });
       }
       else
       {
-        write_vertex(mesh, index_index, vertex_index, format.size, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, position_offset, normal, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, position_offset, normal, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, { 0.0f, 0.0f });
       }
     }
   }

@@ -29,12 +29,12 @@ namespace ludo
 
   ///
   /// A vertex format
-  /// Possible components are:
+  /// Possible component types are:
   ///   p: position
   ///   n: normal
   ///   c: color
   ///   t: texture coordinate
-  ///   b: bone indices and weights
+  ///   b: bone weights
   ///   i: int
   ///   u: unsigned int
   ///   f: float
@@ -42,19 +42,18 @@ namespace ludo
   /// Component counts represent the number of float/int32_t/uint32_t values within the component e.g. the component p3 represents a position consisting of 3 floats.
   struct LUDO_API vertex_format
   {
-    std::vector<char> components; ///< The components the vertex is comprised of.
-    std::vector<uint8_t> component_counts; ///< The counts of values within the components.
-    uint8_t size = 0; ///< The total size of the vertex in bytes.
-  };
+    std::vector<std::pair<char, uint32_t>> components; ///< The components within the vertex. Components are of the form { <type>, <count> }.
+    uint32_t size = 0; ///< The total size of the vertex in bytes.
 
-  ///
-  /// A set of options for building a standardized vertex format.
-  struct LUDO_API vertex_format_options
-  {
-    bool normals = false; ///< Determines if normals will be included in the vertex format.
-    bool colors = false; ///< Determines if colors will be included in the vertex format.
-    bool texture = false; ///< Determines if texture coordinates will be included in the vertex format.
-    bool bones = false; ///< Determines if bone indices and weights will be included in the vertex format.
+    bool has_normal = false; ///< Determines if the vertex format includes a normal.
+    bool has_color = false; ///< Determines if the vertex format includes a color.
+    bool has_texture_coordinate = false; ///< Determines if the vertex format includes a texture coordinate.
+    bool has_bone_weights = false; ///< Determines if the vertex format includes bone weights.
+
+    uint32_t position_offset = 0; ///< The offset in bytes to the position.
+    uint32_t normal_offset = 0; ///< The offset in bytes to the normal.
+    uint32_t color_offset = 0; ///< The offset in bytes to the color.
+    uint32_t texture_coordinate_offset = 0; ///< The offset in bytes to the texture coordinate.
   };
 
   ///
@@ -89,67 +88,63 @@ namespace ludo
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information
   {
-    .components = { 'p' },
-    .component_counts = { 3 },
-    .size = 3 * sizeof(float)
+    .components = { { 'p', 3 } },
+    .size = 3 * sizeof(float),
   };
 
   const auto vertex_format_pc = vertex_format ///< A vertex format containing position and color information
   {
-    .components = { 'p', 'c' },
-    .component_counts = { 3, 4 },
-    .size = 7 * sizeof(float)
+    .components = { { 'p', 3 }, { 'c', 4 } },
+    .size = 7 * sizeof(float),
+    .has_color = true,
+    .color_offset = 3 * sizeof(float)
   };
 
   const auto vertex_format_pn = vertex_format ///< A vertex format containing position and normal information
   {
-    .components = { 'p', 'n' },
-    .component_counts = { 3, 3 },
-    .size = 6 * sizeof(float)
+    .components = { { 'p', 3 }, { 'n', 3 } },
+    .size = 6 * sizeof(float),
+    .has_normal = true,
+    .normal_offset = 3 * sizeof(float)
   };
 
   const auto vertex_format_pnc = vertex_format ///< A vertex format containing position, normal and color information
   {
-    .components = { 'p', 'n', 'c' },
-    .component_counts = { 3, 3, 4 },
-    .size = 10 * sizeof(float)
+    .components = { { 'p', 3 }, { 'n', 3 }, { 'c', 4 } },
+    .size = 10 * sizeof(float),
+    .has_normal = true,
+    .has_color = true,
+    .normal_offset = 3 * sizeof(float),
+    .color_offset = 6 * sizeof(float)
   };
 
   const auto vertex_format_pnt = vertex_format ///< A vertex format containing position, normal and texture coordinate information
   {
-    .components = { 'p', 'n', 't' },
-    .component_counts = { 3, 3, 2 },
-    .size = 8 * sizeof(float)
+    .components = { { 'p', 3 }, { 'n', 3 }, { 't', 2 } },
+    .size = 8 * sizeof(float),
+    .has_normal = true,
+    .has_texture_coordinate = true,
+    .normal_offset = 3 * sizeof(float),
+    .texture_coordinate_offset = 6 * sizeof(float)
   };
 
   const auto vertex_format_pt = vertex_format ///< A vertex format containing position and texture coordinate information
   {
-    .components = { 'p', 't' },
-    .component_counts = { 3, 2 },
-    .size = 5 * sizeof(float)
+    .components = { { 'p', 3 }, { 't', 2 } },
+    .size = 5 * sizeof(float),
+    .has_texture_coordinate = true,
+    .texture_coordinate_offset = 3 * sizeof(float)
   };
 
   ///
   /// Creates a vertex format based on the options provided.
-  /// It will be of the form p3[n3][c4][t2_0...t2_n][u4f4] where the optional components are only included if the relevant options are specified.
-  /// The last component [u4f4] is only included if the bone count is greater than 0.
-  /// \param options The options used to build the vertex format.
+  /// It will be of the form p3[n3][c4][t2_0...t2_n][u4f4] where the optional components are only included if specified.
+  /// \param normal Determines if a normal should be included in the vertex format.
+  /// \param color Determines if a color should be included in the vertex format.
+  /// \param texture_coordinate Determines if a texture coordinate should be included in the vertex format.
+  /// \param bone_weights Determines if bone weights should be included in the vertex format.
   /// \return A vertex format based on the options provided.
-  LUDO_API vertex_format format(const vertex_format_options& options);
-
-  ///
-  /// Determines the primitive count of the given component.
-  /// \param format The format to find the primitive count within.
-  /// \param component The component to find the primitive count of.
-  /// \return The primitive count of the given component (or 0 if it is not found).
-  uint32_t count(const vertex_format& format, char component);
-
-  ///
-  /// Determines the byte offset to the given component.
-  /// \param format The format to find the offset within.
-  /// \param component The component to find the offset to.
-  /// \return The byte offset to the given component.
-  LUDO_API uint32_t offset(const vertex_format& format, char component);
+  LUDO_API vertex_format format(bool normal = false, bool color = false, bool texture_coordinate = false, bool bone_weights = false);
 
   ///
   /// Adds a mesh to the data of an instance.

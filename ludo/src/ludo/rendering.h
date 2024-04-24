@@ -228,10 +228,10 @@ namespace ludo
   /// Adds a render program to the data of an instance.
   /// \param instance The instance to add the render program to.
   /// \param init The initial state of the new render program.
-  /// \param options The options used to build the vertex and fragment shaders of the render program.
+  /// \param format The vertex format to build the vertex and fragment shaders of the render program for.
   /// \param partition The name of the partition.
   /// \return A pointer to the new render program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API render_program* add(instance& instance, const render_program& init, const vertex_format_options& options, const std::string& partition = "default");
+  LUDO_API render_program* add(instance& instance, const render_program& init, const vertex_format& format, const std::string& partition = "default");
 
   template<>
   LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
@@ -250,10 +250,10 @@ namespace ludo
   /// Adds a shader to the data of an instance.
   /// \param instance The instance to add the shader to.
   /// \param init The initial state of the new shader.
-  /// \param options The options used to build the shader.
+  /// \param format The vertex format to build the shader for.
   /// \param partition The name of the partition.
   /// \return A pointer to the new shader. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API shader* add(instance& instance, const shader& init, shader_type type, const vertex_format_options& options, const std::string& partition = "default");
+  LUDO_API shader* add(instance& instance, const shader& init, shader_type type, const vertex_format& format, const std::string& partition = "default");
 
   template<>
   LUDO_API void remove<shader>(instance& instance, shader* element, const std::string& partition);

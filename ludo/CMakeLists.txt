@@ -18,6 +18,7 @@ set(SRC_FILES
     src/ludo/graphs/linear_octree.cpp
     src/ludo/math/distance.cpp
     src/ludo/math/mat.cpp
+    src/ludo/math/projection.cpp
     src/ludo/math/quat.cpp
     src/ludo/math/util.cpp
     src/ludo/math/vec.cpp
@@ -44,6 +45,7 @@ set(TEST_SRC_FILES
     tests/graphs/dynamic_octree.cpp
     tests/graphs/linear_octree.cpp
     tests/math/mat.cpp
+    tests/math/projection.cpp
     tests/math/quat.cpp
     tests/math/vec.cpp
     tests/tests.cpp)

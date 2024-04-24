@@ -19,7 +19,7 @@ namespace ludo
 {
   void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes);
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
-  vertex_format_options build_vertex_format_options(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options);
+  vertex_format build_vertex_format(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options);
 
   auto primitives = std::unordered_map<uint8_t, mesh_primitive>
   {
@@ -52,8 +52,8 @@ namespace ludo
     if (!mesh_objects.empty())
     {
       auto primitive = primitives[assimp_scene->mMeshes[mesh_objects[0].mesh_index]->mPrimitiveTypes]; // We use aiProcess_SortByPType so all primitives should be the same.
-      auto vertex_format_options = build_vertex_format_options(*assimp_scene, mesh_objects, options);
-      auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format_options);
+      auto vertex_format = build_vertex_format(*assimp_scene, mesh_objects, options);
+      auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format);
 
       auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
       auto textures = import_textures(instance, folder, *assimp_scene, mesh_objects, partition);
@@ -121,7 +121,7 @@ namespace ludo
     }
   }
 
-  vertex_format_options build_vertex_format_options(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
+  vertex_format build_vertex_format(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
   {
     auto color_count = uint8_t(0);
     auto bone_count = uint8_t(0);
@@ -145,12 +145,6 @@ namespace ludo
 
     assert(bone_count <= max_bones_per_armature && "max bone count exceeded");
 
-    return
-    {
-      .normals = true,
-      .colors = color_count > 0,
-      .texture = texture_count > 0,
-      .bones = bone_count > 0,
-    };
+    return ludo::format(true, color_count > 0, texture_count > 0, bone_count > 0);
   }
 }

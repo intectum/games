@@ -157,7 +157,7 @@ int main()
     auto bullet_debug_render_program = ludo::add(
       inst,
       ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST },
-      { .colors = true },
+      ludo::format(false, true),
       "ludo-bullet::visualizations"
     );
 

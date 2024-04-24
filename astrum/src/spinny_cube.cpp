@@ -53,9 +53,9 @@ int main()
 
   // RENDER PROGRAMS
 
-  auto render_program_p = ludo::add(inst, ludo::render_program(), {});
-  auto render_program_pc = ludo::add(inst, ludo::render_program(), { .colors = true });
-  auto render_program_pt = ludo::add(inst, ludo::render_program(), { .texture = true });
+  auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::format());
+  auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::format(false, true));
+  auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::format(false, false, true));
 
   // TEXTURE
 
@@ -132,10 +132,7 @@ int main()
     mesh_instances[0].transform = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     mesh_instances[1].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     mesh_instances[2].transform = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    //mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-
-    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(1.0f, 1.0f, 0.0f));
-    //mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::quat(1.0f, 1.0f, 0.0f)));
+    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
 
     ludo::interpolate(*animation, *armature, inst.total_time, armature_instance->transforms);
   });

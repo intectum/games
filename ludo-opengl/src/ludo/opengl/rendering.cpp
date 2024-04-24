@@ -77,17 +77,17 @@ namespace ludo
       auto draw_command_start = uint32_t(vram_draw_commands.array_size);
       auto instance_byte_start = uint64_t(vram_instances.array_size);
       auto instance_byte_index = instance_byte_start;
-      auto instance_byte_size = mesh_instance_group.second.size() * (sizeof(mat4) + (count(render_program->format, 't') ? sizeof(uint64_t) : 0));
+      auto instance_byte_size = mesh_instance_group.second.size() * (sizeof(mat4) + (render_program->format.has_texture_coordinate ? sizeof(uint64_t) : 0));
       auto animation_byte_start = instance_byte_start + instance_byte_size;
       auto animation_byte_index = animation_byte_start;
-      auto animation_byte_size = mesh_instance_group.second.size() * (count(render_program->format, 'b') ? max_bones_per_armature * sizeof(mat4) : 0);
+      auto animation_byte_size = mesh_instance_group.second.size() * (render_program->format.has_bone_weights ? max_bones_per_armature * sizeof(mat4) : 0);
 
       for (auto& mesh_instance : mesh_instance_group.second)
       {
         write(vram_instances, instance_byte_index, mesh_instance.transform);
         instance_byte_index += sizeof(mat4);
 
-        if (count(render_program->format, 't'))
+        if (render_program->format.has_texture_coordinate)
         {
           if (mesh_instance.texture_id)
           {
@@ -101,7 +101,7 @@ namespace ludo
           }
         }
 
-        if (count(render_program->format, 'b'))
+        if (render_program->format.has_bone_weights)
         {
           auto armature_instance = get<ludo::armature_instance>(instance, mesh_instance.armature_instance_id);
           assert(armature_instance && "armature instance not found");

@@ -10,19 +10,19 @@
 
 namespace ludo
 {
-  void write_header(std::ostream& stream, const vertex_format_options& options);
+  void write_header(std::ostream& stream, const vertex_format& format);
 
-  void write_types(std::ostream& stream, const vertex_format_options& options);
+  void write_types(std::ostream& stream, const vertex_format& format);
 
-  void write_inputs(std::ostream& stream, const vertex_format_options& options);
+  void write_inputs(std::ostream& stream, const vertex_format& format);
 
-  void write_buffers(std::ostream& stream, const vertex_format_options& options);
+  void write_buffers(std::ostream& stream, const vertex_format& format);
 
-  void write_vertex_main(std::ostream& stream, const vertex_format_options& options);
+  void write_vertex_main(std::ostream& stream, const vertex_format& format);
 
-  void write_lighting_functions(std::ostream& stream, const vertex_format_options& options);
+  void write_lighting_functions(std::ostream& stream, const vertex_format& format);
 
-  void write_fragment_main(std::ostream& stream, const vertex_format_options& options);
+  void write_fragment_main(std::ostream& stream, const vertex_format& format);
 }
 
 #endif // LUDO_OPENGL_SHADERS_H

@@ -532,14 +532,4 @@ namespace ludo
     float clamped_dot = std::max(std::min(dot, 1.0f), -1.0f);
     return std::acos(clamped_dot);
   }
-
-  vec3 project_onto_plane(const vec3& vector, const vec3& target_normal)
-  {
-    assert(near(length(target_normal), 1.0f) && "'target_normal' must be unit length");
-
-    auto vector_normalized = vector;
-    normalize(vector_normalized);
-
-    return cross(cross(target_normal, vector_normalized), target_normal) * length(vector);
-  }
 }

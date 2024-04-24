@@ -11,7 +11,7 @@ namespace ludo
 {
   ///
   /// A set of options for building a shape.
-  struct shape_options
+  struct LUDO_API shape_options
   {
     vec3 center = vec3_zero; ///< The center position of the shape.
     vec3 dimensions = vec3_one; ///< The dimensions of the shape. Of the form [width/diameter,height,depth].
@@ -113,11 +113,6 @@ namespace ludo
   /// \param options The options used to build the sphere.
   /// \return The total and unique vertex counts of an icosahedron-based sphere. Of the form { total, unique }.
   LUDO_API std::pair<uint32_t, uint32_t> sphere_ico_counts(const shape_options& options = {});
-
-  ///
-  /// Retrieves the base faces of an icosahedron-based sphere.
-  /// \return The base faces of an icosahedron-based sphere.
-  LUDO_API const std::array<std::array<ludo::vec3, 3>, 20>& sphere_ico_faces();
 
   ///
   /// Builds a UV sphere within a mesh.

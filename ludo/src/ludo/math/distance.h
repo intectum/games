@@ -9,9 +9,7 @@
 
 namespace ludo
 {
-  float distance_point_to_line_segment(const vec3& point, const vec3* line_segment);
-
-  float distance_point_to_point(const vec3& a, const vec3& b);
+  float distance_point_to_line_segment(const vec3& point, const std::array<vec3, 2>& line_segment);
 }
 
 #endif // LUDO_MATH_DISTANCE_H

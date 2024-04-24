@@ -290,7 +290,5 @@ namespace ludo
 
     test_equal("vec2 angle between", angle_between(vec2_unit_x, vec2_unit_y), pi / 2.0f);
     test_equal("vec3 angle between", angle_between(vec3_unit_x, vec3_unit_y), pi / 2.0f);
-
-    test_near("vec3 project onto plane", project_onto_plane(vec3 { 1.0f, 1.0f, 1.0f }, vec3_unit_y), vec3 { 1.0f, 0.0f, 1.0f });
   }
 }

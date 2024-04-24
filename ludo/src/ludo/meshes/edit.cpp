@@ -9,12 +9,12 @@ namespace ludo
 {
   void colorize(mesh& mesh, const vertex_format& format, uint32_t vertex_start, uint32_t vertex_count, const vec4& color, bool debug)
   {
-    if (!count(format, 'c'))
+    if (!format.has_color)
     {
       return;
     }
 
-    auto byte_index = vertex_start * format.size + offset(format, 'c');
+    auto byte_index = vertex_start * format.size + format.color_offset;
 
     for (auto vertex_index = 0; vertex_index < vertex_count; vertex_index++)
     {
@@ -33,14 +33,12 @@ namespace ludo
 
   void extrude(mesh& mesh, const vertex_format& format, const std::vector<std::array<uint32_t, 3>>& triangles, const vec3& extrusion, bool invert)
   {
-    auto position_offset = offset(format, 'p');
-
     auto position_counts = std::vector<std::pair<vec3, uint32_t>>();
     for (auto& triangle : triangles)
     {
       for (auto vertex_index = 0; vertex_index < 3; vertex_index++)
       {
-        auto byte_index = triangle[vertex_index] * format.size + position_offset;
+        auto byte_index = triangle[vertex_index] * format.size + format.position_offset;
         auto position = read<vec3>(mesh.vertex_buffer, byte_index);
         auto position_count_iter = std::find_if(position_counts.begin(), position_counts.end(), [&position](const std::pair<vec3, uint32_t>& position_count)
         {
@@ -49,7 +47,7 @@ namespace ludo
 
         if (position_count_iter == position_counts.end())
         {
-          position_counts.emplace_back(std::pair<vec3, uint32_t> { position, 1 });
+          position_counts.emplace_back(std::pair { position, 1 });
         }
         else
         {
@@ -93,7 +91,7 @@ namespace ludo
     {
       for (auto vertex_index = 0; vertex_index < 3; vertex_index++)
       {
-        auto byte_index = triangle[vertex_index] * format.size + position_offset;
+        auto byte_index = triangle[vertex_index] * format.size + format.position_offset;
         write(mesh.vertex_buffer, byte_index, read<vec3>(mesh.vertex_buffer, byte_index) + extrusion);
       }
     }
@@ -101,41 +99,35 @@ namespace ludo
 
   void flip(mesh& mesh, const vertex_format& format, const std::vector<std::array<uint32_t, 3>>& triangles)
   {
-    auto has_normals = count(format, 'n') > 0;
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-
     for (auto& triangle : triangles)
     {
       auto vertex_0_data = mesh.vertex_buffer.data + triangle[0] * format.size;
       auto vertex_1_data = mesh.vertex_buffer.data + triangle[1] * format.size;
       auto vertex_2_data = mesh.vertex_buffer.data + triangle[2] * format.size;
 
-      std::swap(*reinterpret_cast<vec3*>(vertex_1_data + position_offset), *reinterpret_cast<vec3*>(vertex_2_data + position_offset));
+      std::swap(*reinterpret_cast<vec3*>(vertex_1_data + format.position_offset), *reinterpret_cast<vec3*>(vertex_2_data + format.position_offset));
 
-      if (has_normals)
+      if (format.has_normal)
       {
-        *reinterpret_cast<vec3*>(vertex_0_data + normal_offset) *= -1.0f;
-        *reinterpret_cast<vec3*>(vertex_1_data + normal_offset) *= -1.0f;
-        *reinterpret_cast<vec3*>(vertex_2_data + normal_offset) *= -1.0f;
+        *reinterpret_cast<vec3*>(vertex_0_data + format.normal_offset) *= -1.0f;
+        *reinterpret_cast<vec3*>(vertex_1_data + format.normal_offset) *= -1.0f;
+        *reinterpret_cast<vec3*>(vertex_2_data + format.normal_offset) *= -1.0f;
       }
     }
   }
 
   void rotate(mesh& mesh, const vertex_format& format, uint32_t vertex_start, uint32_t vertex_count, const quat& rotation)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
     auto data = mesh.vertex_buffer.data + vertex_start * format.size;
 
     auto rotation_matrix = mat3(rotation);
 
     for (auto vertex_index = 0; vertex_index < vertex_count; vertex_index++)
     {
-      auto& position = *reinterpret_cast<vec3*>(data + position_offset);
+      auto& position = *reinterpret_cast<vec3*>(data + format.position_offset);
       position = rotation_matrix * position;
 
-      /*auto& normal = *reinterpret_cast<vec3*>(data + normal_offset);
+      /*auto& normal = *reinterpret_cast<vec3*>(data + format.normal_offset);
       normal = rotation_matrix * normal;*/
 
       data += format.size;
@@ -144,7 +136,7 @@ namespace ludo
 
   void scale(mesh& mesh, const vertex_format& format, uint32_t vertex_start, uint32_t vertex_count, float scalar)
   {
-    auto data = mesh.vertex_buffer.data + vertex_start * format.size + offset(format, 'p');
+    auto data = mesh.vertex_buffer.data + vertex_start * format.size + format.position_offset;
 
     for (auto vertex_index = 0; vertex_index < vertex_count; vertex_index++)
     {
@@ -155,7 +147,7 @@ namespace ludo
 
   void translate(mesh& mesh, const vertex_format& format, uint32_t vertex_start, uint32_t vertex_count, const vec3& translation)
   {
-    auto data = mesh.vertex_buffer.data + vertex_start * format.size + offset(format, 'p');
+    auto data = mesh.vertex_buffer.data + vertex_start * format.size + format.position_offset;
 
     for (auto vertex_index = 0; vertex_index < vertex_count; vertex_index++)
     {

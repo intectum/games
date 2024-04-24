@@ -57,10 +57,6 @@ namespace ludo
 
   void polar_cap(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool north, bool smooth, bool invert)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto has_normals = count(format, 'n') > 0;
-
     auto parallel = north ? 1 : divisions - 1;
     auto position_0 = vec3 { 0.0f, north ? radius : -radius, 0.0f };
 
@@ -89,27 +85,23 @@ namespace ludo
         normal_2 *= -1.0f;
       }
 
-      write_vertex(mesh, index_index, vertex_index, format.size, center + position_0, position_offset, normal_0, has_normals, normal_offset, vec2(), false, 0);
+      write_vertex(mesh, format, index_index, vertex_index, center + position_0, normal_0, { 0.0f, 0.0f });
 
       if (north != invert)
       {
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_2, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_1, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, { 0.0f, 0.0f });
       }
       else
       {
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_1, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_2, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, { 0.0f, 0.0f });
       }
     }
   }
 
   void quads(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool smooth, bool invert)
   {
-    auto position_offset = offset(format, 'p');
-    auto normal_offset = offset(format, 'n');
-    auto has_normals = count(format, 'n') > 0;
-
     for (auto parallel = 1; parallel < divisions - 1; parallel++)
     {
       for (auto meridian = 0; meridian < divisions; meridian++)
@@ -137,13 +129,13 @@ namespace ludo
         normalize(normal_2);
         normalize(normal_3);
 
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_0, position_offset, normal_0, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_1, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_2, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + position_0, normal_0, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, { 0.0f, 0.0f });
 
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_1, position_offset, normal_1, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_3, position_offset, normal_3, has_normals, normal_offset, vec2(), false, 0);
-        write_vertex(mesh, index_index, vertex_index, format.size, center + position_2, position_offset, normal_2, has_normals, normal_offset, vec2(), false, 0);
+        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_3, normal_3, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, { 0.0f, 0.0f });
       }
     }
   }
