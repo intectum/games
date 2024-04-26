@@ -16,52 +16,33 @@ namespace astrum
     std::string name;
     float radius = 0.0f;
     float mass = 0.0f;
-    ludo::vertex_format format;
-    std::vector<lod> lods;
-
-    std::unordered_map<uint32_t, uint64_t> static_body_ids;
-    std::unordered_map<uint32_t, uint64_t> static_body_mesh_ids;
-
-    std::function<float(const ludo::vec3& position)> height_func;
-    std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color_func;
-    std::function<std::vector<tree>(uint64_t patch_id)> tree_func;
   };
 
-  struct patch
+  struct terrain_chunk
   {
     uint64_t mesh_instance_id = 0;
 
     ludo::vec3 center;
     ludo::vec3 normal;
-    uint32_t variant_index = 0;
-
-    std::vector<uint32_t> adjacent_patch_indices;
+    uint32_t lod_index = 0;
 
     bool locked = false;
   };
 
-  struct patch_variant
-  {
-    std::vector<std::vector<uint32_t>> border_indices;
-    std::vector<uint32_t> first_unique_indices;
-  };
-
-  struct patchwork
+  struct terrain
   {
     uint64_t id = 0;
-    uint64_t render_program_id = 0;
 
-    ludo::transform transform;
+    ludo::vertex_format format;
+    std::vector<lod> lods;
+    std::function<float(const ludo::vec3& position)> height_func;
+    std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color_func;
+    std::function<std::vector<tree>(uint64_t patch_id)> tree_func;
 
-    std::vector<patch_variant> variants;
-    std::vector<patch> patches;
+    std::vector<terrain_chunk> chunks;
 
-    std::function<uint32_t(const patchwork& patchwork, uint32_t patch_index)> variant_index;
-    std::function<std::pair<uint32_t, uint32_t>(const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index)> counts;
-    std::function<void(const patchwork& patchwork, uint32_t patch_index, uint32_t variant_index, ludo::mesh& mesh)> load;
-    std::function<void(const patchwork& patchwork, uint32_t anchor_patch_index, uint32_t patch_index)> sew;
-    std::function<void(const patchwork& patchwork, uint32_t patch_index)> on_load = [](const patchwork& patchwork, uint32_t patch_index) {};
-    std::function<void(const patchwork& patchwork, uint32_t patch_index)> on_unload = [](const patchwork& patchwork, uint32_t patch_index) {};
+    std::unordered_map<uint32_t, uint64_t> static_body_ids;
+    std::unordered_map<uint32_t, uint64_t> static_body_mesh_ids;
   };
 
   struct game_controls

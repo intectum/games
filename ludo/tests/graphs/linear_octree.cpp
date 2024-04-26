@@ -85,7 +85,7 @@ namespace ludo
   }
 
   // dummy functions so that buffers compile
-  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree, uint32_t max_render_programs)
+  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree)
   {
     return new compute_program();
   }

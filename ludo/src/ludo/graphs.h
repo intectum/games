@@ -149,9 +149,8 @@ namespace ludo
   /// Adds a compute program used to build draw commands from a linear octree to the data of an instance.
   /// \param instance The instance to add the compute program to.
   /// \param octree The initial state of the new compute program.
-  /// \param max_render_programs The maximum number of render programs within the instance.
   /// \return A pointer to the new compute program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree, uint32_t max_render_programs);
+  LUDO_API compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree);
 
   ///
   /// Adds a mesh instance to a linear octree.

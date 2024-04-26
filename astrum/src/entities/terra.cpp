@@ -2,7 +2,8 @@
 
 #include <libnoise/noise.h>
 
-#include "../meshes/sphere_ico.h"
+#include "../constants.h"
+#include "../terrain/terrain.h"
 #include "terra.h"
 
 namespace astrum
@@ -13,6 +14,45 @@ namespace astrum
   auto seed = 123456;
   auto tree_random = std::mt19937(seed);
   std::uniform_real_distribution<float> tree_distribution(0.0f, 1.0f);
+
+  void add_terra(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
+  {
+    auto celestial_body = ludo::add(
+      inst,
+      astrum::celestial_body
+      {
+        .name = "terra",
+        .radius = terra_radius,
+        .mass = terra_mass,
+      },
+      "celestial-bodies"
+    );
+
+    ludo::add(
+      inst,
+      point_mass
+      {
+        .mass = celestial_body->mass,
+        .transform = initial_transform,
+        .linear_velocity = initial_velocity
+      },
+    "celestial-bodies"
+    );
+
+    add_terrain(
+      inst,
+      terrain
+      {
+        .format = ludo::vertex_format_pnc,
+        .lods = terra_lods,
+        .height_func = terra_height,
+        .color_func = terra_color,
+        .tree_func = terra_tree
+      },
+      *celestial_body,
+      "celestial-bodies"
+    );
+  }
 
   float terra_height(const ludo::vec3& position)
   {
@@ -100,7 +140,7 @@ namespace astrum
       .vertex_buffer = ludo::allocate(3 * sizeof(ludo::vec3))
     };
 
-    ico_section(temp_mesh, ludo::vertex_format_p, 0, patch_index, 5, 5, 0);
+    //terrain_chunk(temp_mesh, ludo::vertex_format_p, 0, chunk_index, 5, 5, 0); TODO!
 
     auto positions = std::vector<ludo::vec3>(3);
     std::memcpy(positions.data(), temp_mesh.vertex_buffer.data, 3 * sizeof(ludo::vec3));

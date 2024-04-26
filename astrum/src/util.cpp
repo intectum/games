@@ -13,19 +13,26 @@ namespace astrum
   auto script_names = std::vector<std::string>
   {
     "ludo::finalize_background",
+
     "astrum::center_universe",
-    "ludo::simulate_physics",
+    "astrum::relativize_universe",
+
     "astrum::simulate_gravity",
-    "astrum::relativize_to_nearest_celestial_body",
+    "ludo::simulate_physics",
     "astrum::simulate_point_mass_physics",
-    "astrum::update_celestial_bodies",
-    "astrum::update_patchworks",
-    "astrum::sync_light_with_sol",
+
+    "astrum::stream_terrain",
     //"astrum::stream_trees",
+
+    "astrum::sync_light_with_sol",
+
     "astrum::simulate_people",
     "astrum::simulate_spaceships",
+
     "astrum::control_game",
+
     "astrum::sync_mesh_instances_with_point_masses",
+
     "ludo::update_windows",
     "ludo::clear_vram_data",
     "ludo::render/geometry",
@@ -47,6 +54,7 @@ namespace astrum
     "ludo::render/hdr_resolve",
     "ludo::blit",
     "ludo::wait_for_render",
+
     "astrum::print_timings"
   };
 

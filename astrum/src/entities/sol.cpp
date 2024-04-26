@@ -1,9 +1,49 @@
 #include "../constants.h"
+#include "../terrain/terrain.h"
 #include "sol.h"
 
 namespace astrum
 {
   // TODO make smooth (requires indexed support for slods, or maybe this doesn't need to be a slod?)
+
+  void add_sol(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
+  {
+    auto celestial_body = ludo::add(
+      inst,
+      astrum::celestial_body
+      {
+        .name = "sol",
+        .radius = sol_radius,
+        .mass = sol_mass,
+      },
+      "celestial-bodies"
+    );
+
+    ludo::add(
+      inst,
+      point_mass
+      {
+        .mass = celestial_body->mass,
+        .transform = initial_transform,
+        .linear_velocity = initial_velocity
+      },
+      "celestial-bodies"
+    );
+
+    add_terrain(
+      inst,
+      terrain
+      {
+        .format = ludo::vertex_format_p,
+        .lods = sol_lods,
+        .height_func = sol_height,
+        .color_func = sol_color,
+        .tree_func = sol_tree
+      },
+      *celestial_body,
+      "celestial-bodies"
+    );
+  }
 
   float sol_height(const ludo::vec3& position)
   {

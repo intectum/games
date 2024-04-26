@@ -4,20 +4,20 @@
 
 #include "constants.h"
 #include "controllers/game.h"
-#include "entities/celestial_bodies.h"
 #include "entities/luna.h"
 #include "entities/people.h"
 #include "entities/sol.h"
 #include "entities/spaceships.h"
 #include "entities/terra.h"
 #include "entities/trees.h"
-#include "meshes/patchwork.h"
 #include "paths.h"
 #include "physics/centering.h"
 #include "physics/gravity.h"
 #include "physics/point_masses.h"
+#include "physics/relativity.h"
 #include "physics/util.h"
 #include "solar_system.h"
+#include "terrain/terrain.h"
 
 namespace astrum
 {
@@ -40,7 +40,7 @@ namespace astrum
     const auto spaceship_initial_position = person_initial_position + ludo::vec3 { 0.0f, 0.0f, 10.0f };
     const auto spaceship_initial_velocity = ludo::vec3 { 0.0f, orbital_speed(ludo::length(spaceship_initial_position), sol_mass), 0.0f };
 
-    // Initialize camera to roughly correct position to ensure the correct LODs are pre-loaded
+    // Initialize camera to roughly correct position to ensure the correct terrain LODs are pre-loaded
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
     ludo::set_camera(
       rendering_context,
@@ -52,56 +52,9 @@ namespace astrum
       }
     );
 
-    add_celestial_body(
-      inst,
-      celestial_body
-      {
-        .name = "sol",
-        .radius = sol_radius,
-        .mass = sol_mass,
-        .format = ludo::vertex_format_p,
-        .lods = sol_lods,
-        .height_func = sol_height,
-        .color_func = sol_color,
-        .tree_func = sol_tree
-      },
-      {},
-      ludo::vec3_zero
-    );
-
-    add_celestial_body(
-      inst,
-      celestial_body
-      {
-        .name = "terra",
-        .radius = terra_radius,
-        .mass = terra_mass,
-        .format = ludo::vertex_format_pnc,
-        .lods = terra_lods,
-        .height_func = terra_height,
-        .color_func = terra_color,
-        .tree_func = terra_tree
-      },
-      { .position = terra_initial_position },
-      terra_initial_velocity
-    );
-
-    add_celestial_body(
-      inst,
-      celestial_body
-      {
-        .name = "luna",
-        .radius = luna_radius,
-        .mass = luna_mass,
-        .format = ludo::vertex_format_pn,
-        .lods = luna_lods,
-        .height_func = luna_height,
-        .color_func = luna_color,
-        .tree_func = luna_tree
-      },
-      { .position = luna_initial_position },
-      luna_initial_velocity
-    );
+    add_sol(inst, {}, ludo::vec3_zero);
+    add_terra(inst, { .position = terra_initial_position }, terra_initial_velocity);
+    add_luna(inst, { .position = luna_initial_position }, luna_initial_velocity);
 
     //add_trees(inst, 1);
 
@@ -135,16 +88,16 @@ namespace astrum
     ludo::add<ludo::script>(inst, ludo::finalize_background);
 
     ludo::add<ludo::script>(inst, center_universe);
-    ludo::add<ludo::script, float, float>(inst, ludo::simulate_physics, 1.0f / 60.0f, game_speed);
+    ludo::add<ludo::script>(inst, relativize_universe);
+
     ludo::add<ludo::script>(inst, simulate_gravity);
-    ludo::add<ludo::script>(inst, relativize_to_nearest_celestial_body);
+    ludo::add<ludo::script, float, float>(inst, ludo::simulate_physics, 1.0f / 60.0f, game_speed);
     ludo::add<ludo::script, std::vector<std::string>>(inst, simulate_point_mass_physics, { "people", "spaceships" });
 
-    ludo::add<ludo::script>(inst, update_celestial_bodies);
-    ludo::add<ludo::script>(inst, update_patchworks);
-    ludo::add<ludo::script>(inst, sync_light_with_sol);
-
+    ludo::add<ludo::script>(inst, stream_terrain);
     //ludo::add<ludo::script, uint32_t>(inst, stream_trees, 1);
+
+    ludo::add<ludo::script>(inst, sync_light_with_sol);
 
     ludo::add<ludo::script>(inst, simulate_people);
     ludo::add<ludo::script>(inst, simulate_spaceships);

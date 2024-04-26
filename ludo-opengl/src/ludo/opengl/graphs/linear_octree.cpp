@@ -8,7 +8,7 @@
 
 namespace ludo
 {
-  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree, uint32_t max_render_programs)
+  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree)
   {
     auto code = std::stringstream();
 

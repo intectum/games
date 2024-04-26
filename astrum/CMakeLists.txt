@@ -26,7 +26,6 @@ set(SRC_FILES
     src/controllers/map.cpp
     src/controllers/person.cpp
     src/controllers/spaceship.cpp
-    src/entities/celestial_bodies.cpp
     src/entities/luna.cpp
     src/entities/people.cpp
     src/entities/sol.cpp
@@ -34,13 +33,11 @@ set(SRC_FILES
     src/entities/terra.cpp
     #src/entities/trees.cpp
     src/main.cpp
-    src/meshes/patchwork.cpp
-    src/meshes/sphere_ico.cpp
-    src/meshes/sphere_ico_find.cpp
     src/paths.cpp
     src/physics/centering.cpp
     src/physics/gravity.cpp
     src/physics/point_masses.cpp
+    src/physics/relativity.cpp
     src/physics/util.cpp
     src/post-processing/atmosphere.cpp
     src/post-processing/bloom.cpp
@@ -48,6 +45,14 @@ set(SRC_FILES
     src/post-processing/pass.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
+    src/terrain/mesh.cpp
+    src/terrain/metadata.cpp
+    src/terrain/shaders.cpp
+    src/terrain/sphere_ico.cpp
+    src/terrain/static_bodies.cpp
+    src/terrain/terrain.cpp
+    src/terrain/terrain_chunk.cpp
+    src/terrain/mesh.cpp
     src/util.cpp)
 
 # Standalone Target

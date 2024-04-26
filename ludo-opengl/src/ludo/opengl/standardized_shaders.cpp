@@ -91,7 +91,7 @@ in vec3 position;
 R"--(
 // Buffers
 
-layout(std430, binding = 0) buffer context_layout
+layout(std430, binding = 0) buffer rendering_context_layout
 {
   camera_t camera;
   uint light_count;
@@ -115,7 +115,7 @@ layout(std430, binding = 3) buffer instance_layout
 R"--(
 void main()
 {
-  instance_t instance = instances[gl_DrawID];
+  instance_t instance = instances[gl_BaseInstance + gl_InstanceID];
   mat4 world_transform = instance.transform;
 )--";
 

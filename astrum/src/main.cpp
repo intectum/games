@@ -5,13 +5,13 @@
 #include <ludo/opengl/util.h>
 
 #include "constants.h"
-#include "entities/celestial_bodies.h"
 #include "post-processing/atmosphere.h"
 #include "post-processing/bloom.h"
 #include "post-processing/hdr_resolve.h"
 #include "post-processing/pass.h"
 #include "post-processing/util.h"
 #include "solar_system.h"
+#include "terrain/terrain.h"
 #include "util.h"
 
 int main()
@@ -22,9 +22,9 @@ int main()
 
   auto max_terrain_chunks = 25;
   auto post_processing_rectangle_counts = ludo::rectangle_counts();
-  auto sol_mesh_counts = astrum::celestial_body_counts(astrum::sol_lods);
-  auto terra_mesh_counts = astrum::celestial_body_counts(astrum::terra_lods);
-  auto luna_mesh_counts = astrum::celestial_body_counts(astrum::luna_lods);
+  auto sol_mesh_counts = astrum::terrain_counts(astrum::sol_lods);
+  auto terra_mesh_counts = astrum::terrain_counts(astrum::terra_lods);
+  auto luna_mesh_counts = astrum::terrain_counts(astrum::luna_lods);
   auto person_mesh_counts = ludo::import_counts("assets/models/minifig.dae");
   auto spaceship_mesh_counts = ludo::import_counts("assets/models/spaceship.obj");
   auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_chunks * 48 * 2, max_terrain_chunks * 48 * 2 };
@@ -80,7 +80,7 @@ int main()
   ludo::allocate<ludo::mesh_instance>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
   ludo::allocate<ludo::script>(inst, 36);
-  ludo::allocate<ludo::shader>(inst, 19);
+  ludo::allocate<ludo::shader>(inst, 22);
   ludo::allocate<ludo::static_body>(inst, max_terrain_chunks);
   ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
@@ -88,12 +88,12 @@ int main()
   ludo::allocate<astrum::celestial_body>(inst, 3);
   ludo::allocate<astrum::game_controls>(inst, 1);
   ludo::allocate<astrum::map_controls>(inst, 1);
-  ludo::allocate<astrum::patchwork>(inst, 3);
   ludo::allocate<astrum::person>(inst, 1);
   ludo::allocate<astrum::person_controls>(inst, 1);
   ludo::allocate<astrum::point_mass>(inst, 5);
   ludo::allocate<astrum::solar_system>(inst, 1);
   ludo::allocate<astrum::spaceship_controls>(inst, 1);
+  ludo::allocate<astrum::terrain>(inst, 3);
 
   ludo::add(inst, ludo::windowing_context());
   auto window = ludo::add(inst, ludo::window { .title = "astrum", .width = 1920, .height = 1080, .v_sync = false });
@@ -223,12 +223,12 @@ int main()
   ludo::deallocate<astrum::celestial_body>(inst);
   ludo::deallocate<astrum::game_controls>(inst);
   ludo::deallocate<astrum::map_controls>(inst);
-  ludo::deallocate<astrum::patchwork>(inst);
   ludo::deallocate<astrum::person>(inst);
   ludo::deallocate<astrum::person_controls>(inst);
   ludo::deallocate<astrum::point_mass>(inst);
   ludo::deallocate<astrum::solar_system>(inst);
   ludo::deallocate<astrum::spaceship_controls>(inst);
+  ludo::deallocate<astrum::terrain>(inst);
 
   ludo::deallocate_heap_vram<ludo::draw_command>(inst);
   ludo::deallocate_heap_vram<ludo::index_t>(inst);

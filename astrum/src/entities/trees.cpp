@@ -156,7 +156,7 @@ namespace astrum
           }
         }
 
-        return []() {};
+        return [] {};
       });
 
       for (auto instance_index = mesh.instance_start; instance_index < mesh.instance_start + mesh.instance_count; instance_index++)

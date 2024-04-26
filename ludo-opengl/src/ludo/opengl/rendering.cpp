@@ -168,8 +168,8 @@ namespace ludo
 
       for (auto index = 0; index < render_programs.array_size; index++)
       {
-        auto instance_byte_index = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
-        render_programs[index].active_commands.count = read<uint32_t>(context_buffer, instance_byte_index + sizeof(uint64_t) + sizeof(uint32_t));
+        auto offset = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
+        render_programs[index].active_commands.count = read<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
       }
 
       deallocate_vram(context_buffer);

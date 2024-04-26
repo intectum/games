@@ -7,6 +7,8 @@
 
 namespace astrum
 {
+  void add_sol(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity);
+
   float sol_height(const ludo::vec3& position);
 
   ludo::vec4 sol_color(float longitude, const std::array<float, 3>& heights, float gradient);

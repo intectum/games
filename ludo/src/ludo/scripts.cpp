@@ -49,7 +49,7 @@ namespace ludo
         {
           script(instance);
 
-          return []() {};
+          return [] {};
         });
       }
 

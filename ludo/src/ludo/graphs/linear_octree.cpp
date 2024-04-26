@@ -30,7 +30,7 @@ namespace ludo
   {
     auto octree = add(data<ludo::linear_octree>(instance), init, partition);
     octree->id = next_id++;
-    octree->compute_program_id = add_linear_octree_compute_program(instance, *octree, 16)->id;
+    octree->compute_program_id = add_linear_octree_compute_program(instance, *octree)->id;
 
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree->depth));
     auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));

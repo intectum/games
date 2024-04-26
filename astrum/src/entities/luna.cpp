@@ -2,6 +2,8 @@
 
 #include <libnoise/noise.h>
 
+#include "../constants.h"
+#include "../terrain/terrain.h"
 #include "luna.h"
 
 namespace astrum
@@ -31,6 +33,45 @@ namespace astrum
   float bias(float x, float bias);
 
   auto craters = std::vector<crater>();
+
+  void add_luna(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
+  {
+    auto celestial_body = ludo::add(
+      inst,
+      astrum::celestial_body
+      {
+        .name = "luna",
+        .radius = luna_radius,
+        .mass = luna_mass,
+      },
+      "celestial-bodies"
+    );
+
+    ludo::add(
+      inst,
+      point_mass
+      {
+        .mass = celestial_body->mass,
+        .transform = initial_transform,
+        .linear_velocity = initial_velocity
+      },
+    "celestial-bodies"
+    );
+
+    add_terrain(
+      inst,
+      terrain
+      {
+        .format = ludo::vertex_format_pn,
+        .lods = luna_lods,
+        .height_func = luna_height,
+        .color_func = luna_color,
+        .tree_func = luna_tree
+      },
+      *celestial_body,
+    "celestial-bodies"
+    );
+  }
 
   float luna_height(const ludo::vec3& position)
   {

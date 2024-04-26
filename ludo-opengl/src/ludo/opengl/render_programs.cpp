@@ -67,23 +67,32 @@ namespace ludo
     auto render_program = init;
     render_program.format = format;
 
-    auto vertex_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::VERTEX, format, partition);
-    render_program.vertex_shader_id = vertex_shader->id;
+    if (!render_program.vertex_shader_id)
+    {
+      auto vertex_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::VERTEX, format, partition);
+      render_program.vertex_shader_id = vertex_shader->id;
+    }
 
-    auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, format, partition);
-    render_program.fragment_shader_id = fragment_shader->id;
+    if (!render_program.fragment_shader_id)
+    {
+      auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, format, partition);
+      render_program.fragment_shader_id = fragment_shader->id;
+    }
 
     auto& draw_commands = data_heap<draw_command>(instance);
     render_program.command_buffer = allocate(draw_commands, capacity * sizeof(draw_command));
 
-    render_program.instance_size = sizeof(mat4);
-    if (format.has_texture_coordinate)
+    if (!render_program.instance_size)
     {
-      render_program.instance_size += 16;
-    }
-    if (format.has_bone_weights)
-    {
-      render_program.instance_size += max_bones_per_armature * sizeof(mat4);
+      render_program.instance_size = sizeof(mat4);
+      if (format.has_texture_coordinate)
+      {
+        render_program.instance_size += 16;
+      }
+      if (format.has_bone_weights)
+      {
+        render_program.instance_size += max_bones_per_armature * sizeof(mat4);
+      }
     }
 
     render_program.instance_buffer_front = allocate_vram(capacity * render_program.instance_size);

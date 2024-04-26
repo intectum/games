@@ -1,4 +1,4 @@
-#include "../entities/celestial_bodies.h"
+#include "../types.h"
 #include "centering.h"
 
 namespace astrum
@@ -11,8 +11,10 @@ namespace astrum
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
     auto& static_bodies = ludo::data<ludo::static_body>(inst);
 
-    auto& patchworks = ludo::data<patchwork>(inst);
+    auto& terrains = ludo::data<celestial_body>(inst);
     auto& point_masses = ludo::data<point_mass>(inst);
+
+    auto& terrain_render_programs = ludo::data<ludo::render_program>(inst, "terrain");
 
     auto camera = ludo::get_camera(*rendering_context);
     auto camera_position = ludo::position(camera.view);
@@ -30,13 +32,21 @@ namespace astrum
       linear_octree.bounds.max += delta;
     }
 
-    for (auto& mesh_instance : mesh_instances)
+    for (auto& partition_pair : mesh_instances.partitions)
     {
-      if (mesh_instance.instance_buffer.data)
+      if (partition_pair.first == "terrain")
       {
-        // TODO replace with at()
-        auto transform = reinterpret_cast<ludo::mat4*>(mesh_instance.instance_buffer.data);
-        ludo::position(*transform, ludo::position(*transform) + delta);
+        continue;
+      }
+
+      for (auto& mesh_instance: partition_pair.second)
+      {
+        if (mesh_instance.instance_buffer.data)
+        {
+          // TODO replace with at()
+          auto transform = reinterpret_cast<ludo::mat4 *>(mesh_instance.instance_buffer.data);
+          ludo::position(*transform, ludo::position(*transform) + delta);
+        }
       }
     }
 
@@ -55,9 +65,11 @@ namespace astrum
       ludo::push(body);
     }
 
-    for (auto& patchwork : patchworks)
+    for (auto index = uint32_t(0); index < terrains.array_size; index++)
     {
-      patchwork.transform.position += delta;
+      // TODO replace with at()
+      auto transform = reinterpret_cast<ludo::mat4*>(terrain_render_programs[index].shader_buffer.data);
+      ludo::position(*transform, ludo::position(*transform) + delta);
     }
 
     for (auto& point_mass : point_masses)
