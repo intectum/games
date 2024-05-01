@@ -42,7 +42,7 @@ namespace astrum
         "prediction-paths"
       );
 
-      for (auto step_index = ludo::index_t(0); step_index < path_steps; step_index++)
+      for (auto step_index = uint32_t(0); step_index < path_steps; step_index++)
       {
         ludo::write(mesh->index_buffer, step_index * sizeof(ludo::index_t), step_index);
       }

@@ -100,7 +100,7 @@ namespace ludo
   /// \param position The position in the buffer to read from.
   /// \param value The bytes in which to store the data.
   /// \param size The number of bytes to read.
-  LUDO_API void read(const buffer& buffer, uint64_t position, std::byte* value, uint32_t size);
+  LUDO_API void read(const buffer& buffer, uint64_t position, std::byte* value, uint32_t size); // TODO why not return a ref?
 
   ///
   /// Writes a value to a buffer.

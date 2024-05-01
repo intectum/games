@@ -7,12 +7,22 @@
 
 namespace ludo
 {
-  void find(std::vector<mesh_instance>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
+  void find(std::vector<uint64_t>& results, const linear_octree& octree, uint32_t octant_count_1d, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
   std::array<ludo::aabb, 8> calculate_child_bounds(const aabb& bounds);
-  std::array<uint32_t, 3> to_octant_coordinates(uint32_t key);
+  std::vector<uint64_t> octant_mesh_instance_ids(const linear_octree& octree, uint32_t octant_index);
+  uint32_t octant_mesh_instance_index(const linear_octree& octree, uint64_t mesh_instance_id, uint32_t octant_index);
+  uint64_t octant_offset(const linear_octree& octree, uint32_t octant_index);
+  uint32_t to_index(uint32_t octant_count_1d, const std::array<uint32_t, 3>& octant_coordinates);
   std::array<uint32_t, 3> to_octant_coordinates(const linear_octree& octree, const vec3& position);
-  uint32_t to_key(const std::array<uint32_t, 3>& octant_coordinates);
-  uint32_t to_key(const linear_octree& octree, const vec3& position);
+
+  // 3 * vec3, padded to 16 bytes
+  const auto front_buffer_header_size = sizeof(vec3) + 4 + sizeof(vec3) + 4 + sizeof(vec3) + 4;
+
+  // The mesh instance count, padded to 8 bytes
+  const auto octant_header_size = sizeof(uint32_t) + 4;
+
+  // 2 IDs and 4 index/start/count values
+  const auto mesh_instance_size = 2 * sizeof(uint64_t) + 4 * sizeof(uint32_t);
 
   template<>
   linear_octree* add(instance& instance, const linear_octree& init, const std::string& partition)
@@ -21,106 +31,145 @@ namespace ludo
 
     auto octree = add(data<ludo::linear_octree>(instance), init, partition);
     octree->id = next_id++;
+    octree->compute_program_id = add_linear_octree_compute_program(instance, *octree, 16)->id;
 
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree->depth));
-    for (auto x = uint32_t(0); x < octant_count_1d; x++)
-    {
-      for (auto y = uint32_t(0); y < octant_count_1d; y++)
-      {
-        for (auto z = uint32_t(0); z < octant_count_1d; z++)
-        {
-          octree->octants[to_key({ x, y, z })] = std::vector<mesh_instance>();
-        }
-      }
-    }
+    auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));
+
+    auto data_size = octant_offset(*octree, octant_count);
+
+    octree->front_buffer = allocate_vram(front_buffer_header_size + data_size);
+    octree->back_buffer = allocate(data_size);
+
+    // TODO initialize counts to 0
 
     return octree;
   }
 
-  void add(linear_octree& octree, const mesh_instance& element, const vec3& position)
+  void push(linear_octree& octree)
   {
-    octree.octants[to_key(octree, position)].emplace_back(element);
+    auto offset = 0;
+    write(octree.front_buffer, offset, octree.bounds.min);
+    offset += 16;
+    write(octree.front_buffer, offset, octree.bounds.max);
+    offset += 16;
+    write(octree.front_buffer, offset, ludo::octant_size(octree));
+    offset += 16;
+    std::memcpy(octree.front_buffer.data + offset, octree.back_buffer.data, octree.back_buffer.size);
   }
 
-  void remove(linear_octree& octree, const mesh_instance& element, const vec3& position)
+  void add(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position)
   {
-    auto octant_coordinates = to_octant_coordinates(octree, position);
-
-    auto& elements = octree.octants[to_key(octant_coordinates)];
-    auto element_iter = std::find_if(elements.begin(), elements.end(), [&](const mesh_instance& the_mesh_instance) { return the_mesh_instance.id == element.id; });
-    if (element_iter != elements.end())
-    {
-      elements.erase(element_iter);
-      return;
-    }
-
-    // Search adjacent octants in case of floating point precision errors
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree.depth));
-    auto offsets = std::array<int32_t, 3> { -1, 0, 1 };
-    for (auto offset_x : offsets)
-    {
-      if ((octant_coordinates[0] == 0 && offset_x == -1) || octant_coordinates[0] == octant_count_1d - 1 && offset_x == 1)
-      {
-        continue;
-      }
+    auto offset = octant_offset(octree, to_index(octant_count_1d, to_octant_coordinates(octree, position)));
 
-      for (auto offset_y : offsets)
+    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+
+    assert(mesh_instance_count < octree.octant_capacity && "octant is full");
+
+    write(octree.back_buffer, offset, mesh_instance_count + 1);
+    offset += 4;
+    offset += 4;
+    offset += mesh_instance_count * mesh_instance_size;
+    write(octree.back_buffer, offset, mesh_instance.id);
+    offset += 8;
+    write(octree.back_buffer, offset, mesh_instance.render_program_id);
+    offset += 8;
+    write(octree.back_buffer, offset, mesh_instance.instance_index);
+    offset += 4;
+    write(octree.back_buffer, offset, mesh_instance.indices.start);
+    offset += 4;
+    write(octree.back_buffer, offset, mesh_instance.indices.count);
+    offset += 4;
+    write(octree.back_buffer, offset, mesh_instance.vertices.start);
+  }
+
+  void remove(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position)
+  {
+    auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree.depth));
+    auto octant_coordinates = to_octant_coordinates(octree, position);
+    auto octant_index = to_index(octant_count_1d, octant_coordinates);
+    auto mesh_instance_index = octant_mesh_instance_index(octree, mesh_instance.id, octant_index);
+
+    if (mesh_instance_index == octree.octant_capacity)
+    {
+      // Search adjacent octants in case of floating point precision errors
+      auto offsets = std::array<int32_t, 3> { -1, 0, 1 };
+      for (auto offset_x : offsets)
       {
-        if ((octant_coordinates[1] == 0 && offset_y == -1) || octant_coordinates[1] == octant_count_1d - 1 && offset_y == 1)
+        if ((octant_coordinates[0] == 0 && offset_x == -1) || octant_coordinates[0] == octant_count_1d - 1 && offset_x == 1)
         {
           continue;
         }
 
-        for (auto offset_z : offsets)
+        for (auto offset_y : offsets)
         {
-          if ((octant_coordinates[2] == 0 && offset_z == -1) || octant_coordinates[2] == octant_count_1d - 1 && offset_z == 1)
+          if ((octant_coordinates[1] == 0 && offset_y == -1) || octant_coordinates[1] == octant_count_1d - 1 && offset_y == 1)
           {
             continue;
           }
 
-          auto adjacent_octant_coordinates = std::array<uint32_t, 3> { octant_coordinates[0] + offset_x, octant_coordinates[1] + offset_y, octant_coordinates[2] + offset_z };
-          if (adjacent_octant_coordinates == octant_coordinates)
+          for (auto offset_z : offsets)
           {
-            continue;
+            if ((octant_coordinates[2] == 0 && offset_z == -1) || octant_coordinates[2] == octant_count_1d - 1 && offset_z == 1)
+            {
+              continue;
+            }
+
+            auto adjacent_octant_coordinates = std::array<uint32_t, 3> { octant_coordinates[0] + offset_x, octant_coordinates[1] + offset_y, octant_coordinates[2] + offset_z };
+            if (adjacent_octant_coordinates == octant_coordinates)
+            {
+              continue;
+            }
+
+            octant_index = to_index(octant_count_1d, adjacent_octant_coordinates);
+            mesh_instance_index = octant_mesh_instance_index(octree, mesh_instance.id, octant_index);
+            if (mesh_instance_index < octree.octant_capacity)
+            {
+              break;
+            }
           }
 
-          auto& adjacent_elements = octree.octants[to_key(adjacent_octant_coordinates)];
-          auto adjacent_element_iter = std::find_if(adjacent_elements.begin(), adjacent_elements.end(), [&](const mesh_instance& the_mesh_instance) { return the_mesh_instance.id == element.id; });
-          if (adjacent_element_iter != adjacent_elements.end())
+          if (mesh_instance_index < octree.octant_capacity)
           {
-            adjacent_elements.erase(adjacent_element_iter);
-            return;
+            break;
           }
+        }
+
+        if (mesh_instance_index < octree.octant_capacity)
+        {
+          break;
         }
       }
     }
 
-    assert(false && "element not found");
+    assert(mesh_instance_index < octree.octant_capacity && "mesh instance not found");
+
+    auto offset = octant_offset(octree, octant_index);
+
+    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset) - 1;
+    write(octree.back_buffer, offset, mesh_instance_count);
+    offset += 4;
+    offset += 4;
+
+    offset += mesh_instance_index * mesh_instance_size;
+    std::memmove(
+      octree.back_buffer.data + offset,
+      octree.back_buffer.data + offset + mesh_instance_size,
+      (mesh_instance_count - mesh_instance_index) * mesh_instance_size
+    );
   }
 
-  void move(linear_octree& octree, const vec3& movement)
+  std::vector<uint64_t> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
-    octree.bounds.min += movement;
-    octree.bounds.max += movement;
+    auto mesh_instance_ids = std::vector<uint64_t>();
+    auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree.depth));
+    find(mesh_instance_ids, octree, octant_count_1d, 0, octree.bounds, test, false);
 
-    for (auto& octant: octree.octants)
-    {
-      for (auto& mesh: octant.second)
-      {
-        position(mesh.transform, position(mesh.transform) + movement);
-      }
-    }
+    return mesh_instance_ids;
   }
 
-  std::vector<mesh_instance> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
-  {
-    auto mesh_instances = std::vector<mesh_instance>();
-    find(mesh_instances, octree, 0, octree.bounds, test, false);
-
-    return mesh_instances;
-  }
-
-  void find(std::vector<mesh_instance>& results, const linear_octree& octree, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
+  void find(std::vector<uint64_t>& results, const linear_octree& octree, uint32_t octant_count_1d, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside)
   {
     auto test_result = inside ? 1 : test(bounds);
     if (test_result == -1)
@@ -131,8 +180,9 @@ namespace ludo
     if (depth == octree.depth)
     {
       auto center = bounds.min + (bounds.max - bounds.min) / 2.0f;
-      auto& elements = octree.octants.at(to_key(octree, center));
-      results.insert(results.end(), elements.begin(), elements.end());
+      auto octant_index = to_index(octant_count_1d, to_octant_coordinates(octree, center));
+      auto ids = octant_mesh_instance_ids(octree, octant_index);
+      results.insert(results.end(), ids.begin(), ids.end());
 
       return;
     }
@@ -140,20 +190,20 @@ namespace ludo
     auto child_bounds = calculate_child_bounds(bounds);
     for (auto child_bound : child_bounds)
     {
-      find(results, octree, depth + 1, child_bound, test, test_result == 1);
+      find(results, octree, octant_count_1d, depth + 1, child_bound, test, test_result == 1);
     }
   }
 
-  std::vector<mesh_instance> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
+  std::vector<uint64_t> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test)
   {
-    auto mesh_instances = std::vector<mesh_instance>();
+    auto mesh_instance_ids = std::vector<uint64_t>();
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2, octree.depth));
     auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));
     auto octant_size = ludo::octant_size(octree);
 
-    divide_and_conquer(octant_count, [&octree, &test, &mesh_instances, octant_count_1d, octant_size](uint32_t start, uint32_t end)
+    divide_and_conquer(octant_count, [&octree, &test, &mesh_instance_ids, octant_count_1d, octant_size](uint32_t start, uint32_t end)
     {
-      auto task_mesh_instances = std::vector<mesh_instance>();
+      auto task_mesh_instance_ids = std::vector<uint64_t>();
 
       for (auto index = start; index < end; index++)
       {
@@ -172,18 +222,18 @@ namespace ludo
 
         if (test(bounds) != -1)
         {
-          auto& octant_meshes = octree.octants.at(to_key({ x, y, z }));
-          task_mesh_instances.insert(task_mesh_instances.end(), octant_meshes.begin(), octant_meshes.end());
+          auto ids = octant_mesh_instance_ids(octree, index);
+          task_mesh_instance_ids.insert(task_mesh_instance_ids.end(), ids.begin(), ids.end());
         }
       }
 
-      return [&mesh_instances, task_mesh_instances]()
+      return [&mesh_instance_ids, task_mesh_instance_ids]()
       {
-        mesh_instances.insert(mesh_instances.end(), task_mesh_instances.begin(), task_mesh_instances.end());
+        mesh_instance_ids.insert(mesh_instance_ids.end(), task_mesh_instance_ids.begin(), task_mesh_instance_ids.end());
       };
     });
 
-    return mesh_instances;
+    return mesh_instance_ids;
   }
 
   vec3 octant_size(const linear_octree& octree)
@@ -245,24 +295,58 @@ namespace ludo
     };
   }
 
-  uint32_t to_key(const std::array<uint32_t, 3>& octant_coordinates)
+  std::vector<uint64_t> octant_mesh_instance_ids(const linear_octree& octree, uint32_t octant_index)
   {
-    return octant_coordinates[0] | octant_coordinates[1] << 10 | octant_coordinates[2] << 20;
+    auto octant_mesh_instance_ids = std::vector<uint64_t>();
+    auto offset = octant_offset(octree, octant_index);
+
+    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+    offset += 4;
+    offset += 4;
+
+    for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
+    {
+      octant_mesh_instance_ids.push_back(read<uint64_t>(octree.back_buffer, offset));
+      offset += mesh_instance_size;
+    }
+
+    return octant_mesh_instance_ids;
   }
 
-  uint32_t to_key(const linear_octree& octree, const vec3& position)
+  uint32_t octant_mesh_instance_index(const linear_octree& octree, uint64_t mesh_instance_id, uint32_t octant_index)
   {
-    return to_key(to_octant_coordinates(octree, position));
+    auto offset = octant_offset(octree, octant_index);
+
+    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+    offset += 4;
+    offset += 4;
+
+    for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
+    {
+      if (read<uint64_t>(octree.back_buffer, offset) == mesh_instance_id)
+      {
+        return mesh_instance_index;
+      }
+
+      offset += mesh_instance_size;
+    }
+
+    return octree.octant_capacity;
   }
 
-  std::array<uint32_t, 3> to_octant_coordinates(uint32_t key)
+  uint64_t octant_offset(const linear_octree& octree, uint32_t octant_index)
   {
-    return { key & 0x3FF, (key >> 10) & 0x3FF, (key >> 20) & 0xFFF };
+    return octant_index * (octant_header_size + octree.octant_capacity * mesh_instance_size);
+  }
+
+  uint32_t to_index(uint32_t octant_count_1d, const std::array<uint32_t, 3>& octant_coordinates)
+  {
+    return octant_coordinates[0] * octant_count_1d * octant_count_1d + octant_coordinates[1] * octant_count_1d + octant_coordinates[2];
   }
 
   std::array<uint32_t, 3> to_octant_coordinates(const linear_octree& octree, const vec3& position)
   {
-    assert(position >= octree.bounds.min && position <= octree.bounds.max && "out of bounds!");
+    assert(position >= octree.bounds.min && position <= octree.bounds.max && "position out of bounds");
 
     auto octant_size = ludo::octant_size(octree);
 

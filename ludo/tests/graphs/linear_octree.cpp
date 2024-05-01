@@ -9,6 +9,8 @@
 
 namespace ludo
 {
+  std::vector<uint64_t> octant_mesh_instance_ids(const linear_octree& octree, uint32_t octant_index);
+
   void test_graphs_linear_octree()
   {
     test_group("linear_octree");
@@ -21,22 +23,22 @@ namespace ludo
     allocate<linear_octree>(inst, 1);
 
     auto linear_octree_1 = add(inst, linear_octree { .bounds = bounds_1 });
-    test_equal("linear_octree: init (octant count)", linear_octree_1->octants.size(), std::size_t(8));
 
     auto position_1 = vec3 { -0.25f, -0.25f, -0.25f };
-    auto position_1_octant_key = 0;
+    auto position_1_octant_index = 0;
 
     auto mesh_instance_1 = mesh_instance { .id = 1 };
     add(*linear_octree_1, mesh_instance_1, position_1);
-    for (auto& octant : linear_octree_1->octants)
+    for (auto octant_index = 0; octant_index < 8; octant_index++)
     {
-      if (octant.first == position_1_octant_key)
+      auto ids = octant_mesh_instance_ids(*linear_octree_1, octant_index);
+      if (octant_index == position_1_octant_index)
       {
-        test_equal("linear_octree: add (octant element count)", octant.second.size(), std::size_t(1));
+        test_equal("linear_octree: add (octant element count)", ids.size(), std::size_t(1));
       }
       else
       {
-        test_equal("linear_octree: add (octant element count)", octant.second.size(), std::size_t(0));
+        test_equal("linear_octree: add (octant element count)", ids.size(), std::size_t(0));
       }
     }
 
@@ -44,15 +46,16 @@ namespace ludo
     add(*linear_octree_1, mesh_instance_2, position_1);
 
     remove(*linear_octree_1, mesh_instance_2, position_1);
-    for (auto& octant : linear_octree_1->octants)
+    for (auto octant_index = 0; octant_index < 8; octant_index++)
     {
-      if (octant.first == position_1_octant_key)
+      auto ids = octant_mesh_instance_ids(*linear_octree_1, octant_index);
+      if (octant_index == position_1_octant_index)
       {
-        test_equal("linear_octree: add (octant element count)", octant.second.size(), std::size_t(1));
+        test_equal("linear_octree: remove (octant element count)", ids.size(), std::size_t(1));
       }
       else
       {
-        test_equal("linear_octree: add (octant element count)", octant.second.size(), std::size_t(0));
+        test_equal("linear_octree: remove (octant element count)", ids.size(), std::size_t(0));
       }
     }
 
@@ -79,5 +82,15 @@ namespace ludo
       return intersect(bounds_3, bounds) ? 0 : -1;
     });
     test_equal("octree: find parallel 2", meshes_4.size(), std::size_t(0));
+  }
+
+  // dummy functions so that buffers compile
+  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree, uint32_t max_render_programs)
+  {
+    return new compute_program();
+  }
+
+  void set_texture(mesh_instance& mesh_instance, const texture& texture)
+  {
   }
 }

@@ -30,8 +30,8 @@ int main()
   auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_chunks * 48 * 2, max_terrain_chunks * 48 * 2 };
 
   auto max_rendered_instances =
-    1 + // post-processing rectangle
-    3 * (5120 * 2); // celestial bodies (doubled to account for re-allocations)
+    14 + // post-processing
+    3 * (5120 * 2) + // celestial bodies (doubled to account for re-allocations)
     1 + // person
     1; // spaceship
   auto max_indices =
@@ -69,8 +69,8 @@ int main()
 
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
-  ludo::allocate<ludo::armature_instance>(inst, 1);
   ludo::allocate<ludo::body_shape>(inst, 3);
+  ludo::allocate<ludo::compute_program>(inst, 4);
   ludo::allocate<ludo::dynamic_body>(inst, 0);
   ludo::allocate<ludo::frame_buffer>(inst, 16);
   ludo::allocate<ludo::ghost_body>(inst, 1);
@@ -101,8 +101,7 @@ int main()
 
   ludo::add(inst, ludo::rendering_context(), 1);
 
-  ludo::allocate_vram<ludo::draw_command>(inst, max_rendered_instances);
-  ludo::allocate_vram<ludo::instance_t>(inst, max_rendered_instances * sizeof(ludo::mat4) + 10 * sizeof(uint64_t) + ludo::max_bones_per_armature * sizeof(ludo::mat4));
+  ludo::allocate_heap_vram<ludo::draw_command>(inst, max_rendered_instances);
   ludo::allocate_heap_vram<ludo::index_t>(inst, max_indices);
   ludo::allocate_heap_vram<ludo::vertex_t>(inst, max_vertices * ludo::vertex_format_pnc.size);
 
@@ -132,11 +131,11 @@ int main()
   // TODO Maybe find a better way to do this?
   ludo::add<ludo::script>(inst, [](ludo::instance& inst)
   {
-    auto& vram_draw_commands = data<ludo::draw_command>(inst);
-    auto& vram_instances = data<ludo::instance_t>(inst);
-
-    ludo::clear(vram_draw_commands);
-    ludo::clear(vram_instances);
+    auto& render_programs = data<ludo::render_program>(inst);
+    for (auto& render_program : render_programs)
+    {
+      render_program.active_commands.start = 0;
+    }
   });
 
   auto& linear_octrees = data<ludo::linear_octree>(inst);
@@ -158,6 +157,7 @@ int main()
       inst,
       ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST },
       ludo::format(false, true),
+      1,
       "ludo-bullet::visualizations"
     );
 
@@ -194,15 +194,15 @@ int main()
 
   ludo::add<ludo::script>(inst, astrum::print_timings);
 
-  std::cout << std::fixed << std::setprecision(2) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
+  std::cout << std::fixed << std::setprecision(4) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
 
   ludo::play(inst);
 
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
-  ludo::deallocate<ludo::armature_instance>(inst);
   ludo::deallocate<ludo::body_shape>(inst);
   ludo::deallocate<ludo::dynamic_body>(inst);
+  ludo::deallocate<ludo::compute_program>(inst);
   ludo::deallocate<ludo::frame_buffer>(inst);
   ludo::deallocate<ludo::ghost_body>(inst);
   ludo::deallocate<ludo::kinematic_body>(inst);
@@ -230,8 +230,7 @@ int main()
   ludo::deallocate<astrum::solar_system>(inst);
   ludo::deallocate<astrum::spaceship_controls>(inst);
 
-  ludo::deallocate_vram<ludo::draw_command>(inst);
-  ludo::deallocate_vram<ludo::mat4>(inst);
+  ludo::deallocate_heap_vram<ludo::draw_command>(inst);
   ludo::deallocate_heap_vram<ludo::index_t>(inst);
   ludo::deallocate_heap_vram<ludo::vertex_t>(inst);
 

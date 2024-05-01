@@ -1,5 +1,7 @@
 #include <fstream>
 
+#include <ludo/opengl/util.h>
+
 #include "hdr_resolve.h"
 #include "util.h"
 
@@ -10,6 +12,8 @@ namespace astrum
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto& previous_frame_buffer = frame_buffers[frame_buffers.array_size - 1];
 
+    auto& vram_draw_commands = data_heap<ludo::draw_command>(inst);
+
     auto fragment_stream = std::ifstream("assets/shaders/hdr.frag");
     auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream);
     auto render_program = ludo::add(
@@ -18,7 +22,8 @@ namespace astrum
       {
         .vertex_shader_id = vertex_shader_id,
         .fragment_shader_id = fragment_shader->id,
-        .format = ludo::vertex_format_pt
+        .format = ludo::vertex_format_pt,
+        .command_buffer = ludo::allocate(vram_draw_commands, sizeof(ludo::draw_command))
       }
     );
 

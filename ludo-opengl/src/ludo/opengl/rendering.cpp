@@ -4,13 +4,13 @@
 
 #include <GL/glew.h>
 
-#include <ludo/animation.h>
 #include <ludo/graphs.h>
+#include <ludo/timer.h>
+#include <ludo/windowing.h>
 
 #include "frame_buffers.h"
 #include "render_programs.h"
 #include "rendering_contexts.h"
-#include "textures.h"
 #include "util.h"
 
 namespace ludo
@@ -26,28 +26,28 @@ namespace ludo
     { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
   };
 
-  std::unordered_map<uint64_t, std::vector<mesh_instance>> find_mesh_instances(const instance& instance, const rendering_context& rendering_context, const render_options& options);
+  void write_commands(instance& instance, const rendering_context& rendering_context, const render_options& options);
+  void write_command(instance& instance, const render_options& options, const mesh_instance& mesh_instance);
   uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance);
   std::array<vec4, 6> frustum_planes(const camera& camera);
-  int32_t frustum_test(const std::array<vec4, 6>& planes, const aabb& bounds);
 
   void render(instance& instance, const render_options& options)
   {
     auto& render_programs = data<render_program>(instance);
     auto rendering_context = first<ludo::rendering_context>(instance);
 
-    auto& vram_draw_commands = data<draw_command>(instance);
-    auto& vram_instances = data<instance_t>(instance);
+    auto& vram_draw_commands = data_heap<draw_command>(instance);
     auto& vram_indices = data_heap<index_t>(instance);
     auto& vram_vertices = data_heap<vertex_t>(instance);
 
-    assert(rendering_context && "rendering context not found");
-    bind(*rendering_context);
+    write_commands(instance, *rendering_context, options);
 
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, vram_draw_commands.id); check_opengl_error();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vram_indices.id); check_opengl_error();
     glBindBuffer(GL_ARRAY_BUFFER, vram_vertices.id); check_opengl_error();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, options.shader_buffer.id); check_opengl_error();
+
+    assert(rendering_context && "rendering context not found");
+    bind(*rendering_context);
 
     if (options.frame_buffer_id)
     {
@@ -68,151 +68,134 @@ namespace ludo
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
     }
 
-    auto grouped_mesh_instances = find_mesh_instances(instance, *rendering_context, options);
-    for (auto& mesh_instance_group : grouped_mesh_instances)
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, options.shader_buffer.id); check_opengl_error();
+
+    for (auto& render_program : render_programs)
     {
-      auto render_program = find_by_id(render_programs.begin(), render_programs.end(), mesh_instance_group.first);
-      assert(render_program != render_programs.end() && "render program not found");
-
-      auto draw_command_start = uint32_t(vram_draw_commands.array_size);
-      auto instance_byte_start = uint64_t(vram_instances.array_size);
-      auto instance_byte_index = instance_byte_start;
-      auto instance_byte_size = mesh_instance_group.second.size() * (sizeof(mat4) + (render_program->format.has_texture_coordinate ? sizeof(uint64_t) : 0));
-      auto animation_byte_start = instance_byte_start + instance_byte_size;
-      auto animation_byte_index = animation_byte_start;
-      auto animation_byte_size = mesh_instance_group.second.size() * (render_program->format.has_bone_weights ? max_bones_per_armature * sizeof(mat4) : 0);
-
-      for (auto& mesh_instance : mesh_instance_group.second)
+      if (!render_program.active_commands.count)
       {
-        write(vram_instances, instance_byte_index, mesh_instance.transform);
-        instance_byte_index += sizeof(mat4);
-
-        if (render_program->format.has_texture_coordinate)
-        {
-          if (mesh_instance.texture_id)
-          {
-            write(vram_instances, instance_byte_index, handle(texture { .id = mesh_instance.texture_id }));
-            instance_byte_index += sizeof(uint64_t);
-          }
-          else
-          {
-            write(vram_instances, instance_byte_index, uint64_t(0));
-            instance_byte_index += sizeof(uint64_t);
-          }
-        }
-
-        if (render_program->format.has_bone_weights)
-        {
-          auto armature_instance = get<ludo::armature_instance>(instance, mesh_instance.armature_instance_id);
-          assert(armature_instance && "armature instance not found");
-
-          for (auto& transform : armature_instance->transforms)
-          {
-            write(vram_instances, animation_byte_index, transform);
-            animation_byte_index += sizeof(mat4);
-          }
-        }
-
-        // TODO combine instance commands where possible?
-        add(vram_draw_commands, draw_command
-        {
-          .index_count = static_cast<GLuint>(mesh_instance.index_buffer.size / sizeof(uint32_t)),
-          .index_start = static_cast<GLuint>((mesh_instance.index_buffer.data - vram_indices.data) / sizeof(uint32_t)),
-          .vertex_start = static_cast<GLuint>((mesh_instance.vertex_buffer.data - vram_vertices.data) / render_program->format.size),
-          .instance_start = static_cast<GLuint>(vram_draw_commands.array_size)
-        });
+        continue;
       }
 
-      bind(*render_program);
-
-      glBindBufferRange(
-        GL_SHADER_STORAGE_BUFFER,
-        3,
-        vram_instances.id,
-        static_cast<GLintptr>(instance_byte_start),
-        static_cast<GLintptr>(instance_byte_size)
-      ); check_opengl_error();
-
-      // The bone transforms are bound separately because including an array of mat4 within the shader's instance_t struct did not work...
-      if (animation_byte_size)
-      {
-        glBindBufferRange(
-          GL_SHADER_STORAGE_BUFFER,
-          4,
-          vram_instances.id,
-          static_cast<GLintptr>(animation_byte_start),
-          static_cast<GLintptr>(animation_byte_size)
-        ); check_opengl_error();
-      }
+      bind(render_program);
 
       glMultiDrawElementsIndirect(
-        draw_modes[render_program->primitive],
+        draw_modes[render_program.primitive],
         GL_UNSIGNED_INT,
-        reinterpret_cast<void*>(draw_command_start * sizeof(draw_command)),
-        static_cast<GLsizei>(vram_draw_commands.array_size - draw_command_start),
+        reinterpret_cast<void*>((render_program.command_buffer.data - vram_draw_commands.data) + render_program.active_commands.start * sizeof(draw_command)),
+        static_cast<GLsizei>(render_program.active_commands.count),
         sizeof(draw_command)
       ); check_opengl_error();
 
-      vram_instances.array_size += instance_byte_size + animation_byte_size;
+      render_program.active_commands.start += render_program.active_commands.count;
+      render_program.active_commands.count = 0;
     }
   }
 
-  std::unordered_map<uint64_t, std::vector<mesh_instance>> find_mesh_instances(const instance& instance, const rendering_context& rendering_context, const render_options& options)
+  void write_commands(instance& instance, const rendering_context& rendering_context, const render_options& options)
   {
-    auto grouped_mesh_instances = std::unordered_map<uint64_t, std::vector<mesh_instance>>();
-
     if (!options.mesh_instance_ids.empty())
     {
-      auto& mesh_instances = data<mesh_instance>(instance);
-
       for (auto mesh_instance_id : options.mesh_instance_ids)
       {
-        auto mesh_instance = find_by_id(mesh_instances.begin(), mesh_instances.end(), mesh_instance_id);
+        auto mesh_instance = get<ludo::mesh_instance>(instance, mesh_instance_id);
         assert(mesh_instance && "mesh instance not found");
 
-        grouped_mesh_instances[get_render_program_id(options, *mesh_instance)].push_back(*mesh_instance);
+        write_command(instance, options, *mesh_instance);
       }
     }
     else if (!options.linear_octree_ids.empty())
     {
-      auto& linear_octrees = data<linear_octree>(instance);
+      auto& render_programs = data<render_program>(instance);
+
+      auto& vram_draw_commands = data_heap<draw_command>(instance);
+
       auto planes = frustum_planes(get_camera(rendering_context));
+
+      // TODO take allocation out of frame?
+      auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.size * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
+
+      auto context_byte_index = uint32_t(0);
+      write(context_buffer, context_byte_index, planes[0]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, planes[1]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, planes[2]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, planes[3]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, planes[4]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, planes[5]);
+      context_byte_index += 16;
+      write(context_buffer, context_byte_index, static_cast<uint32_t>(render_programs.array_size));
+      context_byte_index += 4;
+      for (auto& render_program : render_programs)
+      {
+        // Pad to multiple of 8 as that is the alignment of the largest member of the render_program_t struct (uint64_t)
+        // Since the size of the render_program_t struct is 16 (a multiple of 8), this will only be applied before the first instance of the struct
+        context_byte_index += (8 - context_byte_index % 8) % 8;
+
+        write(context_buffer, context_byte_index, render_program.id);
+        context_byte_index += 8;
+        write(context_buffer, context_byte_index, static_cast<uint32_t>((render_program.command_buffer.data - vram_draw_commands.data) / sizeof(draw_command) + render_program.active_commands.start));
+        context_byte_index += 4;
+        write(context_buffer, context_byte_index, render_program.active_commands.count);
+        context_byte_index += 4;
+      }
 
       for (auto linear_octree_id : options.linear_octree_ids)
       {
-        auto linear_octree = find_by_id(linear_octrees.begin(), linear_octrees.end(), linear_octree_id);
+        auto linear_octree = get<ludo::linear_octree>(instance, linear_octree_id);
         assert(linear_octree && "linear octree not found");
 
-        auto octant_size = ludo::octant_size(*linear_octree);
+        // TODO move this out of here... This is the slow part...
+        ludo::push(*linear_octree);
 
-        auto results = find_parallel(*linear_octree, [&planes, &octant_size](const aabb& bounds)
-        {
-          return frustum_test(
-            planes,
-            // Include neighbouring octants to ensure the mesh instances that overlap from them into this octant are included.
-            {
-            .min = bounds.min - octant_size,
-            .max = bounds.max + octant_size
-            }
-          );
-        });
+        auto linear_octree_compute_program = get<ludo::compute_program>(instance, linear_octree->compute_program_id);
+        assert(linear_octree_compute_program && "compute program not found");
 
-        for (auto& mesh_instance : results)
-        {
-          grouped_mesh_instances[get_render_program_id(options, mesh_instance)].push_back(mesh_instance);
-        }
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, context_buffer.id); check_opengl_error();
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, linear_octree->front_buffer.id); check_opengl_error();
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vram_draw_commands.id); check_opengl_error();
+
+        auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, linear_octree->depth));
+        ludo::execute(*linear_octree_compute_program, octant_count_1d / 8, octant_count_1d / 4, octant_count_1d); check_opengl_error();
       }
+
+      // TODO memory barrier can do it faster?
+      wait_for_render(instance);
+
+      for (auto index = 0; index < render_programs.array_size; index++)
+      {
+        auto instance_byte_index = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
+        render_programs[index].active_commands.count = read<uint32_t>(context_buffer, instance_byte_index + sizeof(uint64_t) + sizeof(uint32_t));
+      }
+
+      deallocate_vram(context_buffer);
     }
     else if (exists<mesh_instance>(instance))
     {
       auto& mesh_instances = data<mesh_instance>(instance);
       for (auto& mesh_instance : mesh_instances)
       {
-        grouped_mesh_instances[get_render_program_id(options, mesh_instance)].push_back(mesh_instance);
+        write_command(instance, options, mesh_instance);
       }
     }
+  }
 
-    return grouped_mesh_instances;
+  void write_command(instance& instance, const render_options& options, const mesh_instance& mesh_instance)
+  {
+    auto render_program = get<ludo::render_program>(instance, get_render_program_id(options, mesh_instance));
+    assert(render_program && "render program not found");
+
+    write(render_program->command_buffer, (render_program->active_commands.start + render_program->active_commands.count++) * sizeof(draw_command), draw_command
+    {
+      .index_count = mesh_instance.indices.count,
+      .index_start = mesh_instance.indices.start,
+      .vertex_start = mesh_instance.vertices.start,
+      .instance_start = mesh_instance.instance_index
+    });
   }
 
   uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance)
@@ -264,46 +247,5 @@ namespace ludo
       rows[3] + rows[2], // Near
       rows[3] - rows[2] // Far
     };
-  }
-
-  // Based on: https://old.cescg.org/CESCG-2002/DSykoraJJelinek/index.html
-  int32_t frustum_test(const std::array<vec4, 6>& planes, const aabb& bounds)
-  {
-    for (auto& plane : planes)
-    {
-      // This is the vertex that would be closest to the plane if the AABB is fully within the negative halfspace (the p-vertex).
-      // If this vertex is indeed in the negative halfspace, all other vertices of the AABB must also be in the negative halfspace.
-      auto closest_negative = vec4
-      {
-        plane[0] > 0.0f ? bounds.max[0] : bounds.min[0],
-        plane[1] > 0.0f ? bounds.max[1] : bounds.min[1],
-        plane[2] > 0.0f ? bounds.max[2] : bounds.min[2],
-        1.0f
-      };
-
-      // Check if the p-vertex is within the negative halfspace.
-      if (dot(plane, closest_negative) < 0.0f)
-      {
-        return -1;
-      }
-
-      // This is the vertex that would be closest to the plane if the AABB is fully within the positive halfspace (the n-vertex).
-      // If this vertex is actually in the negative halfspace, the AABB intersects the plane (since we already showed that at-least one vertex is in the positive halfspace).
-      auto closest_positive = vec4
-      {
-        plane[0] > 0.0f ? bounds.min[0] : bounds.max[0],
-        plane[1] > 0.0f ? bounds.min[1] : bounds.max[1],
-        plane[2] > 0.0f ? bounds.min[2] : bounds.max[2],
-        1.0f
-      };
-
-      // Check if the n-vertex is within the negative halfspace.
-      if (dot(plane, closest_positive) < 0.0f)
-      {
-        return 0;
-      }
-    }
-
-    return 1;
   }
 }

@@ -83,7 +83,6 @@ namespace astrum
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
     auto& point_masses = ludo::data<point_mass>(inst);
-    auto& solar_system = *ludo::first<astrum::solar_system>(inst);
 
     for (auto& partition : partitions)
     {
@@ -95,12 +94,12 @@ namespace astrum
         auto& mesh_instance = partition_mesh_instances[index];
         auto& point_mass = partition_point_masses[index];
 
-        auto old_transform = mesh_instance.transform;
+        auto old_transform = ludo::get_transform(mesh_instance);
         auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
-        mesh_instance.transform = new_transform;
+        ludo::set_transform(mesh_instance, new_transform);
 
-        auto old_position = ludo::position(old_transform) + solar_system.center_delta;
+        auto old_position = ludo::position(old_transform);
         auto new_position = ludo::position(new_transform);
 
         auto movement = new_position - old_position;

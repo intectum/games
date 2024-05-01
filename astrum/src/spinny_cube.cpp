@@ -18,7 +18,6 @@ int main()
 
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
-  ludo::allocate<ludo::armature_instance>(inst, instance_count);
   ludo::allocate<ludo::body_shape>(inst, 1);
   ludo::allocate<ludo::mesh>(inst, 4);
   ludo::allocate<ludo::mesh_instance>(inst, instance_count);
@@ -33,8 +32,7 @@ int main()
 
   auto rendering_context = ludo::add(inst, ludo::rendering_context(), 1);
 
-  ludo::allocate_vram<ludo::draw_command>(inst, instance_count);
-  ludo::allocate_vram<ludo::instance_t>(inst, instance_count * (sizeof(ludo::mat4) + sizeof(uint64_t) + ludo::max_bones_per_armature * sizeof(ludo::mat4)));
+  ludo::allocate_heap_vram<ludo::draw_command>(inst, instance_count * sizeof(ludo::draw_command));
   ludo::allocate_heap_vram<ludo::index_t>(inst, box_counts.first * instance_count + minifig_counts.first);
   ludo::allocate_heap_vram<ludo::vertex_t>(inst, box_counts.second * instance_count * ludo::vertex_format_pnc.size + minifig_counts.second * 80);
 
@@ -53,9 +51,9 @@ int main()
 
   // RENDER PROGRAMS
 
-  auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::format());
-  auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::format(false, true));
-  auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::format(false, false, true));
+  auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::format(), 1);
+  auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::format(false, true), 1);
+  auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::format(false, false, true), 1);
 
   // TEXTURE
 
@@ -126,15 +124,16 @@ int main()
   {
     auto animation = ludo::first<ludo::animation>(inst);
     auto armature = ludo::first<ludo::armature>(inst);
-    auto armature_instance = ludo::first<ludo::armature_instance>(inst);
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
-    mesh_instances[0].transform = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    mesh_instances[1].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    mesh_instances[2].transform = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    mesh_instances[3].transform = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    ludo::set_transform(mesh_instances[0], ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
+    ludo::set_transform(mesh_instances[1], ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
+    ludo::set_transform(mesh_instances[2], ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
+    ludo::set_transform(mesh_instances[3], ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
 
-    ludo::interpolate(*animation, *armature, inst.total_time, armature_instance->transforms);
+    auto bone_transforms = ludo::get_bone_transforms(mesh_instances[3]);
+    ludo::interpolate(*animation, *armature, inst.total_time, bone_transforms.data());
+    ludo::set_bone_transforms(mesh_instances[3], bone_transforms);
   });
 
   ludo::add<ludo::script>(inst, ludo::update_windows);
@@ -142,11 +141,11 @@ int main()
   // TODO Maybe find a better way to do this?
   ludo::add<ludo::script>(inst, [](ludo::instance& inst)
   {
-    auto& vram_draw_commands = data<ludo::draw_command>(inst);
-    auto& vram_instances = data<ludo::instance_t>(inst);
-
-    ludo::clear(vram_draw_commands);
-    ludo::clear(vram_instances);
+    auto& render_programs = data<ludo::render_program>(inst);
+    for (auto& render_program : render_programs)
+    {
+      render_program.active_commands.start = 0;
+    }
   });
 
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
@@ -158,14 +157,12 @@ int main()
 
   // TEARDOWN
 
-  ludo::deallocate_vram<ludo::draw_command>(inst);
-  ludo::deallocate_vram<ludo::instance_t>(inst);
+  ludo::deallocate_heap_vram<ludo::draw_command>(inst);
   ludo::deallocate_heap_vram<ludo::index_t>(inst);
   ludo::deallocate_heap_vram<ludo::vertex_t>(inst);
 
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
-  ludo::deallocate<ludo::armature_instance>(inst);
   ludo::deallocate<ludo::body_shape>(inst);
   ludo::deallocate<ludo::mesh>(inst);
   ludo::deallocate<ludo::mesh_instance>(inst);

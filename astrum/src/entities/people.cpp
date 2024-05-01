@@ -13,7 +13,7 @@ namespace astrum
 
     auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "people");
 
-    mesh_instance->transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
+    ludo::set_transform(*mesh_instance, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
 
     ludo::add(
@@ -47,20 +47,21 @@ namespace astrum
 
     auto& animation = *ludo::first<ludo::animation>(inst, "people");
     auto& armature = *ludo::first<ludo::armature>(inst, "people");
+    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst, "people");
 
     auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
     auto& person_controls_list = ludo::data<astrum::person_controls>(inst, "people");
     auto& people = ludo::data<astrum::person>(inst, "people");
     auto& point_masses = ludo::data<astrum::point_mass>(inst, "people");
-    auto& armature_instances = ludo::data<ludo::armature_instance>(inst, "people");
 
     for (auto index = 0; index < people.array_size; index++)
     {
+      auto& mesh_instance = mesh_instances[index];
+
       auto& person_controls = person_controls_list[index];
       auto& person = people[index];
       auto& point_mass = point_masses[index];
-      auto& armature_instance = armature_instances[index];
 
       if (!person.standing)
       {
@@ -100,7 +101,9 @@ namespace astrum
         person.walk_animation_time = 0.25f;
       }
 
-      ludo::interpolate(animation, armature, person.walk_animation_time, armature_instance.transforms);
+      auto bone_transforms = ludo::get_bone_transforms(mesh_instance);
+      ludo::interpolate(animation, armature, person.walk_animation_time, bone_transforms.data());
+      ludo::set_bone_transforms(mesh_instance, bone_transforms);
     }
   }
 

@@ -10,7 +10,7 @@ namespace astrum
 
     auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "spaceships");
 
-    mesh_instance->transform = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
+    ludo::set_transform(*mesh_instance, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
 
     ludo::add(

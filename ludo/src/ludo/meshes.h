@@ -9,12 +9,14 @@
 #include "data.h"
 #include "math/mat.h"
 #include "math/vec.h"
+#include "util.h"
 
 namespace ludo
 {
-  using instance_t = std::byte;
-  using index_t = uint32_t;
-  using vertex_t = std::byte;
+  struct texture;
+
+  struct index_t { uint32_t data; };
+  struct vertex_t { std::byte data; };
 
   ///
   /// A mesh primitive.
@@ -66,8 +68,9 @@ namespace ludo
     uint64_t armature_id = 0; ///< The ID of the armature instance used to animate this mesh.
     std::vector<uint64_t> animation_ids; ///< The ID of the armature instance used to animate this mesh.
 
-    buffer index_buffer; ///< A buffer containing the index data.
-    buffer vertex_buffer; ///< A buffer containing the vertex data.
+    buffer index_buffer; ///< A buffer containing the indices of this mesh.
+    buffer vertex_buffer; ///< A buffer containing the vertices of this mesh.
+    uint32_t vertex_size = 0; ///< The size in bytes of a vertex within this mesh.
   };
 
   ///
@@ -77,13 +80,12 @@ namespace ludo
     uint64_t id = 0; ///< The ID of the mesh instance.
     uint64_t mesh_id = 0; ///< The ID of the mesh this instance is based on.
     uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh instance.
-    uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
-    uint64_t armature_instance_id = 0; ///< The ID of the armature instance used to animate this mesh.
 
-    buffer index_buffer; ///< A buffer containing the index data.
-    buffer vertex_buffer; ///< A buffer containing the vertex data.
+    uint32_t instance_index = 0; ///< The index of this instance within the render program.
+    buffer instance_buffer; ///< A buffer containing instance data for this mesh instance.
 
-    mat4 transform = ludo::mat4_identity; ///< The transform of this mesh.
+    range indices; ///< The indices of this mesh instance.
+    range vertices; ///< The vertices of this mesh instance.
   };
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information
@@ -153,7 +155,7 @@ namespace ludo
   /// \param init The initial state of the new mesh.
   /// \param index_count The number of indices to allocate.
   /// \param vertex_count The number of vertices to allocate.
-  /// \param vertex_size The size of each vertex in bytes.
+  /// \param vertex_size The size in bytes of a vertex within this mesh.
   /// \param partition The name of the partition.
   /// \return A pointer to the new mesh. This pointer is not guaranteed to remain valid after subsequent additions/removals.
   LUDO_API mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition = "default");
@@ -170,6 +172,21 @@ namespace ludo
   /// \param partition The name of the partition.
   /// \return A pointer to the new mesh instance. This pointer is not guaranteed to remain valid after subsequent additions/removals.
   LUDO_API mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition = "default");
+
+  template<>
+  LUDO_API void remove<mesh_instance>(instance& instance, mesh_instance* element, const std::string& partition);
+
+  ///
+  /// Retrieves the transform from a mesh instance.
+  /// \param mesh_instance The transform to retrieve from the mesh instance.
+  /// \return The transform.
+  LUDO_API mat4 get_transform(const mesh_instance& mesh_instance);
+
+  ///
+  /// Sets the transform of a mesh instance.
+  /// \param mesh_instance The mesh instance to set the transform of.
+  /// \param transform The transform.
+  LUDO_API void set_transform(mesh_instance& mesh_instance, const mat4& transform);
 }
 
 #endif // LUDO_GEOMETRY_H

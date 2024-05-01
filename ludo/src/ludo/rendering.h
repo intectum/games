@@ -5,15 +5,16 @@
 #ifndef LUDO_RENDERING_H
 #define LUDO_RENDERING_H
 
-#include "core.h"
 #include "data.h"
 #include "math/mat.h"
 #include "math/vec.h"
 #include "meshes.h"
-#include "windowing.h"
+#include "util.h"
 
 namespace ludo
 {
+  struct draw_command;
+
   ///
   /// A rendering context.
   struct LUDO_API rendering_context
@@ -41,15 +42,22 @@ namespace ludo
   /// A render program consisting of a set of shaders.
   struct LUDO_API render_program
   {
-    uint64_t id = 0; ///< The ID of the render program.
+    uint64_t id = 0; ///< The ID of this render program.
     uint64_t vertex_shader_id = 0; ///< The ID of the vertex shader.
     uint64_t geometry_shader_id = 0; ///< The ID of the geometry shader.
     uint64_t fragment_shader_id = 0; ///< The ID of the fragment shader.
 
-    mesh_primitive primitive = mesh_primitive::TRIANGLE_LIST; ///< The primitive the render program will render.
-    vertex_format format; ///< The vertex format the render program expects.
+    mesh_primitive primitive = mesh_primitive::TRIANGLE_LIST; ///< The primitive this render program will render.
+    vertex_format format; ///< The vertex format this render program expects.
 
-    buffer shader_buffer; ///< A buffer containing data available to the render program.
+    buffer command_buffer; ///< A buffer containing commands to be executed by this render program.
+    buffer shader_buffer; ///< A buffer containing data available to this render program.
+
+    buffer instance_buffer_front; ///< A buffer containing instance data available to this render program.
+    heap_buffer instance_buffer_back; ///< A buffer containing instance data available to this render program.
+    uint32_t instance_size = 0; ///< The size in bytes of an instance within this render program.
+
+    range active_commands; ///< The active commands to be executed by this render program.
   };
 
   ///
@@ -220,18 +228,20 @@ namespace ludo
   /// \param init The initial state of the new render program.
   /// \param vertex_shader_file_name The name of the file containing the vertex shader code.
   /// \param fragment_shader_file_name The name of the file containing the fragment shader code.
+  /// \param capacity The maximum number of mesh instances that can be rendered by the render program per frame.
   /// \param partition The name of the partition.
   /// \return A pointer to the new render program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API render_program* add(instance& instance, const render_program& init, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, const std::string& partition = "default");
+  LUDO_API render_program* add(instance& instance, const render_program& init, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, uint32_t capacity, const std::string& partition = "default");
 
   ///
   /// Adds a render program to the data of an instance.
   /// \param instance The instance to add the render program to.
   /// \param init The initial state of the new render program.
   /// \param format The vertex format to build the vertex and fragment shaders of the render program for.
+  /// \param capacity The maximum number of mesh instances that can be rendered by the render program per frame.
   /// \param partition The name of the partition.
   /// \return A pointer to the new render program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API render_program* add(instance& instance, const render_program& init, const vertex_format& format, const std::string& partition = "default");
+  LUDO_API render_program* add(instance& instance, const render_program& init, const vertex_format& format, uint32_t capacity, const std::string& partition = "default");
 
   template<>
   LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
@@ -302,6 +312,12 @@ namespace ludo
   /// \param texture The texture.
   /// \return The size (in bytes) of a pixel in a texture.
   uint8_t pixel_depth(const texture& texture);
+
+  ///
+  /// Sets the texture of a mesh instance.
+  /// \param mesh_instance The mesh instance to set the texture of.
+  /// \param texture The texture.
+  LUDO_API void set_texture(mesh_instance& mesh_instance, const texture& texture);
 }
 
 #endif // LUDO_RENDERING_H

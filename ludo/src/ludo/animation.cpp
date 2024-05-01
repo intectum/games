@@ -23,18 +23,21 @@ namespace ludo
     interpolate(animation, armature, tick_time, mat4_identity, final_transforms);
   }
 
-  template<>
-  armature_instance* add(instance& instance, const armature_instance& init, const std::string& partition)
+  std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance)
   {
-    auto armature_instance = add(data<ludo::armature_instance>(instance), init, partition);
-    armature_instance->id = next_id++;
+    auto instance_bone_transforms = reinterpret_cast<ludo::mat4*>(mesh_instance.instance_buffer.data + sizeof(ludo::mat4) + 16);
 
-    for (auto& transform : armature_instance->transforms)
-    {
-      transform = mat4_identity;
-    }
+    std::array<mat4, max_bones_per_armature> bone_transforms;
+    std::memcpy(bone_transforms.data(), instance_bone_transforms, sizeof(ludo::mat4) * max_bones_per_armature);
 
-    return armature_instance;
+    return bone_transforms;
+  }
+
+  void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms)
+  {
+    auto instance_bone_transforms = reinterpret_cast<ludo::mat4*>(mesh_instance.instance_buffer.data + sizeof(ludo::mat4) + 16);
+
+    std::memcpy(instance_bone_transforms, bone_transforms.data(), sizeof(ludo::mat4) * max_bones_per_armature);
   }
 
   void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform, mat4* final_transforms)

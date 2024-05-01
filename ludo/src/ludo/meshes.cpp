@@ -63,6 +63,8 @@ namespace ludo
     auto& vertices = data_heap<vertex_t>(instance);
     mesh->vertex_buffer = allocate(vertices, vertex_count * vertex_size, vertex_size);
 
+    mesh->vertex_size = vertex_size;
+
     return mesh;
   }
 
@@ -88,17 +90,60 @@ namespace ludo
   {
     auto mesh_instance = add(instance, init, partition);
 
-    mesh_instance->mesh_id = mesh.id;
-    mesh_instance->render_program_id = init.render_program_id ? init.render_program_id : mesh.render_program_id;
-    mesh_instance->texture_id = init.texture_id ? init.texture_id : mesh.texture_id;
-    mesh_instance->index_buffer = mesh.index_buffer;
-    mesh_instance->vertex_buffer = mesh.vertex_buffer;
+    mesh_instance->mesh_id = mesh.id; // TODO remove mesh_id from mesh_instance?
+    mesh_instance->render_program_id = init.render_program_id ? init.render_program_id : mesh.render_program_id; // TODO remove render_program_id from mesh?
 
-    if (mesh.armature_id && !mesh_instance->armature_instance_id)
+    auto& indices = data_heap<index_t>(instance);
+    mesh_instance->indices.start = (mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
+    mesh_instance->indices.count = mesh.index_buffer.size / sizeof(uint32_t);
+
+    auto& vertices = data_heap<vertex_t>(instance);
+    mesh_instance->vertices.start = (mesh.vertex_buffer.data - vertices.data) / mesh.vertex_size;
+    mesh_instance->vertices.count = mesh.vertex_buffer.size / mesh.vertex_size;
+
+    if (mesh_instance->render_program_id)
     {
-      mesh_instance->armature_instance_id = add(instance, armature_instance(), partition)->id;
+      auto render_program = get<ludo::render_program>(instance, mesh_instance->render_program_id);
+      mesh_instance->instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size);
+
+      set_transform(*mesh_instance, mat4_identity);
+
+      if (mesh.texture_id)
+      {
+        set_texture(*mesh_instance, texture { .id = mesh.texture_id });
+      }
+
+      if (mesh.armature_id)
+      {
+        std::array<mat4, max_bones_per_armature> bone_transforms;
+        bone_transforms.fill(mat4_identity);
+
+        set_bone_transforms(*mesh_instance, bone_transforms);
+      }
     }
 
     return mesh_instance;
+  }
+
+  template<>
+  void remove<mesh_instance>(instance& instance, mesh_instance* element, const std::string& partition)
+  {
+    if (element->render_program_id && element->instance_buffer.data)
+    {
+      auto render_program = get<ludo::render_program>(instance, element->render_program_id);
+      deallocate(render_program->instance_buffer_back, element->instance_buffer);
+    }
+
+    remove(data<mesh_instance>(instance), element, partition);
+  }
+
+  mat4 get_transform(const mesh_instance& mesh_instance)
+  {
+    return read<mat4>(mesh_instance.instance_buffer, 0);
+  }
+
+  void set_transform(mesh_instance& mesh_instance, const mat4& transform)
+  {
+    write<mat4>(mesh_instance.instance_buffer, 0, transform);
   }
 }

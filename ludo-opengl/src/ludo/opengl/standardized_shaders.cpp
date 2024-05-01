@@ -12,7 +12,7 @@ namespace ludo
   {
     stream <<
 R"--(
-#version 460
+#version 460 core
 #extension GL_ARB_bindless_texture : require
 )--";
   }
@@ -54,6 +54,7 @@ struct instance_t
 )--";
 
   if (format.has_texture_coordinate) stream << "  sampler2D sampler;" << std::endl;
+  if (format.has_bone_weights) stream << "  mat4 bone_transforms[" << max_bones_per_armature << "];" << std::endl;
 
   stream <<
 R"--(
@@ -105,11 +106,6 @@ layout(std430, binding = 3) buffer instance_layout
 {
   instance_t instances[];
 };
-
-layout(std430, binding = 4) buffer animation_layout
-{
-  mat4 bone_transforms[];
-};
 )--";
   }
 
@@ -128,10 +124,10 @@ void main()
       stream <<
 R"--(
   // Animation
-  mat4 bone_transform = bone_transforms[bone_indices[0]] * bone_weights[0];
-  bone_transform += bone_transforms[bone_indices[1]] * bone_weights[1];
-  bone_transform += bone_transforms[bone_indices[2]] * bone_weights[2];
-  bone_transform += bone_transforms[bone_indices[3]] * bone_weights[3];
+  mat4 bone_transform = instance.bone_transforms[bone_indices[0]] * bone_weights[0];
+  bone_transform += instance.bone_transforms[bone_indices[1]] * bone_weights[1];
+  bone_transform += instance.bone_transforms[bone_indices[2]] * bone_weights[2];
+  bone_transform += instance.bone_transforms[bone_indices[3]] * bone_weights[3];
   world_transform *= bone_transform;
 )--";
     }

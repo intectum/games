@@ -8,6 +8,7 @@
 #include <cmath>
 #include <functional>
 
+#include "compute.h"
 #include "core.h"
 #include "data.h"
 #include "math/vec.h"
@@ -62,15 +63,17 @@ namespace ludo
   /// A linear octree that contains a full set of leaf octants.
   /// This allows for parallel search algorithms.
   /// A linear octree with a depth of 0 with have only a single octant.
-  /// Contained meshes are considered unique based on the combination of their ID and instance start.
   struct LUDO_API linear_octree
   {
     uint64_t id = 0; ///< The ID of the linear octree.
+    uint64_t compute_program_id = 0; ///< The ID of the compute program used to build draw commands from this linear octree.
 
     aabb bounds; ///< The bounds of the linear octree.
     uint8_t depth = 1; ///< The depth of the linear octree (the maximum supported depth is 9).
+    uint32_t octant_capacity = 16; ///< The maximum number of mesh instances that can be added to an octant.
 
-    std::unordered_map<uint32_t, std::vector<mesh_instance>> octants; ///< The leaf octants of the linear octree. TODO use std::set for faster sorting?
+    buffer front_buffer;
+    buffer back_buffer;
   };
 
   ///
@@ -138,38 +141,45 @@ namespace ludo
   LUDO_API linear_octree* add(instance& instance, const linear_octree& init, const std::string& partition);
 
   ///
-  /// Adds an element to a linear octree.
-  /// \param octree The linear octree to add the element to.
-  /// \param element The element to add to the linear octree.
-  /// \param position The position of the element.
-  LUDO_API void add(linear_octree& octree, const mesh_instance& element, const vec3& position);
+  /// Pushes the state of a linear octree to the front buffer.
+  /// \param octree The linear octree to push.
+  LUDO_API void push(linear_octree& octree);
 
   ///
-  /// Removes an element from a linear octree.
-  /// \param octree The linear octree to remove the element from.
-  /// \param element The element to remove from the linear octree.
-  /// \param position The position of the element.
-  LUDO_API void remove(linear_octree& octree, const mesh_instance& element, const vec3& position);
+  /// Adds a compute program used to build draw commands from a linear octree to the data of an instance.
+  /// \param instance The instance to add the compute program to.
+  /// \param octree The initial state of the new compute program.
+  /// \param max_render_programs The maximum number of render programs within the instance.
+  /// \return A pointer to the new compute program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
+  LUDO_API compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree, uint32_t max_render_programs);
 
   ///
-  /// Moves a linear octree.
-  /// \param octree The linear octree to move.
-  /// \param movement The movement to apply to the linear octree.
-  LUDO_API void move(linear_octree& octree, const vec3& movement);
+  /// Adds a mesh instance to a linear octree.
+  /// \param octree The linear octree to add the mesh instance to.
+  /// \param mesh_instance The mesh instance to add to the linear octree.
+  /// \param position The position of the mesh instance.
+  LUDO_API void add(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position);
 
   ///
-  /// Finds elements within a linear octree using a hierarchical search.
+  /// Removes a mesh instance from a linear octree.
+  /// \param octree The linear octree to remove the mesh instance from.
+  /// \param mesh_instance The mesh instance to remove from the linear octree.
+  /// \param position The position of the mesh instance.
+  LUDO_API void remove(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position);
+
+  ///
+  /// Finds mesh instances within a linear octree using a hierarchical search.
   /// \param octree The linear octree to search.
   /// \param test The test to perform against the bounds of the nodes.
-  /// \return The matching elements.
-  LUDO_API std::vector<mesh_instance> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
+  /// \return The matching mesh instance IDs.
+  LUDO_API std::vector<uint64_t> find(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
 
   ///
-  /// Finds elements within a linear octree using a parallel search across all octants.
+  /// Finds mesh instances within a linear octree using a parallel search across all octants.
   /// \param octree The linear octree to search.
   /// \param test The test to perform against the bounds of the nodes.
-  /// \return The matching elements.
-  LUDO_API std::vector<mesh_instance> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
+  /// \return The matching mesh instance IDs.
+  LUDO_API std::vector<uint64_t> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
 
   ///
   /// Retrieves the size of an octant in a linear octree.

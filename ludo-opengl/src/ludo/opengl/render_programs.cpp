@@ -44,7 +44,7 @@ namespace ludo
     return render_program;
   }
 
-  render_program* add(instance& instance, const render_program& init, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, const std::string& partition)
+  render_program* add(instance& instance, const render_program& init, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, uint32_t capacity, const std::string& partition)
   {
     auto render_program = init;
 
@@ -56,10 +56,13 @@ namespace ludo
     auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream, partition);
     render_program.fragment_shader_id = fragment_shader->id;
 
+    auto& draw_commands = data_heap<draw_command>(instance);
+    render_program.command_buffer = allocate(draw_commands, capacity * sizeof(draw_command));
+
     return add(instance, render_program, partition);
   }
 
-  render_program* add(instance& instance, const render_program& init, const vertex_format& format, const std::string& partition)
+  render_program* add(instance& instance, const render_program& init, const vertex_format& format, uint32_t capacity, const std::string& partition)
   {
     auto render_program = init;
     render_program.format = format;
@@ -70,6 +73,22 @@ namespace ludo
     auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, format, partition);
     render_program.fragment_shader_id = fragment_shader->id;
 
+    auto& draw_commands = data_heap<draw_command>(instance);
+    render_program.command_buffer = allocate(draw_commands, capacity * sizeof(draw_command));
+
+    render_program.instance_size = sizeof(mat4);
+    if (format.has_texture_coordinate)
+    {
+      render_program.instance_size += 16;
+    }
+    if (format.has_bone_weights)
+    {
+      render_program.instance_size += max_bones_per_armature * sizeof(mat4);
+    }
+
+    render_program.instance_buffer_front = allocate_vram(capacity * render_program.instance_size);
+    render_program.instance_buffer_back = allocate_heap(capacity * render_program.instance_size);
+
     return add(instance, render_program, partition);
   }
 
@@ -77,6 +96,27 @@ namespace ludo
   void remove<render_program>(instance& instance, render_program* element, const std::string& partition)
   {
     glDeleteProgram(element->id); check_opengl_error();
+
+    if (element->command_buffer.data)
+    {
+      auto& draw_commands = data_heap<draw_command>(instance);
+      deallocate(draw_commands, element->command_buffer);
+    }
+
+    if (element->shader_buffer.data)
+    {
+      deallocate_vram(element->shader_buffer);
+    }
+
+    if (element->instance_buffer_front.data)
+    {
+      deallocate_vram(element->instance_buffer_front);
+    }
+
+    if (element->instance_buffer_back.data)
+    {
+      deallocate(element->instance_buffer_back);
+    }
 
     remove(data<render_program>(instance), element, partition);
   }
@@ -99,6 +139,10 @@ namespace ludo
 
     glUseProgram(render_program.id); check_opengl_error();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.id); check_opengl_error();
+
+    // TODO do this during 'pre_render' step?
+    std::memcpy(render_program.instance_buffer_front.data, render_program.instance_buffer_back.data, render_program.instance_buffer_front.size);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, render_program.instance_buffer_front.id); check_opengl_error();
 
     // Convert b4 to u4f4
     auto format = render_program.format;

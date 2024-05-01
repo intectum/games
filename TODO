@@ -1,4 +1,3 @@
-- Build render commands on GPU
 - Deferred rendering
 - Parallel rendering
 - Occlusion culling
@@ -12,5 +11,7 @@
 - Refine atmosphere, looks better at altitude
 - Shadow mapping
 - Phong and PBR lights
-- CEF
+- CEF/UI
 - Trees, rocks and grass
+- Specify layout info in shader to prevent need for specifying vertex attributes? Is that a thing?
+- Simplify buffers, get ref to position, add streams

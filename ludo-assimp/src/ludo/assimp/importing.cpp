@@ -52,8 +52,9 @@ namespace ludo
     if (!mesh_objects.empty())
     {
       auto primitive = primitives[assimp_scene->mMeshes[mesh_objects[0].mesh_index]->mPrimitiveTypes]; // We use aiProcess_SortByPType so all primitives should be the same.
+      // TODO should really do meshes individually and create multiple vertex format if needed
       auto vertex_format = build_vertex_format(*assimp_scene, mesh_objects, options);
-      auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format);
+      auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format, mesh_objects.size(), partition);
 
       auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
       auto textures = import_textures(instance, folder, *assimp_scene, mesh_objects, partition);

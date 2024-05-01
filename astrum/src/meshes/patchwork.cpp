@@ -127,7 +127,8 @@ namespace astrum
       patchwork->load(*patchwork, index, patch.variant_index, *mesh);
 
       auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, partition);
-      mesh_instance->transform = ludo::mat4(patchwork->transform.position, ludo::mat3(patchwork->transform.rotation));
+      mesh_instance->instance_index = index;
+      ludo::set_transform(*mesh_instance, ludo::mat4(patchwork->transform.position, ludo::mat3(patchwork->transform.rotation)));
       patch.mesh_instance_id = mesh_instance->id;
     }
 
@@ -187,7 +188,8 @@ namespace astrum
               );
 
               auto new_mesh_instance = ludo::add(inst, ludo::mesh_instance(), new_mesh, partition_name);
-              new_mesh_instance->transform = ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation));
+              new_mesh_instance->instance_index = index;
+              ludo::set_transform(*new_mesh_instance, ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation)));
 
               auto new_mesh_instance_id = new_mesh_instance->id;
 

@@ -109,7 +109,7 @@ namespace astrum
       ludo::remove(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
     };
 
-    auto render_program = ludo::add(inst, ludo::render_program(), celestial_body->format, "celestial-bodies");
+    auto render_program = ludo::add(inst, ludo::render_program(), celestial_body->format, 5120 * 2, "celestial-bodies");
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body->radius * 1.1f, celestial_body->radius * 1.1f, celestial_body->radius * 1.1f };
     ludo::add(
@@ -176,6 +176,7 @@ namespace astrum
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
     auto& linear_octrees = ludo::data<ludo::linear_octree>(inst, "celestial-bodies");
+    auto& render_programs = ludo::data<ludo::render_program>(inst, "celestial-bodies");
 
     auto& celestial_bodies = ludo::data<celestial_body>(inst, "celestial-bodies");
     auto& patchworks = ludo::data<patchwork>(inst, "celestial-bodies");
@@ -188,17 +189,32 @@ namespace astrum
     {
       for (auto index = start; index < end; index++)
       {
+        auto& linear_octree = linear_octrees[index];
+        auto& render_program = render_programs[index];
+
+        auto& celestial_body = celestial_bodies[index];
         auto& patchwork = patchworks[index];
         auto& point_mass = point_masses[index];
 
         auto movement = point_mass.transform.position - patchwork.transform.position;
         if (ludo::length2(movement) > 0.0f)
         {
-          ludo::move(linear_octrees[index], movement);
+          linear_octree.bounds.min += movement;
+          linear_octree.bounds.max += movement;
+
+          auto byte_index = uint32_t(0);
+          for (auto patch_index = uint32_t(0); patch_index < patchwork.patches.size(); patch_index++)
+          {
+            // TODO replace with at()
+            auto transform = reinterpret_cast<ludo::mat4*>(render_program.instance_buffer_back.data + byte_index);
+            ludo::position(*transform, ludo::position(*transform) + movement);
+
+            byte_index += render_program.instance_size;
+          }
         }
 
         patchwork.transform = point_mass.transform;
-        patchwork.variant_index = build_variant_index(celestial_bodies[index], camera_position, patchwork.transform.position);
+        patchwork.variant_index = build_variant_index(celestial_body, camera_position, patchwork.transform.position);
       }
 
       return []() {};
@@ -536,15 +552,17 @@ namespace astrum
     auto& anchor_patch = patchwork.patches[anchor_patch_index];
     auto& patch = patchwork.patches[patch_index];
     auto& anchor_mesh_instance = *ludo::get<ludo::mesh_instance>(inst, anchor_patch.mesh_instance_id);
+    auto& anchor_mesh = *ludo::get<ludo::mesh>(inst, anchor_mesh_instance.mesh_id);
     auto& mesh_instance = *ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
+    auto& mesh = *ludo::get<ludo::mesh>(inst, mesh_instance.mesh_id);
 
     assert(anchor_patch.variant_index <= patch.variant_index && "anchor patch LOD level must be equal or less than the aligning patch LOD level");
 
     auto& anchor_border_indices = border_indices(patchwork, anchor_patch_index, patch_index);
     auto& aligning_border_indices = border_indices(patchwork, patch_index, anchor_patch_index);
 
-    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
-    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh_instance.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
+    auto anchor_border_position_0 = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
+    auto aligning_border_position_0 = ludo::read<ludo::vec3>(mesh.vertex_buffer, aligning_border_indices[0] * celestial_body.format.size + celestial_body.format.position_offset);
     auto reverse_borders = !ludo::near(anchor_border_position_0, aligning_border_position_0);
 
     if (anchor_patch.variant_index == patch.variant_index)
@@ -561,11 +579,11 @@ namespace astrum
           anchor_index_0 = anchor_border_indices.size() - 1 - anchor_index_0;
         }
 
-        auto position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
+        auto position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
 
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
-        ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
+        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
+        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
+        ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, position);
 
         anchor_index += 3;
       }
@@ -589,25 +607,25 @@ namespace astrum
           anchor_index_1 = anchor_border_indices.size() - 1 - anchor_index_1;
         }
 
-        auto start_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
-        auto end_position = ludo::read<ludo::vec3>(anchor_mesh_instance.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + celestial_body.format.position_offset);
+        auto start_position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_0] * celestial_body.format.size + celestial_body.format.position_offset);
+        auto end_position = ludo::read<ludo::vec3>(anchor_mesh.vertex_buffer, anchor_border_indices[anchor_index_1] * celestial_body.format.size + celestial_body.format.position_offset);
         auto alignment_vector = end_position - start_position;
 
         for (auto division_index = 0; division_index < divisions_per_anchor; division_index++)
         {
           auto alignment_position = start_position + alignment_vector * static_cast<float>(division_index + 1) / static_cast<float>(divisions_per_anchor + 1);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, alignment_position);
         }
 
         anchor_index += 3;
 
         if (anchor_index < anchor_border_indices.size() - 1)
         {
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
-          ludo::write(mesh_instance.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
+          ludo::write(mesh.vertex_buffer, aligning_border_indices[aligning_index++] * celestial_body.format.size + celestial_body.format.position_offset, end_position);
         }
       }
     }

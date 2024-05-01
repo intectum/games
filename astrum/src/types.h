@@ -144,7 +144,6 @@ namespace astrum
     uint64_t id = 0;
 
     int32_t relative_celestial_body_index = -1;
-    ludo::vec3 center_delta = ludo::vec3_zero;
   };
 
   struct spaceship_controls
