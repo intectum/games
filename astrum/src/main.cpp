@@ -31,7 +31,7 @@ int main()
 
   auto max_rendered_instances =
     14 + // post-processing
-    3 * (5120 * 2) + // celestial bodies (doubled to account for re-allocations)
+    3 * (5120 * 2) + // celestial bodies (doubled to account for re-allocations - overkill)
     1 + // person
     1; // spaceship
   auto max_indices =

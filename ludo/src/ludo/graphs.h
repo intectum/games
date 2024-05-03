@@ -69,7 +69,7 @@ namespace ludo
     uint64_t compute_program_id = 0; ///< The ID of the compute program used to build draw commands from this linear octree.
 
     aabb bounds; ///< The bounds of the linear octree.
-    uint8_t depth = 1; ///< The depth of the linear octree (the maximum supported depth is 9).
+    uint8_t depth = 1; ///< The depth of the linear octree.
     uint32_t octant_capacity = 16; ///< The maximum number of mesh instances that can be added to an octant.
 
     buffer front_buffer;
@@ -180,11 +180,6 @@ namespace ludo
   /// \param test The test to perform against the bounds of the nodes.
   /// \return The matching mesh instance IDs.
   LUDO_API std::vector<uint64_t> find_parallel(const linear_octree& octree, const std::function<int32_t(const aabb& bounds)>& test);
-
-  ///
-  /// Retrieves the size of an octant in a linear octree.
-  /// \param octree The linear octree to retrieve the octant size from.
-  LUDO_API vec3 octant_size(const linear_octree& octree);
 }
 
 #endif // LUDO_GRAPHS_H

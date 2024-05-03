@@ -9,6 +9,7 @@ namespace ludo
 {
   void find(std::vector<uint64_t>& results, const linear_octree& octree, uint32_t octant_count_1d, uint8_t depth, const aabb& bounds, const std::function<int32_t(const aabb& bounds)>& test, bool inside);
   std::array<ludo::aabb, 8> calculate_child_bounds(const aabb& bounds);
+  vec3 octant_dimensions(const linear_octree& octree);
   std::vector<uint64_t> octant_mesh_instance_ids(const linear_octree& octree, uint32_t octant_index);
   uint32_t octant_mesh_instance_index(const linear_octree& octree, uint64_t mesh_instance_id, uint32_t octant_index);
   uint64_t octant_offset(const linear_octree& octree, uint32_t octant_index);
@@ -27,21 +28,24 @@ namespace ludo
   template<>
   linear_octree* add(instance& instance, const linear_octree& init, const std::string& partition)
   {
-    assert(init.depth <= 9 && "maximum supported depth (9) exceeded");
-
     auto octree = add(data<ludo::linear_octree>(instance), init, partition);
     octree->id = next_id++;
     octree->compute_program_id = add_linear_octree_compute_program(instance, *octree, 16)->id;
 
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree->depth));
     auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));
+    auto octant_size = octant_header_size + octree->octant_capacity * mesh_instance_size;
 
-    auto data_size = octant_offset(*octree, octant_count);
-
+    auto data_size = octant_count * octant_size;
     octree->front_buffer = allocate_vram(front_buffer_header_size + data_size);
     octree->back_buffer = allocate(data_size);
 
-    // TODO initialize counts to 0
+    auto offset = uint32_t(0);
+    for (auto octant_index = uint32_t(0); octant_index < octant_count; octant_index++)
+    {
+      write(octree->back_buffer, offset, uint32_t(0));
+      offset += octant_size;
+    }
 
     return octree;
   }
@@ -53,7 +57,7 @@ namespace ludo
     offset += 16;
     write(octree.front_buffer, offset, octree.bounds.max);
     offset += 16;
-    write(octree.front_buffer, offset, ludo::octant_size(octree));
+    write(octree.front_buffer, offset, ludo::octant_dimensions(octree));
     offset += 16;
     std::memcpy(octree.front_buffer.data + offset, octree.back_buffer.data, octree.back_buffer.size);
   }
@@ -199,9 +203,9 @@ namespace ludo
     auto mesh_instance_ids = std::vector<uint64_t>();
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2, octree.depth));
     auto octant_count = static_cast<uint32_t>(std::pow(octant_count_1d, 3));
-    auto octant_size = ludo::octant_size(octree);
+    auto octant_dimensions = ludo::octant_dimensions(octree);
 
-    divide_and_conquer(octant_count, [&octree, &test, &mesh_instance_ids, octant_count_1d, octant_size](uint32_t start, uint32_t end)
+    divide_and_conquer(octant_count, [&octree, &test, &mesh_instance_ids, octant_count_1d, octant_dimensions](uint32_t start, uint32_t end)
     {
       auto task_mesh_instance_ids = std::vector<uint64_t>();
 
@@ -212,12 +216,12 @@ namespace ludo
         auto z = index % octant_count_1d;
 
         auto xyz = vec3 { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) };
-        auto min = octree.bounds.min + xyz * octant_size;
+        auto min = octree.bounds.min + xyz * octant_dimensions;
 
         auto bounds = aabb
         {
           .min = min,
-          .max = min + octant_size
+          .max = min + octant_dimensions
         };
 
         if (test(bounds) != -1)
@@ -234,13 +238,6 @@ namespace ludo
     });
 
     return mesh_instance_ids;
-  }
-
-  vec3 octant_size(const linear_octree& octree)
-  {
-    auto bounds_size = octree.bounds.max - octree.bounds.min;
-    auto octant_count_1d = std::pow(2, octree.depth);
-    return bounds_size / static_cast<float>(octant_count_1d);
   }
 
   std::array<ludo::aabb, 8> calculate_child_bounds(const aabb& bounds)
@@ -293,6 +290,13 @@ namespace ludo
         .max = bounds.max
       }
     };
+  }
+
+  vec3 octant_dimensions(const linear_octree& octree)
+  {
+    auto bounds_size = octree.bounds.max - octree.bounds.min;
+    auto octant_count_1d = std::pow(2, octree.depth);
+    return bounds_size / static_cast<float>(octant_count_1d);
   }
 
   std::vector<uint64_t> octant_mesh_instance_ids(const linear_octree& octree, uint32_t octant_index)
@@ -348,9 +352,9 @@ namespace ludo
   {
     assert(position >= octree.bounds.min && position <= octree.bounds.max && "position out of bounds");
 
-    auto octant_size = ludo::octant_size(octree);
+    auto octant_dimensions = ludo::octant_dimensions(octree);
 
-    auto octant_coordinates = (position - octree.bounds.min) / octant_size;
+    auto octant_coordinates = (position - octree.bounds.min) / octant_dimensions;
     octant_coordinates[0] = std::floor(octant_coordinates[0]);
     octant_coordinates[1] = std::floor(octant_coordinates[1]);
     octant_coordinates[2] = std::floor(octant_coordinates[2]);

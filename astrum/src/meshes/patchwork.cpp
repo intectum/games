@@ -187,20 +187,14 @@ namespace astrum
                 partition_name
               );
 
-              auto new_mesh_instance = ludo::add(inst, ludo::mesh_instance(), new_mesh, partition_name);
-              new_mesh_instance->instance_index = index;
-              ludo::set_transform(*new_mesh_instance, ludo::mat4(patchwork.transform.position, ludo::mat3(patchwork.transform.rotation)));
-
-              auto new_mesh_instance_id = new_mesh_instance->id;
-
               // Purposely take a copy of the new mesh!
               // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
-              ludo::enqueue_background(inst, [&inst, &patchwork, index, new_variant_index, new_mesh, new_mesh_instance_id, partition_name]()
+              ludo::enqueue_background(inst, [&inst, &patchwork, index, new_variant_index, new_mesh, partition_name]()
               {
                 auto local_new_mesh = new_mesh;
                 patchwork.load(patchwork, index, new_variant_index, local_new_mesh);
 
-                return [&inst, &patchwork, index, new_variant_index, local_new_mesh, new_mesh_instance_id, partition_name]()
+                return [&inst, &patchwork, index, new_variant_index, new_mesh, partition_name]()
                 {
                   auto& patch = patchwork.patches[index];
 
@@ -208,10 +202,18 @@ namespace astrum
 
                   auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, patch.mesh_instance_id);
                   auto mesh = ludo::get<ludo::mesh>(inst, mesh_instance->mesh_id);
-                  ludo::remove(inst, mesh_instance, partition_name);
                   ludo::remove(inst, mesh, partition_name);
 
-                  patch.mesh_instance_id = new_mesh_instance_id;
+                  mesh_instance->mesh_id = new_mesh.id;
+
+                  auto& indices = data_heap<ludo::index_t>(inst);
+                  mesh_instance->indices.start = (new_mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
+                  mesh_instance->indices.count = new_mesh.index_buffer.size / sizeof(uint32_t);
+
+                  auto& vertices = data_heap<ludo::vertex_t>(inst);
+                  mesh_instance->vertices.start = (new_mesh.vertex_buffer.data - vertices.data) / new_mesh.vertex_size;
+                  mesh_instance->vertices.count = new_mesh.vertex_buffer.size / new_mesh.vertex_size;
+
                   patch.variant_index = new_variant_index;
                   patch.locked = false;
 

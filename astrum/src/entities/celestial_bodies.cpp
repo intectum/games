@@ -109,7 +109,7 @@ namespace astrum
       ludo::remove(linear_octree, mesh_instance, patchwork.transform.position + patch.center);
     };
 
-    auto render_program = ludo::add(inst, ludo::render_program(), celestial_body->format, 5120 * 2, "celestial-bodies");
+    auto render_program = ludo::add(inst, ludo::render_program(), celestial_body->format, 5120, "celestial-bodies");
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body->radius * 1.1f, celestial_body->radius * 1.1f, celestial_body->radius * 1.1f };
     ludo::add(

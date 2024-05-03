@@ -76,7 +76,7 @@ layout(std430, binding = 1) buffer context_layout
 layout(std430, binding = 2) buffer linear_octree_layout
 {
   aabb_t bounds;
-  vec3 octant_size;
+  vec3 octant_dimensions;
   octant_t octants[];
 };
 
@@ -149,10 +149,10 @@ void main()
     gl_GlobalInvocationID.y * octant_count_1d +
     gl_GlobalInvocationID.z;
 
-  vec3 octant_min = bounds.min + gl_GlobalInvocationID * octant_size;
+  vec3 octant_min = bounds.min + gl_GlobalInvocationID * octant_dimensions;
 
   // Include neighbouring octants to ensure the mesh instances that overlap from them into this octant are included.
-  aabb_t test_bounds = aabb_t(octant_min - octant_size, octant_min + octant_size * 2);
+  aabb_t test_bounds = aabb_t(octant_min - octant_dimensions, octant_min + octant_dimensions * 2);
   if (frustum_test(test_bounds)  != -1)
   {
     for (uint mesh_instance_index = 0; mesh_instance_index < octants[octant_index].count; mesh_instance_index++)
