@@ -14,15 +14,15 @@ namespace astrum
 
     auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-    auto body_accelerations = std::vector<ludo::vec3>(dynamic_bodies.array_size, ludo::vec3_zero);
-    auto point_mass_accelerations = std::vector<ludo::vec3>(point_masses.array_size, ludo::vec3_zero);
+    auto body_accelerations = std::vector<ludo::vec3>(dynamic_bodies.length, ludo::vec3_zero);
+    auto point_mass_accelerations = std::vector<ludo::vec3>(point_masses.length, ludo::vec3_zero);
 
     // Body <-> body gravitational acceleration
-    for (auto index_a = 0; dynamic_bodies.array_size && index_a < dynamic_bodies.array_size - 1; index_a++)
+    for (auto index_a = 0; dynamic_bodies.length && index_a < dynamic_bodies.length - 1; index_a++)
     {
       auto& body_a = dynamic_bodies[index_a];
 
-      for (auto index_b = index_a + 1; index_b < dynamic_bodies.array_size; index_b++)
+      for (auto index_b = index_a + 1; index_b < dynamic_bodies.length; index_b++)
       {
         auto& body_b = dynamic_bodies[index_b];
 
@@ -35,11 +35,11 @@ namespace astrum
     }
 
     // Point mass <-> point mass gravitational acceleration
-    for (auto index_a = 0; index_a < point_masses.array_size && point_masses.array_size - 1; index_a++)
+    for (auto index_a = 0; index_a < point_masses.length && point_masses.length - 1; index_a++)
     {
       auto& point_mass_a = point_masses[index_a];
 
-      for (auto index_b = index_a + 1; index_b < point_masses.array_size; index_b++)
+      for (auto index_b = index_a + 1; index_b < point_masses.length; index_b++)
       {
         auto& point_mass_b = point_masses[index_b];
 
@@ -58,11 +58,11 @@ namespace astrum
     }
 
     // Body <-> point mass gravitational acceleration
-    for (auto index_a = 0; index_a < dynamic_bodies.array_size; index_a++)
+    for (auto index_a = 0; index_a < dynamic_bodies.length; index_a++)
     {
       auto& body = dynamic_bodies[index_a];
 
-      for (auto index_b = 0; index_b < point_masses.array_size; index_b++)
+      for (auto index_b = 0; index_b < point_masses.length; index_b++)
       {
         auto& point_mass = point_masses[index_b];
 
@@ -92,13 +92,13 @@ namespace astrum
     }
 
     // Apply gravitational acceleration to bodies and point masses
-    for (auto index = 0; index < dynamic_bodies.array_size; index++)
+    for (auto index = 0; index < dynamic_bodies.length; index++)
     {
       auto& body = dynamic_bodies[index];
       ludo::apply_force(body, body.mass * body_accelerations[index]);
     }
 
-    for (auto index = 0; index < point_masses.array_size; index++)
+    for (auto index = 0; index < point_masses.length; index++)
     {
       auto& point_mass = point_masses[index];
       if (point_mass.resting)

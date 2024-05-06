@@ -18,20 +18,20 @@ namespace ludo
 
   void debug_drawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
   {
-    auto index_byte_index = next_index * sizeof(uint32_t);
-    auto vertex_byte_index = next_index * vertex_format_pc.size;
+    auto index_position = next_index * sizeof(uint32_t);
+    auto vertex_position = next_index * vertex_format_pc.size;
 
-    write(mesh->index_buffer, index_byte_index, next_index);
-    index_byte_index += sizeof(uint32_t);
-    write(mesh->index_buffer, index_byte_index, next_index + 1);
+    cast<uint32_t>(mesh->index_buffer, index_position) = next_index;
+    index_position += sizeof(uint32_t);
+    cast<uint32_t>(mesh->index_buffer, index_position) = next_index + 1;
 
-    write(mesh->vertex_buffer, vertex_byte_index, to_vec3(from));
-    vertex_byte_index += sizeof(vec3);
-    write(mesh->vertex_buffer, vertex_byte_index, vec4(to_vec3(color)));
-    vertex_byte_index += sizeof(vec4);
-    write(mesh->vertex_buffer, vertex_byte_index, to_vec3(to));
-    vertex_byte_index += sizeof(vec3);
-    write(mesh->vertex_buffer, vertex_byte_index, vec4(to_vec3(color)));
+    cast<vec3>(mesh->vertex_buffer, vertex_position) = to_vec3(from);
+    vertex_position += sizeof(vec3);
+    cast<vec4>(mesh->vertex_buffer, vertex_position) = vec4(to_vec3(color));
+    vertex_position += sizeof(vec4);
+    cast<vec3>(mesh->vertex_buffer, vertex_position) = to_vec3(to);
+    vertex_position += sizeof(vec3);
+    cast<vec4>(mesh->vertex_buffer, vertex_position) = vec4(to_vec3(color));
 
     next_index += 2;
   }

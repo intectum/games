@@ -12,11 +12,11 @@ namespace astrum
   void add_terrain(ludo::instance& inst, const terrain& init, const celestial_body& celestial_body, const std::string& partition)
   {
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
-    auto& indices = data_heap<ludo::index_t>(inst);
-    auto& vertices = data_heap<ludo::vertex_t>(inst);
+    auto& indices = data_heap(inst, "ludo::vram_indices");
+    auto& vertices = data_heap(inst, "ludo::vram_vertices");
 
     auto& point_masses = ludo::data<point_mass>(inst, partition);
-    auto& point_mass = point_masses[point_masses.array_size - 1];
+    auto& point_mass = point_masses[point_masses.length - 1];
 
     auto terrain = add(inst, init, partition);
 
@@ -64,7 +64,7 @@ namespace astrum
       "terrain"
     );
 
-    ludo::write(render_program->shader_buffer, 0, ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation)));
+    ludo::cast<ludo::mat4>(render_program->shader_buffer, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
     auto linear_octree = ludo::add(
@@ -176,7 +176,7 @@ namespace astrum
     auto camera = ludo::get_camera(rendering_context);
     auto camera_position = ludo::position(camera.view);
 
-    for (auto index = uint32_t(0); index < celestial_bodies.array_size; index++)
+    for (auto index = uint32_t(0); index < terrains.length; index++)
     {
       auto& linear_octree = linear_octrees[index];
       auto& render_program = render_programs[index];
@@ -185,8 +185,7 @@ namespace astrum
       auto& point_mass = point_masses[index];
       auto& terrain = terrains[index];
 
-      auto old_transform = ludo::read<ludo::mat4>(render_program.shader_buffer, 0);
-      auto old_position = ludo::position(ludo::read<ludo::mat4>(render_program.shader_buffer, 0));
+      auto old_position = ludo::position(ludo::cast<ludo::mat4>(render_program.shader_buffer, 0));
       auto new_position = point_mass.transform.position;
 
       auto movement = new_position - old_position;
@@ -195,7 +194,7 @@ namespace astrum
         linear_octree.bounds.min += movement;
         linear_octree.bounds.max += movement;
 
-        ludo::write(render_program.shader_buffer, 0, ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation)));
+        ludo::cast<ludo::mat4>(render_program.shader_buffer, 0) = ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation));
       }
 
       update_terrain_static_bodies(inst, terrain, celestial_body.radius, new_position, celestial_body.radius * 1.25f);
@@ -246,11 +245,11 @@ namespace astrum
 
                 mesh_instance->mesh_id = new_mesh.id;
 
-                auto& indices = data_heap<ludo::index_t>(inst);
+                auto& indices = data_heap(inst, "ludo::vram_indices");
                 mesh_instance->indices.start = (new_mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
                 mesh_instance->indices.count = new_mesh.index_buffer.size / sizeof(uint32_t);
 
-                auto& vertices = data_heap<ludo::vertex_t>(inst);
+                auto& vertices = data_heap(inst, "ludo::vram_vertices");
                 mesh_instance->vertices.start = (new_mesh.vertex_buffer.data - vertices.data) / new_mesh.vertex_size;
                 mesh_instance->vertices.count = new_mesh.vertex_buffer.size / new_mesh.vertex_size;
 

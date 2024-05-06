@@ -43,7 +43,7 @@ namespace ludo
     auto offset = uint32_t(0);
     for (auto octant_index = uint32_t(0); octant_index < octant_count; octant_index++)
     {
-      write(octree->back_buffer, offset, uint32_t(0));
+      cast<uint32_t>(octree->back_buffer, offset) = 0;
       offset += octant_size;
     }
 
@@ -52,40 +52,35 @@ namespace ludo
 
   void push(linear_octree& octree)
   {
-    auto offset = 0;
-    write(octree.front_buffer, offset, octree.bounds.min);
-    offset += 16;
-    write(octree.front_buffer, offset, octree.bounds.max);
-    offset += 16;
-    write(octree.front_buffer, offset, ludo::octant_dimensions(octree));
-    offset += 16;
-    std::memcpy(octree.front_buffer.data + offset, octree.back_buffer.data, octree.back_buffer.size);
+    auto stream = ludo::stream(octree.front_buffer);
+    write(stream, octree.bounds.min);
+    stream.position += 4; // align 16
+    write(stream, octree.bounds.max);
+    stream.position += 4; // align 16
+    write(stream, ludo::octant_dimensions(octree));
+    stream.position += 4; // align 8
+    std::memcpy(octree.front_buffer.data + stream.position, octree.back_buffer.data, octree.back_buffer.size);
   }
 
   void add(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position)
   {
     auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, octree.depth));
-    auto offset = octant_offset(octree, to_index(octant_count_1d, to_octant_coordinates(octree, position)));
+    auto index = to_index(octant_count_1d, to_octant_coordinates(octree, position));
+    auto stream = ludo::stream(octree.back_buffer, octant_offset(octree, index));
 
-    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+    auto mesh_instance_count = peek<uint32_t>(stream);
 
     assert(mesh_instance_count < octree.octant_capacity && "octant is full");
 
-    write(octree.back_buffer, offset, mesh_instance_count + 1);
-    offset += 4;
-    offset += 4;
-    offset += mesh_instance_count * mesh_instance_size;
-    write(octree.back_buffer, offset, mesh_instance.id);
-    offset += 8;
-    write(octree.back_buffer, offset, mesh_instance.render_program_id);
-    offset += 8;
-    write(octree.back_buffer, offset, mesh_instance.instance_index);
-    offset += 4;
-    write(octree.back_buffer, offset, mesh_instance.indices.start);
-    offset += 4;
-    write(octree.back_buffer, offset, mesh_instance.indices.count);
-    offset += 4;
-    write(octree.back_buffer, offset, mesh_instance.vertices.start);
+    write(stream, mesh_instance_count + 1);
+    stream.position += 4; // align 8
+    stream.position += mesh_instance_count * mesh_instance_size;
+    write(stream, mesh_instance.id);
+    write(stream, mesh_instance.render_program_id);
+    write(stream, mesh_instance.instance_index);
+    write(stream, mesh_instance.indices.start);
+    write(stream, mesh_instance.indices.count);
+    write(stream, mesh_instance.vertices.start);
   }
 
   void remove(linear_octree& octree, const mesh_instance& mesh_instance, const vec3& position)
@@ -149,17 +144,15 @@ namespace ludo
 
     assert(mesh_instance_index < octree.octant_capacity && "mesh instance not found");
 
-    auto offset = octant_offset(octree, octant_index);
+    auto stream = ludo::stream(octree.back_buffer, octant_offset(octree, octant_index));
 
-    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset) - 1;
-    write(octree.back_buffer, offset, mesh_instance_count);
-    offset += 4;
-    offset += 4;
-
-    offset += mesh_instance_index * mesh_instance_size;
+    auto mesh_instance_count = peek<uint32_t>(stream) - 1;
+    write(stream, mesh_instance_count);
+    stream.position += 4; // align 8
+    stream.position += mesh_instance_index * mesh_instance_size;
     std::memmove(
-      octree.back_buffer.data + offset,
-      octree.back_buffer.data + offset + mesh_instance_size,
+      octree.back_buffer.data + stream.position,
+      octree.back_buffer.data + stream.position + mesh_instance_size,
       (mesh_instance_count - mesh_instance_index) * mesh_instance_size
     );
   }
@@ -304,13 +297,13 @@ namespace ludo
     auto octant_mesh_instance_ids = std::vector<uint64_t>();
     auto offset = octant_offset(octree, octant_index);
 
-    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+    auto mesh_instance_count = cast<uint32_t>(octree.back_buffer, offset);
     offset += 4;
-    offset += 4;
+    offset += 4; // align 8
 
     for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
     {
-      octant_mesh_instance_ids.push_back(read<uint64_t>(octree.back_buffer, offset));
+      octant_mesh_instance_ids.push_back(cast<uint64_t>(octree.back_buffer, offset));
       offset += mesh_instance_size;
     }
 
@@ -321,13 +314,13 @@ namespace ludo
   {
     auto offset = octant_offset(octree, octant_index);
 
-    auto mesh_instance_count = read<uint32_t>(octree.back_buffer, offset);
+    auto mesh_instance_count = cast<uint32_t>(octree.back_buffer, offset);
     offset += 4;
-    offset += 4;
+    offset += 4; // align 8
 
     for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
     {
-      if (read<uint64_t>(octree.back_buffer, offset) == mesh_instance_id)
+      if (cast<uint64_t>(octree.back_buffer, offset) == mesh_instance_id)
       {
         return mesh_instance_index;
       }

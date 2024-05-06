@@ -10,9 +10,9 @@ namespace astrum
   void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id, uint32_t iterations, float final_texture_size)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
-    auto original_frame_buffer = &frame_buffers[frame_buffers.array_size - 1];
+    auto original_frame_buffer = &frame_buffers[frame_buffers.length - 1];
 
-    auto& vram_draw_commands = data_heap<ludo::draw_command>(inst);
+    auto& draw_commands = data_heap(inst, "ludo::vram_draw_commands");
 
     auto brightness_fragment_stream = std::ifstream("assets/shaders/brightness.frag");
     auto brightness_fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, brightness_fragment_stream);
@@ -23,7 +23,7 @@ namespace astrum
         .vertex_shader_id = vertex_shader_id,
         .fragment_shader_id = brightness_fragment_shader->id,
         .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(vram_draw_commands, sizeof(ludo::draw_command))
+        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command))
       }
     );
 
@@ -36,7 +36,7 @@ namespace astrum
         .vertex_shader_id = vertex_shader_id,
         .fragment_shader_id = gaussian_fragment_shader->id,
         .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(vram_draw_commands, 2 * iterations * sizeof(ludo::draw_command))
+        .command_buffer = ludo::allocate(draw_commands, 2 * iterations * sizeof(ludo::draw_command))
       }
     );
 
@@ -49,7 +49,7 @@ namespace astrum
         .vertex_shader_id = vertex_shader_id,
         .fragment_shader_id = additive_fragment_shader->id,
         .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(vram_draw_commands, sizeof(ludo::draw_command))
+        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command))
       }
     );
 
@@ -72,7 +72,7 @@ namespace astrum
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
       auto horizontal_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::write(horizontal_shader_buffer, 8, true);
+      ludo::cast<bool>(horizontal_shader_buffer, 8) = true;
 
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {
@@ -86,7 +86,7 @@ namespace astrum
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
       auto vertical_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::write(vertical_shader_buffer, 8, false);
+      ludo::cast<bool>(horizontal_shader_buffer, 8) = false;
 
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {

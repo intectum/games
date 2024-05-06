@@ -22,13 +22,12 @@ namespace astrum
     render_program->format = ludo::vertex_format_p;
     render_program->shader_buffer = ludo::allocate_vram(16 + path_count * sizeof(ludo::vec4));
 
-    auto byte_index = 0;
-    write(render_program->shader_buffer, byte_index, path_steps);
-    byte_index += 16;
+    auto render_program_stream = ludo::stream(render_program->shader_buffer);
+    ludo::write(render_program_stream, path_steps);
+    render_program_stream.position += 12; // align 16
     for (auto index = 0; index < path_count; index++)
     {
-      write(render_program->shader_buffer, byte_index, colors[index]);
-      byte_index += sizeof(ludo::vec4);
+      ludo::write(render_program_stream, colors[index]);
     }
 
     for (auto path_index = 0; path_index < path_count; path_index++)
@@ -42,9 +41,10 @@ namespace astrum
         "prediction-paths"
       );
 
+      auto index_stream = ludo::stream(mesh->index_buffer);
       for (auto step_index = uint32_t(0); step_index < path_steps; step_index++)
       {
-        ludo::write(mesh->index_buffer, step_index * sizeof(ludo::index_t), step_index);
+        ludo::write(index_stream, step_index);
       }
 
       auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "prediction-paths");
@@ -62,13 +62,13 @@ namespace astrum
 
     ludo::instance prediction_inst;
 
-    ludo::allocate<ludo::dynamic_body>(prediction_inst, dynamic_bodies.array_size);
+    ludo::allocate<ludo::dynamic_body>(prediction_inst, dynamic_bodies.length);
     ludo::allocate<ludo::kinematic_body>(prediction_inst, 0); // Required by point mass physics script
     ludo::allocate<ludo::physics_context>(prediction_inst, 1);
     ludo::allocate<ludo::script>(prediction_inst, 1);
     ludo::allocate<ludo::static_body>(prediction_inst, 0); // Required by point mass physics script
 
-    ludo::allocate<point_mass>(prediction_inst, point_masses.array_size);
+    ludo::allocate<point_mass>(prediction_inst, point_masses.length);
     ludo::allocate<astrum::solar_system>(prediction_inst, 1);
 
     ludo::add(prediction_inst, ludo::physics_context { .gravity = ludo::vec3_zero });
@@ -112,14 +112,14 @@ namespace astrum
 
       for (auto& prediction_body : prediction_dynamic_bodies)
       {
-        ludo::write(meshes[path_index].vertex_buffer, byte_index, prediction_body.transform.position - relative_position);
+        ludo::cast<ludo::vec3>(meshes[path_index].vertex_buffer, byte_index) = prediction_body.transform.position - relative_position;
         path_index++;
         byte_index += path_steps * ludo::vertex_format_p.size;
       }
 
       for (auto& prediction_point_mass : prediction_point_masses)
       {
-        ludo::write(meshes[path_index].vertex_buffer, byte_index, prediction_point_mass.transform.position - relative_position);
+        ludo::cast<ludo::vec3>(meshes[path_index].vertex_buffer, byte_index) = prediction_point_mass.transform.position - relative_position;
         path_index++;
         byte_index += path_steps * ludo::vertex_format_p.size;
       }

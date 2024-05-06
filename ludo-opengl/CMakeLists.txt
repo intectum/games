@@ -23,8 +23,8 @@ add_custom_target(glew DEPENDS ${GLEW_PATH})
 # Source
 #########################
 set(SRC_FILES
-    src/ludo/opengl/buffers.cpp
     src/ludo/opengl/compute.cpp
+    src/ludo/opengl/data/buffers.cpp
     src/ludo/opengl/frame_buffers.cpp
     src/ludo/opengl/graphs/linear_octree.cpp
     src/ludo/opengl/meshes.cpp

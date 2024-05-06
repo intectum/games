@@ -2,30 +2,29 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_DATA_H
-#define LUDO_DATA_H
+#ifndef LUDO_DATA_DATA_H
+#define LUDO_DATA_DATA_H
 
-#include "buffers.h"
-#include "core.h"
+#include "heaps.h"
 
 namespace ludo
 {
   ///
   /// Allocates capacity for a particular type of data within an instance.
   /// \param instance The instance to allocate capacity within.
-  /// \param capacity The maximum number of elements that can be contained within the instance.
-  /// \return The allocated buffer.
+  /// \param capacity The maximum number of elements.
+  /// \return The allocated array.
   template<typename T>
-  LUDO_API partitioned_buffer<T>& allocate(instance& instance, uint64_t capacity);
+  LUDO_API partitioned_array<T>& allocate(instance& instance, uint64_t capacity);
 
   ///
   /// Allocates capacity for a particular type of data within an instance in VRAM.
   /// \param instance The instance to allocate capacity within.
-  /// \param capacity The maximum number of elements that can be contained within the instance.
-  /// \param access_hint The type of access provided by the buffer.
-  /// \return The allocated buffer.
+  /// \param capacity The maximum number of elements.
+  /// \param access_hint The type of access desired.
+  /// \return The allocated array.
   template<typename T>
-  LUDO_API partitioned_buffer<T>& allocate_vram(instance& instance, uint64_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
+  LUDO_API partitioned_array<T>& allocate_vram(instance& instance, uint64_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
 
   ///
   /// Deallocates capacity for a particular type of data within an instance.
@@ -40,24 +39,24 @@ namespace ludo
   LUDO_API void deallocate_vram(instance& instance);
 
   ///
-  /// Retrieves the buffer for a particular type of data within an instance.
-  /// \param instance The instance containing the buffer.
+  /// Retrieves the array for a particular type of data within an instance.
+  /// \param instance The instance containing the array.
   /// \param partition The name of the partition.
-  /// \return The buffer.
+  /// \return The array.
   template<typename T>
-  LUDO_API partitioned_buffer<T>& data(instance& instance);
+  LUDO_API partitioned_array<T>& data(instance& instance);
   template<typename T>
-  LUDO_API const partitioned_buffer<T>& data(const instance& instance);
+  LUDO_API const partitioned_array<T>& data(const instance& instance);
   template<typename T>
-  LUDO_API array_buffer<T>& data(instance& instance, const std::string& partition);
+  LUDO_API array<T>& data(instance& instance, const std::string& partition);
   template<typename T>
-  LUDO_API const array_buffer<T>& data(const instance& instance, const std::string& partition);
+  LUDO_API const array<T>& data(const instance& instance, const std::string& partition);
 
   ///
-  /// Determines if a buffer for a particular type of data exists within an instance.
+  /// Determines if an array for a particular type of data exists within an instance.
   /// \param instance The instance to search.
   /// \param partition The name of the partition.
-  /// \return True if the buffer exists, false otherwise.
+  /// \return True if the array exists, false otherwise.
   template<typename T>
   LUDO_API bool exists(const instance& instance);
   template<typename T>
@@ -82,7 +81,7 @@ namespace ludo
   /// \param instance The instance containing the data.
   /// \param partition The name of the partition.
   /// \param id The ID of the element.
-  /// \return The first element or nullptr if not found.
+  /// \return The element or nullptr if not found.
   template<typename T>
   LUDO_API T* get(instance& instance, uint64_t id);
   template<typename T>
@@ -110,50 +109,48 @@ namespace ludo
   LUDO_API void remove(instance& instance, T* element, const std::string& partition);
 
   ///
-  /// Allocates capacity for a heap of a particular type of data within an instance.
-  /// \param instance The instance to allocate capacity within.
-  /// \param capacity The maximum number of elements that can be contained within the heap.
-  /// \return The allocated buffer.
-  template<typename T>
-  LUDO_API heap_buffer& allocate_heap(instance& instance, uint64_t capacity);
+  /// Allocates a heap within an instance.
+  /// \param instance The instance to allocate a heap within.
+  /// \param name The name of the heap.
+  /// \param size The size (in bytes).
+  /// \return The allocated heap.
+  LUDO_API heap& allocate_heap(instance& instance, const std::string& name, uint64_t size);
 
   ///
-  /// Allocates capacity for a heap of a particular type of data within an instance in VRAM.
-  /// \param instance The instance to allocate capacity within.
-  /// \param capacity The maximum number of elements that can be contained within the heap.
-  /// \param access_hint The type of access provided by the buffer.
-  /// \return The allocated buffer.
-  template<typename T>
-  LUDO_API heap_buffer& allocate_heap_vram(instance& instance, uint64_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
+  /// Allocates a heap within an instance in VRAM.
+  /// \param instance The instance to allocate a heap within.
+  /// \param name The name of the heap.
+  /// \param size The size (in bytes).
+  /// \param access_hint The type of access desired.
+  /// \return The allocated heap.
+  LUDO_API heap& allocate_heap_vram(instance& instance, const std::string& name, uint64_t size, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
 
   ///
-  /// Deallocates capacity for a heap of a particular type of data within an instance.
-  /// \param instance The instance to deallocate capacity from.
-  template<typename T>
-  LUDO_API void deallocate_heap(instance& instance);
+  /// Deallocates a heap within an instance.
+  /// \param instance The instance to deallocate the heap from.
+  /// \param name The name of the heap.
+  LUDO_API void deallocate_heap(instance& instance, const std::string& name);
 
   ///
-  /// Deallocates capacity for a heap of a particular type of data within an instance from VRAM.
-  /// \param instance The instance to deallocate capacity from.
-  template<typename T>
-  LUDO_API void deallocate_heap_vram(instance& instance);
+  /// Deallocates a heap within an instance from VRAM.
+  /// \param instance The instance to deallocate the heap from.
+  /// \param name The name of the heap.
+  LUDO_API void deallocate_heap_vram(instance& instance, const std::string& name);
 
   ///
-  /// Retrieves the heap buffer for a particular type of data within an instance.
-  /// \param instance The instance containing the heap buffer.
+  /// Retrieves a heap within an instance.
+  /// \param instance The instance containing the heap.
+  /// \param name The name of the heap.
   /// \return The heap buffer.
-  template<typename T>
-  LUDO_API heap_buffer& data_heap(instance& instance);
-  template<typename T>
-  LUDO_API const heap_buffer& data_heap(const instance& instance);
+  LUDO_API heap& data_heap(instance& instance, const std::string& name);
+  LUDO_API const heap& data_heap(const instance& instance, const std::string& name);
 
   template<typename T>
-  LUDO_API std::string partitioned_buffer_key();
+  LUDO_API std::string partitioned_array_key();
 
-  template<typename T>
-  LUDO_API std::string heap_buffer_key();
+  LUDO_API std::string heap_key(const std::string& name);
 }
 
 #include "data.hpp"
 
-#endif // LUDO_DATA_H
+#endif // LUDO_DATA_DATA_H

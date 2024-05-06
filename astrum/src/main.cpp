@@ -101,9 +101,9 @@ int main()
 
   ludo::add(inst, ludo::rendering_context(), 1);
 
-  ludo::allocate_heap_vram<ludo::draw_command>(inst, max_rendered_instances);
-  ludo::allocate_heap_vram<ludo::index_t>(inst, max_indices);
-  ludo::allocate_heap_vram<ludo::vertex_t>(inst, max_vertices * ludo::vertex_format_pnc.size);
+  ludo::allocate_heap_vram(inst, "ludo::vram_draw_commands", max_rendered_instances * sizeof(ludo::draw_command));
+  ludo::allocate_heap_vram(inst, "ludo::vram_indices", max_indices * sizeof(uint32_t));
+  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", max_vertices * ludo::vertex_format_pnc.size);
 
   ludo::add(
     inst,
@@ -230,9 +230,9 @@ int main()
   ludo::deallocate<astrum::spaceship_controls>(inst);
   ludo::deallocate<astrum::terrain>(inst);
 
-  ludo::deallocate_heap_vram<ludo::draw_command>(inst);
-  ludo::deallocate_heap_vram<ludo::index_t>(inst);
-  ludo::deallocate_heap_vram<ludo::vertex_t>(inst);
+  ludo::deallocate_heap_vram(inst, "ludo::vram_draw_commands");
+  ludo::deallocate_heap_vram(inst, "ludo::vram_indices");
+  ludo::deallocate_heap_vram(inst, "ludo::vram_vertices");
 
   return 0;
 }

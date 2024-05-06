@@ -5,7 +5,7 @@
 #ifndef LUDO_RENDERING_H
 #define LUDO_RENDERING_H
 
-#include "data.h"
+#include "data/data.h"
 #include "math/mat.h"
 #include "math/vec.h"
 #include "meshes.h"
@@ -13,8 +13,6 @@
 
 namespace ludo
 {
-  struct draw_command;
-
   ///
   /// A rendering context.
   struct LUDO_API rendering_context
@@ -54,7 +52,7 @@ namespace ludo
     buffer shader_buffer; ///< A buffer containing data available to this render program.
 
     buffer instance_buffer_front; ///< A buffer containing instance data available to this render program.
-    heap_buffer instance_buffer_back; ///< A buffer containing instance data available to this render program.
+    heap instance_buffer_back; ///< A buffer containing instance data available to this render program.
     uint32_t instance_size = 0; ///< The size in bytes of an instance within this render program.
 
     range active_commands; ///< The active commands to be executed by this render program.

@@ -36,15 +36,15 @@ namespace ludo
     auto& render_programs = data<render_program>(instance);
     auto rendering_context = first<ludo::rendering_context>(instance);
 
-    auto& vram_draw_commands = data_heap<draw_command>(instance);
-    auto& vram_indices = data_heap<index_t>(instance);
-    auto& vram_vertices = data_heap<vertex_t>(instance);
+    auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
+    auto& indices = data_heap(instance, "ludo::vram_indices");
+    auto& vertices = data_heap(instance, "ludo::vram_vertices");
 
     write_commands(instance, *rendering_context, options);
 
-    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, vram_draw_commands.id); check_opengl_error();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vram_indices.id); check_opengl_error();
-    glBindBuffer(GL_ARRAY_BUFFER, vram_vertices.id); check_opengl_error();
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_commands.id); check_opengl_error();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices.id); check_opengl_error();
+    glBindBuffer(GL_ARRAY_BUFFER, vertices.id); check_opengl_error();
 
     assert(rendering_context && "rendering context not found");
     bind(*rendering_context);
@@ -82,7 +82,7 @@ namespace ludo
       glMultiDrawElementsIndirect(
         draw_modes[render_program.primitive],
         GL_UNSIGNED_INT,
-        reinterpret_cast<void*>((render_program.command_buffer.data - vram_draw_commands.data) + render_program.active_commands.start * sizeof(draw_command)),
+        reinterpret_cast<void*>((render_program.command_buffer.data - draw_commands.data) + render_program.active_commands.start * sizeof(draw_command)),
         static_cast<GLsizei>(render_program.active_commands.count),
         sizeof(draw_command)
       ); check_opengl_error();
@@ -108,40 +108,27 @@ namespace ludo
     {
       auto& render_programs = data<render_program>(instance);
 
-      auto& vram_draw_commands = data_heap<draw_command>(instance);
+      auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
 
       auto planes = frustum_planes(get_camera(rendering_context));
 
       // TODO take allocation out of frame?
-      auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.size * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
+      auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.length * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
 
-      auto context_byte_index = uint32_t(0);
-      write(context_buffer, context_byte_index, planes[0]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, planes[1]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, planes[2]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, planes[3]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, planes[4]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, planes[5]);
-      context_byte_index += 16;
-      write(context_buffer, context_byte_index, static_cast<uint32_t>(render_programs.array_size));
-      context_byte_index += 4;
+      auto stream = ludo::stream(context_buffer);
+      write(stream, planes[0]);
+      write(stream, planes[1]);
+      write(stream, planes[2]);
+      write(stream, planes[3]);
+      write(stream, planes[4]);
+      write(stream, planes[5]);
+      write(stream, static_cast<uint32_t>(render_programs.length));
+      stream.position += 4; // align 8
       for (auto& render_program : render_programs)
       {
-        // Pad to multiple of 8 as that is the alignment of the largest member of the render_program_t struct (uint64_t)
-        // Since the size of the render_program_t struct is 16 (a multiple of 8), this will only be applied before the first instance of the struct
-        context_byte_index += (8 - context_byte_index % 8) % 8;
-
-        write(context_buffer, context_byte_index, render_program.id);
-        context_byte_index += 8;
-        write(context_buffer, context_byte_index, static_cast<uint32_t>((render_program.command_buffer.data - vram_draw_commands.data) / sizeof(draw_command) + render_program.active_commands.start));
-        context_byte_index += 4;
-        write(context_buffer, context_byte_index, render_program.active_commands.count);
-        context_byte_index += 4;
+        write(stream, render_program.id);
+        write(stream, static_cast<uint32_t>((render_program.command_buffer.data - draw_commands.data) / sizeof(draw_command) + render_program.active_commands.start));
+        write(stream, render_program.active_commands.count);
       }
 
       for (auto linear_octree_id : options.linear_octree_ids)
@@ -157,7 +144,7 @@ namespace ludo
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, context_buffer.id); check_opengl_error();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, linear_octree->front_buffer.id); check_opengl_error();
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vram_draw_commands.id); check_opengl_error();
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, draw_commands.id); check_opengl_error();
 
         auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, linear_octree->depth));
         ludo::execute(*linear_octree_compute_program, octant_count_1d / 8, octant_count_1d / 4, octant_count_1d); check_opengl_error();
@@ -166,10 +153,10 @@ namespace ludo
       // TODO memory barrier can do it faster?
       wait_for_render(instance);
 
-      for (auto index = 0; index < render_programs.array_size; index++)
+      for (auto index = 0; index < render_programs.length; index++)
       {
         auto offset = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
-        render_programs[index].active_commands.count = read<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
+        render_programs[index].active_commands.count = cast<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
       }
 
       deallocate_vram(context_buffer);
@@ -189,13 +176,14 @@ namespace ludo
     auto render_program = get<ludo::render_program>(instance, get_render_program_id(options, mesh_instance));
     assert(render_program && "render program not found");
 
-    write(render_program->command_buffer, (render_program->active_commands.start + render_program->active_commands.count++) * sizeof(draw_command), draw_command
+    auto position = (render_program->active_commands.start + render_program->active_commands.count++) * sizeof(draw_command);
+    cast<draw_command>(render_program->command_buffer, position) =
     {
       .index_count = mesh_instance.indices.count,
       .index_start = mesh_instance.indices.start,
       .vertex_start = mesh_instance.vertices.start,
       .instance_start = mesh_instance.instance_index
-    });
+    };
   }
 
   uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance)

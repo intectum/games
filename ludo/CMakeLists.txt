@@ -10,8 +10,10 @@ project(ludo)
 #########################
 set(SRC_FILES
     src/ludo/animation.cpp
-    src/ludo/buffers.cpp
     src/ludo/core.cpp
+    src/ludo/data/buffers.cpp
+    src/ludo/data/data.cpp
+    src/ludo/data/heaps.cpp
     src/ludo/files.cpp
     src/ludo/graphs.cpp
     src/ludo/graphs/dynamic_octree.cpp
@@ -41,7 +43,8 @@ set(SRC_FILES
     src/ludo/timer.cpp)
 
 set(TEST_SRC_FILES
-    tests/buffers.cpp
+    tests/data/arrays.cpp
+    tests/data/buffers.cpp
     tests/graphs/dynamic_octree.cpp
     tests/graphs/linear_octree.cpp
     tests/math/mat.cpp

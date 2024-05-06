@@ -7,9 +7,11 @@
 
 #include "algorithm.h"
 #include "animation.h"
-#include "buffers.h"
 #include "core.h"
-#include "data.h"
+#include "data/arrays.h"
+#include "data/buffers.h"
+#include "data/data.h"
+#include "data/heaps.h"
 #include "files.h"
 #include "meshes.h"
 #include "meshes/edit.h"

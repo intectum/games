@@ -64,7 +64,7 @@ namespace astrum
     auto& person_kinematic_body = ludo::data<ludo::kinematic_body>(inst, "people")[game_controls.person_index];
     auto& spaceship_ghost_bodies = ludo::data<ludo::ghost_body>(inst, "spaceships");
 
-    for (auto spaceship_index = uint32_t(0); spaceship_index < spaceship_ghost_bodies.array_size; spaceship_index++)
+    for (auto spaceship_index = uint32_t(0); spaceship_index < spaceship_ghost_bodies.length; spaceship_index++)
     {
       for (auto& contact : ludo::contacts(inst, spaceship_ghost_bodies[spaceship_index]))
       {

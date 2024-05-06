@@ -11,8 +11,8 @@ namespace astrum
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
     auto& static_bodies = ludo::data<ludo::static_body>(inst);
 
-    auto& terrains = ludo::data<celestial_body>(inst);
     auto& point_masses = ludo::data<point_mass>(inst);
+    auto& terrains = ludo::data<terrain>(inst);
 
     auto& terrain_render_programs = ludo::data<ludo::render_program>(inst, "terrain");
 
@@ -43,9 +43,8 @@ namespace astrum
       {
         if (mesh_instance.instance_buffer.data)
         {
-          // TODO replace with at()
-          auto transform = reinterpret_cast<ludo::mat4 *>(mesh_instance.instance_buffer.data);
-          ludo::position(*transform, ludo::position(*transform) + delta);
+          auto& transform = ludo::instance_transform(mesh_instance);
+          ludo::position(transform, ludo::position(transform) + delta);
         }
       }
     }
@@ -65,11 +64,10 @@ namespace astrum
       ludo::push(body);
     }
 
-    for (auto index = uint32_t(0); index < terrains.array_size; index++)
+    for (auto index = uint32_t(0); index < terrains.length; index++)
     {
-      // TODO replace with at()
-      auto transform = reinterpret_cast<ludo::mat4*>(terrain_render_programs[index].shader_buffer.data);
-      ludo::position(*transform, ludo::position(*transform) + delta);
+      auto& transform = ludo::cast<ludo::mat4>(terrain_render_programs[index].shader_buffer, 0);
+      ludo::position(transform, ludo::position(transform) + delta);
     }
 
     for (auto& point_mass : point_masses)

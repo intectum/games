@@ -92,45 +92,40 @@ namespace ludo
     auto vertex_size = bones_offset;
     vertex_size += has_bones ? bone_data_size : 0;
 
-    auto byte_index = index_start * sizeof(uint32_t);
+    auto index_stream = ludo::stream(mesh.index_buffer, index_start * sizeof(uint32_t));
     for (auto face_index = 0; face_index < assimp_mesh.mNumFaces; face_index++)
     {
       auto& assimp_face = assimp_mesh.mFaces[face_index];
       for (auto index_index = 0; index_index < assimp_face.mNumIndices; index_index++)
       {
-        write(mesh.index_buffer, byte_index, vertex_start + assimp_face.mIndices[index_index]);
-        byte_index += sizeof(uint32_t);
+        write(index_stream, vertex_start + assimp_face.mIndices[index_index]);
       }
     }
 
-    byte_index = vertex_start * vertex_size;
+    auto vertex_stream = ludo::stream(mesh.vertex_buffer, vertex_start * vertex_size);
     for (auto vertex_index = 0; vertex_index < assimp_mesh.mNumVertices; vertex_index++)
     {
       auto position = vec3(transform * vec4(to_vec3(assimp_mesh.mVertices[vertex_index])));
-      write(mesh.vertex_buffer, byte_index, position);
-      byte_index += sizeof(vec3);
+      write(vertex_stream, position);
 
       auto normal = mat3(transform) * to_vec3(assimp_mesh.mNormals[vertex_index]);
-      write(mesh.vertex_buffer, byte_index, normal);
-      byte_index += sizeof(vec3);
+      write(vertex_stream, normal);
 
       if (has_colors)
       {
-        write(mesh.vertex_buffer, byte_index, to_vec4(assimp_mesh.mColors[0][vertex_index]));
-        byte_index += sizeof(vec4);
+        write(vertex_stream, to_vec4(assimp_mesh.mColors[0][vertex_index]));
       }
 
       if (has_texture)
       {
-        write(mesh.vertex_buffer, byte_index, to_vec2(assimp_mesh.mTextureCoords[0][vertex_index]));
-        byte_index += sizeof(vec2);
+        write(vertex_stream, to_vec2(assimp_mesh.mTextureCoords[0][vertex_index]));
       }
 
       if (has_bones)
       {
         // Initialize bone indices and weights to 0
-        std::memset(mesh.vertex_buffer.data + byte_index, 0, bone_data_size);
-        byte_index += bone_data_size;
+        std::memset(mesh.vertex_buffer.data + vertex_stream.position, 0, bone_data_size);
+        vertex_stream.position += bone_data_size;
       }
     }
 
@@ -150,7 +145,7 @@ namespace ludo
         auto bone_index_byte_index = first_bone_index_byte_index;
         auto first_bone_weight_byte_index = first_bone_index_byte_index + max_bone_weights_per_vertex * sizeof(uint32_t);
         auto bone_weight_byte_index = first_bone_weight_byte_index;
-        while (read<float>(mesh.vertex_buffer, bone_weight_byte_index) != 0.0f)
+        while (cast<float>(mesh.vertex_buffer, bone_weight_byte_index) != 0.0f)
         {
           bone_index_byte_index += sizeof(uint32_t);
           bone_weight_byte_index += sizeof(float);
@@ -158,8 +153,8 @@ namespace ludo
           assert(bone_index_byte_index < first_bone_weight_byte_index && "the maximum bone weights per vertex has been exceeded");
         }
 
-        write(mesh.vertex_buffer, bone_index_byte_index, bone_index);
-        write(mesh.vertex_buffer, bone_weight_byte_index, assimp_vertex_weight.mWeight);
+        cast<uint32_t>(mesh.vertex_buffer, bone_index_byte_index) = bone_index;
+        cast<float>(mesh.vertex_buffer, bone_weight_byte_index) = assimp_vertex_weight.mWeight;
       }
     }
   }

@@ -62,16 +62,16 @@ namespace astrum
 
   void sync_light_with_sol(ludo::instance& inst)
   {
-    auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
+    auto rendering_context = ludo::first<ludo::rendering_context>(inst);
 
-    auto& point_mass = *ludo::first<astrum::point_mass>(inst, "celestial-bodies");
+    auto point_mass = ludo::first<astrum::point_mass>(inst, "celestial-bodies");
 
-    ludo::set_light(rendering_context, ludo::light
+    ludo::set_light(*rendering_context, ludo::light
     {
       .ambient = { 0.01f, 0.01f, 0.01f, 1.0f },
       .diffuse = { 0.7f, 0.7f, 0.7f, 1.0f },
       .specular = { 0.01f, 0.01f, 0.01f, 1.0f },
-      .position = point_mass.transform.position,
+      .position = point_mass->transform.position,
       .attenuation = { 1.0f, 0.0f, 0.0f },
       .strength = 1.0f,
       .range = 5.0f * astronomical_unit

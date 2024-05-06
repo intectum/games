@@ -2,8 +2,7 @@
 - Parallel rendering
 - Occlusion culling
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
-- Vertex types? Only trouble could be things like render and import which need to know the vertex info
-- Remove all global state from ludo
+- Remove all global state from ludo (ghost data!)
 - Switch to bazel
 - Remove dynamic containers from data types stored in the instance
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
@@ -13,5 +12,3 @@
 - Phong and PBR lights
 - CEF/UI
 - Trees, rocks and grass
-- Specify layout info in shader to prevent need for specifying vertex attributes? Is that a thing?
-- Simplify buffers, get ref to position, add streams

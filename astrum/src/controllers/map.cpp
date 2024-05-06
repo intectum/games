@@ -16,7 +16,7 @@ namespace astrum
     auto next_target = window.active_keyboard_button_states[ludo::keyboard_button::N] == ludo::button_state::UP;
     if (next_target)
     {
-      map_controls.target_index = (map_controls.target_index + 1) % celestial_body_point_masses.array_size;
+      map_controls.target_index = (map_controls.target_index + 1) % celestial_body_point_masses.length;
       map_controls.target_radius = radii[map_controls.target_index];
 
       map_controls.camera_rotation = ludo::vec2_zero;

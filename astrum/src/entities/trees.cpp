@@ -123,7 +123,7 @@ namespace astrum
     auto movement = point_mass.transform.position - old_position;
     auto moved = ludo::length2(movement) > 0.0f;
 
-    for (auto mesh_index = 0; mesh_index < meshes.array_size; mesh_index++)
+    for (auto mesh_index = 0; mesh_index < meshes.length; mesh_index++)
     {
       auto& mesh = meshes[mesh_index];
       auto mesh_indices = std::vector<uint32_t>(mesh.instance_count, mesh_index);

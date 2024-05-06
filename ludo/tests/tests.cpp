@@ -1,6 +1,7 @@
 #include <ludo/testing.h>
 
-#include "buffers.h"
+#include "data/arrays.h"
+#include "data/buffers.h"
 #include "graphs/linear_octree.h"
 #include "graphs/dynamic_octree.h"
 #include "math/mat.h"
@@ -10,6 +11,7 @@
 
 int main()
 {
+  ludo::test_arrays();
   ludo::test_buffers();
   ludo::test_graphs_dynamic_octree();
   ludo::test_graphs_linear_octree();

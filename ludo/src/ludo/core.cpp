@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "core.h"
-#include "data.h"
+#include "data/data.h"
 #include "scripts.h"
 #include "timer.h"
 

@@ -18,7 +18,7 @@ namespace astrum
       auto kinematics = std::find(kinematic_partitions.begin(), kinematic_partitions.end(), point_mass_partition.first) != kinematic_partitions.end();
       auto kinematic_body_partition = kinematics ? &(*ludo::find(kinematic_bodies, point_mass_partition.first)).second : nullptr;
 
-      for (auto index = 0; index < point_mass_partition.second.array_size; index++)
+      for (auto index = 0; index < point_mass_partition.second.length; index++)
       {
         auto& point_mass = point_mass_partition.second[index];
 
@@ -52,7 +52,7 @@ namespace astrum
                 point_mass.transform.position += velocity_toward_contact * inst.delta_time * game_speed;
                 point_mass.transform.position += deepest_contact.normal_b * -deepest_contact.distance;
 
-                if (static_body >= &celestial_body_static_bodies[0] && static_body <= &celestial_body_static_bodies[celestial_body_static_bodies.array_size - 1])
+                if (static_body >= &celestial_body_static_bodies[0] && static_body <= &celestial_body_static_bodies[celestial_body_static_bodies.length - 1])
                 {
                   point_mass.resting = true;
                   point_mass.linear_velocity = ludo::vec3_zero;
@@ -89,15 +89,15 @@ namespace astrum
       auto& partition_point_masses = ludo::find(point_masses, partition)->second;
       auto& partition_mesh_instances = ludo::find(mesh_instances, partition)->second;
 
-      for (auto index = 0; index < partition_point_masses.array_size; index++)
+      for (auto index = 0; index < partition_point_masses.length; index++)
       {
         auto& mesh_instance = partition_mesh_instances[index];
         auto& point_mass = partition_point_masses[index];
 
-        auto old_transform = ludo::get_transform(mesh_instance);
+        auto old_transform = ludo::instance_transform(mesh_instance);
         auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
-        ludo::set_transform(mesh_instance, new_transform);
+        ludo::instance_transform(mesh_instance) = new_transform;
 
         auto old_position = ludo::position(old_transform);
         auto new_position = ludo::position(new_transform);

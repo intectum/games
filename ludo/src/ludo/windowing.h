@@ -8,7 +8,7 @@
 #include <array>
 
 #include "core.h"
-#include "data.h"
+#include "data/data.h"
 #include "input.h"
 
 namespace ludo

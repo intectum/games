@@ -6,7 +6,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <ludo/data.h>
 #include <ludo/windowing.h>
 
 #include "input.h"

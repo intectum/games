@@ -56,7 +56,7 @@ namespace ludo
     auto fragment_shader = ludo::add(instance, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream, partition);
     render_program.fragment_shader_id = fragment_shader->id;
 
-    auto& draw_commands = data_heap<draw_command>(instance);
+    auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
     render_program.command_buffer = allocate(draw_commands, capacity * sizeof(draw_command));
 
     return add(instance, render_program, partition);
@@ -79,7 +79,7 @@ namespace ludo
       render_program.fragment_shader_id = fragment_shader->id;
     }
 
-    auto& draw_commands = data_heap<draw_command>(instance);
+    auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
     render_program.command_buffer = allocate(draw_commands, capacity * sizeof(draw_command));
 
     if (!render_program.instance_size)
@@ -108,7 +108,7 @@ namespace ludo
 
     if (element->command_buffer.data)
     {
-      auto& draw_commands = data_heap<draw_command>(instance);
+      auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
       deallocate(draw_commands, element->command_buffer);
     }
 

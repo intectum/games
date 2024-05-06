@@ -2,7 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include "data.h"
+#include "data/data.h"
 #include "scripts.h"
 
 namespace ludo

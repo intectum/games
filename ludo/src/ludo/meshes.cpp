@@ -57,10 +57,10 @@ namespace ludo
   {
     auto mesh = add(instance, init, partition);
 
-    auto& indices = data_heap<index_t>(instance);
+    auto& indices = data_heap(instance, "ludo::vram_indices");
     mesh->index_buffer = allocate(indices, index_count * sizeof(uint32_t));
 
-    auto& vertices = data_heap<vertex_t>(instance);
+    auto& vertices = data_heap(instance, "ludo::vram_vertices");
     mesh->vertex_buffer = allocate(vertices, vertex_count * vertex_size, vertex_size);
 
     mesh->vertex_size = vertex_size;
@@ -73,13 +73,13 @@ namespace ludo
   {
     if (element->index_buffer.data)
     {
-      auto& indices = data_heap<index_t>(instance);
+      auto& indices = data_heap(instance, "ludo::vram_indices");
       deallocate(indices, element->index_buffer);
     }
 
     if (element->vertex_buffer.data)
     {
-      auto& vertices = data_heap<vertex_t>(instance);
+      auto& vertices = data_heap(instance, "ludo::vram_vertices");
       deallocate(vertices, element->vertex_buffer);
     }
 
@@ -93,11 +93,11 @@ namespace ludo
     mesh_instance->mesh_id = mesh.id; // TODO remove mesh_id from mesh_instance?
     mesh_instance->render_program_id = init.render_program_id ? init.render_program_id : mesh.render_program_id; // TODO remove render_program_id from mesh?
 
-    auto& indices = data_heap<index_t>(instance);
+    auto& indices = data_heap(instance, "ludo::vram_indices");
     mesh_instance->indices.start = (mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
     mesh_instance->indices.count = mesh.index_buffer.size / sizeof(uint32_t);
 
-    auto& vertices = data_heap<vertex_t>(instance);
+    auto& vertices = data_heap(instance, "ludo::vram_vertices");
     mesh_instance->vertices.start = (mesh.vertex_buffer.data - vertices.data) / mesh.vertex_size;
     mesh_instance->vertices.count = mesh.vertex_buffer.size / mesh.vertex_size;
 
@@ -106,7 +106,7 @@ namespace ludo
       auto render_program = get<ludo::render_program>(instance, mesh_instance->render_program_id);
       mesh_instance->instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size);
 
-      set_transform(*mesh_instance, mat4_identity);
+      instance_transform(*mesh_instance) = mat4_identity;
 
       if (mesh.texture_id)
       {
@@ -137,13 +137,13 @@ namespace ludo
     remove(data<mesh_instance>(instance), element, partition);
   }
 
-  mat4 get_transform(const mesh_instance& mesh_instance)
+  mat4& instance_transform(mesh_instance& mesh_instance)
   {
-    return read<mat4>(mesh_instance.instance_buffer, 0);
+    return cast<mat4>(mesh_instance.instance_buffer, 0);
   }
 
-  void set_transform(mesh_instance& mesh_instance, const mat4& transform)
+  const mat4& instance_transform(const mesh_instance& mesh_instance)
   {
-    write<mat4>(mesh_instance.instance_buffer, 0, transform);
+    return cast<const mat4>(mesh_instance.instance_buffer, 0);
   }
 }

@@ -10,9 +10,9 @@ namespace astrum
   void add_hdr_resolve(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
-    auto& previous_frame_buffer = frame_buffers[frame_buffers.array_size - 1];
+    auto& previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
 
-    auto& vram_draw_commands = data_heap<ludo::draw_command>(inst);
+    auto& draw_commands = data_heap(inst, "ludo::vram_draw_commands");
 
     auto fragment_stream = std::ifstream("assets/shaders/hdr.frag");
     auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream);
@@ -23,7 +23,7 @@ namespace astrum
         .vertex_shader_id = vertex_shader_id,
         .fragment_shader_id = fragment_shader->id,
         .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(vram_draw_commands, sizeof(ludo::draw_command))
+        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command))
       }
     );
 

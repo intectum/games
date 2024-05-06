@@ -54,7 +54,7 @@ namespace ludo
       .projection = perspective(60.0f, 16.0f / 9.0f, 0.1f, 1000.0f)
     });
 
-    write(rendering_context->shader_buffer, camera_size, light_count);
+    cast<uint32_t>(rendering_context->shader_buffer, camera_size) = light_count;
 
     // Lights that don't do anything...
     for (auto index = 0; index < light_count; index++)
@@ -88,45 +88,33 @@ namespace ludo
 
   camera get_camera(const rendering_context& rendering_context)
   {
+    auto stream = ludo::stream(rendering_context.shader_buffer);
     auto camera = ludo::camera();
 
-    // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
-
-    auto byte_index = 0;
-    camera.near_clipping_distance = read<float>(rendering_context.shader_buffer, byte_index);
-    byte_index += 4;
-    camera.far_clipping_distance = read<float>(rendering_context.shader_buffer, byte_index);
-    byte_index += 4;
-    byte_index += 8; // Padding to 16 bytes
-    camera.view = read<mat4>(rendering_context.shader_buffer, byte_index);
-    byte_index += 64;
-    camera.projection = read<mat4>(rendering_context.shader_buffer, byte_index);
+    camera.near_clipping_distance = read<float>(stream);
+    camera.far_clipping_distance = read<float>(stream);
+    stream.position += 8; // align 16
+    camera.view = read<mat4>(stream);
+    camera.projection = read<mat4>(stream);
 
     return camera;
   }
 
   void set_camera(rendering_context& rendering_context, const camera& camera)
   {
+    auto stream = ludo::stream(rendering_context.shader_buffer);
     auto view_inverse = camera.view;
     invert(view_inverse);
     auto view_projection = camera.projection * view_inverse;
 
-    // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
-
-    auto byte_index = 0;
-    write(rendering_context.shader_buffer, byte_index, camera.near_clipping_distance);
-    byte_index += 4;
-    write(rendering_context.shader_buffer, byte_index, camera.far_clipping_distance);
-    byte_index += 4;
-    byte_index += 8; // Padding to 16 bytes
-    write(rendering_context.shader_buffer, byte_index, camera.view);
-    byte_index += 64;
-    write(rendering_context.shader_buffer, byte_index, camera.projection);
-    byte_index += 64;
-    write(rendering_context.shader_buffer, byte_index, position(camera.view));
-    byte_index += 12;
-    byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.shader_buffer, byte_index, view_projection);
+    write(stream, camera.near_clipping_distance);
+    write(stream, camera.far_clipping_distance);
+    stream.position += 8; // align 16
+    write(stream, camera.view);
+    write(stream, camera.projection);
+    write(stream, position(camera.view));
+    stream.position += 4; // align 16
+    write(stream, view_projection);
   }
 
   light get_light(const rendering_context& rendering_context, uint8_t index)
@@ -136,28 +124,19 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < read<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
 
-    // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
-
-    auto byte_index = camera_size + 16 + index * light_size;
-    light.ambient = read<vec4>(rendering_context.shader_buffer, byte_index);
-    byte_index += 16;
-    light.diffuse = read<vec4>(rendering_context.shader_buffer, byte_index);
-    byte_index += 16;
-    light.specular = read<vec4>(rendering_context.shader_buffer, byte_index);
-    byte_index += 16;
-    light.position = read<vec3>(rendering_context.shader_buffer, byte_index);
-    byte_index += 12;
-    byte_index += 4; // Padding to 16 bytes
-    light.direction = read<vec3>(rendering_context.shader_buffer, byte_index);
-    byte_index += 12;
-    byte_index += 4; // Padding to 16 bytes
-    light.attenuation = read<vec3>(rendering_context.shader_buffer, byte_index);
-    byte_index += 12;
-    light.strength = read<float>(rendering_context.shader_buffer, byte_index);
-    byte_index += 4;
-    light.range = read<float>(rendering_context.shader_buffer, byte_index);
+    auto stream = ludo::stream(rendering_context.shader_buffer, camera_size + 16 + index * light_size);
+    light.ambient = read<vec4>(stream);
+    light.diffuse = read<vec4>(stream);
+    light.specular = read<vec4>(stream);
+    light.position = read<vec3>(stream);
+    stream.position += 4; // align 16
+    light.direction = read<vec3>(stream);
+    stream.position += 4; // align 16
+    light.attenuation = read<vec3>(stream);
+    light.strength = read<float>(stream);
+    light.range = read<float>(stream);
 
     return light;
   }
@@ -167,28 +146,19 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < read<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
 
-    // In GLSL std430 buffer layout, data is packed into 16 byte aligned format.
-
-    auto byte_index = camera_size + 16 + index * light_size;
-    write(rendering_context.shader_buffer, byte_index, light.ambient);
-    byte_index += 16;
-    write(rendering_context.shader_buffer, byte_index, light.diffuse);
-    byte_index += 16;
-    write(rendering_context.shader_buffer, byte_index, light.specular);
-    byte_index += 16;
-    write(rendering_context.shader_buffer, byte_index, light.position);
-    byte_index += 12;
-    byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.shader_buffer, byte_index, light.direction);
-    byte_index += 12;
-    byte_index += 4; // Padding to 16 bytes
-    write(rendering_context.shader_buffer, byte_index, light.attenuation);
-    byte_index += 12;
-    write(rendering_context.shader_buffer, byte_index, light.strength);
-    byte_index += 4;
-    write(rendering_context.shader_buffer, byte_index, light.range);
+    auto stream = ludo::stream(rendering_context.shader_buffer, camera_size + 16 + index * light_size);
+    write(stream, light.ambient);
+    write(stream, light.diffuse);
+    write(stream, light.specular);
+    write(stream, light.position);
+    stream.position += 4; // align 16
+    write(stream, light.direction);
+    stream.position += 4; // align 16
+    write(stream, light.attenuation);
+    write(stream, light.strength);
+    write(stream, light.range);
   }
 
   void bind(const rendering_context& rendering_context)

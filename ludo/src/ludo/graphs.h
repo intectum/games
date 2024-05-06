@@ -10,7 +10,7 @@
 
 #include "compute.h"
 #include "core.h"
-#include "data.h"
+#include "data/data.h"
 #include "math/vec.h"
 #include "meshes.h"
 

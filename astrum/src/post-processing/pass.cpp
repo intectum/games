@@ -8,7 +8,7 @@ namespace astrum
   void add_pass(ludo::instance& inst, bool target_screen)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
-    auto& previous_frame_buffer = frame_buffers[frame_buffers.array_size - 1];
+    auto& previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
 
     if (target_screen)
     {

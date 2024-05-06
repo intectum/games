@@ -13,6 +13,9 @@ int main()
   auto box_counts = ludo::box_counts();
   auto minifig_counts = ludo::import_counts("assets/models/minifig.dae");
 
+  auto max_indices = box_counts.first * 3 + minifig_counts.first;
+  auto max_vertices = box_counts.second * 3 + minifig_counts.second;
+
   ludo::allocate<ludo::rendering_context>(inst, 1);
   ludo::allocate<ludo::windowing_context>(inst, 1);
 
@@ -32,9 +35,9 @@ int main()
 
   auto rendering_context = ludo::add(inst, ludo::rendering_context(), 1);
 
-  ludo::allocate_heap_vram<ludo::draw_command>(inst, instance_count * sizeof(ludo::draw_command));
-  ludo::allocate_heap_vram<ludo::index_t>(inst, box_counts.first * instance_count + minifig_counts.first);
-  ludo::allocate_heap_vram<ludo::vertex_t>(inst, box_counts.second * instance_count * ludo::vertex_format_pnc.size + minifig_counts.second * 80);
+  ludo::allocate_heap_vram(inst, "ludo::vram_draw_commands", instance_count * sizeof(ludo::draw_command));
+  ludo::allocate_heap_vram(inst, "ludo::vram_indices", max_indices * sizeof(uint32_t));
+  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", max_vertices * 80); // 80 is a rough guess to cover everything
 
   // LIGHTS
 
@@ -215,10 +218,10 @@ int main()
     auto armature = ludo::first<ludo::armature>(inst);
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
-    ludo::set_transform(mesh_instances[0], ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
-    ludo::set_transform(mesh_instances[1], ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
-    ludo::set_transform(mesh_instances[2], ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
-    ludo::set_transform(mesh_instances[3], ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time)));
+    ludo::instance_transform(mesh_instances[0]) = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    ludo::instance_transform(mesh_instances[1]) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    ludo::instance_transform(mesh_instances[2]) = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    ludo::instance_transform(mesh_instances[3]) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
 
     auto bone_transforms = ludo::get_bone_transforms(mesh_instances[3]);
     ludo::interpolate(*animation, *armature, inst.total_time, bone_transforms.data());
@@ -246,10 +249,6 @@ int main()
 
   // TEARDOWN
 
-  ludo::deallocate_heap_vram<ludo::draw_command>(inst);
-  ludo::deallocate_heap_vram<ludo::index_t>(inst);
-  ludo::deallocate_heap_vram<ludo::vertex_t>(inst);
-
   ludo::deallocate<ludo::animation>(inst);
   ludo::deallocate<ludo::armature>(inst);
   ludo::deallocate<ludo::body_shape>(inst);
@@ -263,4 +262,8 @@ int main()
 
   ludo::deallocate<ludo::rendering_context>(inst);
   ludo::deallocate<ludo::windowing_context>(inst);
+
+  ludo::deallocate_heap_vram(inst, "ludo::vram_draw_commands");
+  ludo::deallocate_heap_vram(inst, "ludo::vram_indices");
+  ludo::deallocate_heap_vram(inst, "ludo::vram_vertices");
 }

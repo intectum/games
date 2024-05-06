@@ -3,6 +3,7 @@
  */
 
 #include <ludo/graphs.h>
+#include <ludo/rendering.h>
 #include <ludo/testing.h>
 
 #include "linear_octree.h"

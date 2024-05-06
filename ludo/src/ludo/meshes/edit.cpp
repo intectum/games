@@ -20,11 +20,11 @@ namespace ludo
     {
       if (debug && vertex_index % 2)
       {
-        write(mesh.vertex_buffer, byte_index, vec4 { 1.0f - color[0], 1.0f - color[1], 1.0f - color[2], color[3] });
+        cast<ludo::vec4>(mesh.vertex_buffer, byte_index) = vec4 { 1.0f - color[0], 1.0f - color[1], 1.0f - color[2], color[3] };
       }
       else
       {
-        write(mesh.vertex_buffer, byte_index, color);
+        cast<ludo::vec4>(mesh.vertex_buffer, byte_index) = color;
       }
 
       byte_index += format.size;
@@ -39,7 +39,7 @@ namespace ludo
       for (auto vertex_index = 0; vertex_index < 3; vertex_index++)
       {
         auto byte_index = triangle[vertex_index] * format.size + format.position_offset;
-        auto position = read<vec3>(mesh.vertex_buffer, byte_index);
+        auto position = cast<vec3>(mesh.vertex_buffer, byte_index);
         auto position_count_iter = std::find_if(position_counts.begin(), position_counts.end(), [&position](const std::pair<vec3, uint32_t>& position_count)
         {
           return position_count.first == position;
@@ -92,7 +92,7 @@ namespace ludo
       for (auto vertex_index = 0; vertex_index < 3; vertex_index++)
       {
         auto byte_index = triangle[vertex_index] * format.size + format.position_offset;
-        write(mesh.vertex_buffer, byte_index, read<vec3>(mesh.vertex_buffer, byte_index) + extrusion);
+        cast<vec3>(mesh.vertex_buffer, byte_index) += extrusion;
       }
     }
   }

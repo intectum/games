@@ -3,7 +3,7 @@
 
 namespace astrum
 {
-  int32_t nearest_point_masses_index(const ludo::instance& inst, const ludo::array_buffer<point_mass>& point_masses);
+  int32_t nearest_point_masses_index(const ludo::instance& inst, const ludo::array<point_mass>& point_masses);
 
   void relativize_universe(ludo::instance& inst)
   {
@@ -37,7 +37,7 @@ namespace astrum
     }
   }
 
-  int32_t nearest_point_masses_index(const ludo::instance& inst, const ludo::array_buffer<point_mass>& point_masses)
+  int32_t nearest_point_masses_index(const ludo::instance& inst, const ludo::array<point_mass>& point_masses)
   {
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
@@ -46,7 +46,7 @@ namespace astrum
 
     auto nearest_index = int32_t(-1);
     auto shortest_length2 = std::numeric_limits<float>::max();
-    for (auto index = 0; index < point_masses.array_size; index++)
+    for (auto index = 0; index < point_masses.length; index++)
     {
       auto relative_length2 = length2(point_masses[index].transform.position - camera_position);
       if (relative_length2 < shortest_length2)

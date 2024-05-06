@@ -5,7 +5,7 @@
 #ifndef LUDO_COMPUTE_H
 #define LUDO_COMPUTE_H
 
-#include "data.h"
+#include "data/data.h"
 
 namespace ludo
 {

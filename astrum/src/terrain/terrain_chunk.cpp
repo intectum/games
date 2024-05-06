@@ -32,8 +32,8 @@ namespace astrum
     auto low_detail_distance = min_distance + distance_range * 0.66f;
     auto high_detail_distance = min_distance + distance_range * 0.33f;
 
-    ludo::write(mesh_instance.instance_buffer, 0, low_detail_distance);
-    ludo::write(mesh_instance.instance_buffer, sizeof(float), high_detail_distance);
+    ludo::cast<float>(mesh_instance.instance_buffer, 0) = low_detail_distance;
+    ludo::cast<float>(mesh_instance.instance_buffer, sizeof(float)) = high_detail_distance;
   }
 
   uint32_t terrain_chunk_lod_index(const terrain& terrain, uint32_t chunk_index, const ludo::vec3& camera_position, const ludo::vec3& position)

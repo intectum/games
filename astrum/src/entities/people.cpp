@@ -13,7 +13,7 @@ namespace astrum
 
     auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "people");
 
-    ludo::set_transform(*mesh_instance, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
+    ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
 
     ludo::add(
@@ -55,7 +55,7 @@ namespace astrum
     auto& people = ludo::data<astrum::person>(inst, "people");
     auto& point_masses = ludo::data<astrum::point_mass>(inst, "people");
 
-    for (auto index = 0; index < people.array_size; index++)
+    for (auto index = 0; index < people.length; index++)
     {
       auto& mesh_instance = mesh_instances[index];
 

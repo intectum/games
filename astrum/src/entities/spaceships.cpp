@@ -10,7 +10,7 @@ namespace astrum
 
     auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "spaceships");
 
-    ludo::set_transform(*mesh_instance, ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation)));
+    ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
 
     ludo::add(
@@ -129,7 +129,7 @@ namespace astrum
     auto& ghost_bodies = ludo::data<ludo::ghost_body>(inst, "spaceships");
     auto& point_masses = ludo::data<point_mass>(inst, "spaceships");
 
-    for (auto index = 0; index < point_masses.array_size; index++)
+    for (auto index = 0; index < point_masses.length; index++)
     {
       auto& spaceship_controls = spaceship_controls_list[index];
       auto& ghost_body = ghost_bodies[index];

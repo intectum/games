@@ -7,7 +7,7 @@
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 #include <ludo/algorithm.h>
-#include <ludo/data.h>
+#include <ludo/data/data.h>
 #include <ludo/physics.h>
 
 #include "debug.h"
@@ -185,7 +185,7 @@ namespace ludo
     auto& static_bodies = data<static_body>(instance);
     for (auto partition_iter = static_bodies.partitions.rbegin(); partition_iter != static_bodies.partitions.rend(); partition_iter++)
     {
-      while (partition_iter->second.array_size)
+      while (partition_iter->second.length)
       {
         // Call remove() to clean up Bullet resources
         auto static_body_iter = partition_iter->second.end() - 1;
@@ -195,7 +195,7 @@ namespace ludo
 
     deallocate(static_bodies);
 
-    instance.data.erase(partitioned_buffer_key<static_body>());
+    instance.data.erase(partitioned_array_key<static_body>());
     delete &static_bodies;
   }
 
@@ -299,7 +299,7 @@ namespace ludo
     auto& dynamic_bodies = data<dynamic_body>(instance);
     for (auto partition_iter = dynamic_bodies.partitions.rbegin(); partition_iter != dynamic_bodies.partitions.rend(); partition_iter++)
     {
-      while (partition_iter->second.array_size)
+      while (partition_iter->second.length)
       {
         // Call remove() to clean up Bullet resources
         auto dynamic_body_iter = partition_iter->second.end() - 1;
@@ -309,7 +309,7 @@ namespace ludo
 
     deallocate(dynamic_bodies);
 
-    instance.data.erase(partitioned_buffer_key<dynamic_body>());
+    instance.data.erase(partitioned_array_key<dynamic_body>());
     delete &dynamic_bodies;
   }
 
@@ -420,7 +420,7 @@ namespace ludo
     auto& kinematic_bodies = data<kinematic_body>(instance);
     for (auto partition_iter = kinematic_bodies.partitions.rbegin(); partition_iter != kinematic_bodies.partitions.rend(); partition_iter++)
     {
-      while (partition_iter->second.array_size)
+      while (partition_iter->second.length)
       {
         // Call remove() to clean up Bullet resources
         auto kinematic_body_iter = partition_iter->second.end() - 1;
@@ -430,7 +430,7 @@ namespace ludo
 
     deallocate(kinematic_bodies);
 
-    instance.data.erase(partitioned_buffer_key<kinematic_body>());
+    instance.data.erase(partitioned_array_key<kinematic_body>());
     delete &kinematic_bodies;
   }
 
@@ -494,7 +494,7 @@ namespace ludo
     auto& ghost_bodies = data<ghost_body>(instance);
     for (auto partition_iter = ghost_bodies.partitions.rbegin(); partition_iter != ghost_bodies.partitions.rend(); partition_iter++)
     {
-      while (partition_iter->second.array_size)
+      while (partition_iter->second.length)
       {
         // Call remove() to clean up Bullet resources
         auto ghost_body_iter = partition_iter->second.end() - 1;
@@ -504,7 +504,7 @@ namespace ludo
 
     deallocate(ghost_bodies);
 
-    instance.data.erase(partitioned_buffer_key<ghost_body>());
+    instance.data.erase(partitioned_array_key<ghost_body>());
     delete &ghost_bodies;
   }
 
@@ -564,7 +564,7 @@ namespace ludo
     auto& constraints = data<constraint>(instance);
     for (auto partition_iter = constraints.partitions.rbegin(); partition_iter != constraints.partitions.rend(); partition_iter++)
     {
-      while (partition_iter->second.array_size)
+      while (partition_iter->second.length)
       {
         // Call remove() to clean up Bullet resources
         auto constraint_iter = partition_iter->second.end() - 1;
@@ -574,7 +574,7 @@ namespace ludo
 
     deallocate(constraints);
 
-    instance.data.erase(partitioned_buffer_key<constraint>());
+    instance.data.erase(partitioned_array_key<constraint>());
     delete &constraints;
   }
 

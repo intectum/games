@@ -13,13 +13,13 @@ namespace ludo
   {
     auto bounds = aabb
     {
-      .min = ludo::vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),
-      .max = ludo::vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest())
+      .min = vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),
+      .max = vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest())
     };
 
     for (auto vertex_position = 0; vertex_position < mesh.vertex_buffer.size; vertex_position += format.size)
     {
-      auto position = ludo::read<ludo::vec3>(mesh.vertex_buffer, vertex_position + format.position_offset);
+      auto position = cast<ludo::vec3>(mesh.vertex_buffer, vertex_position + format.position_offset);
 
       bounds.min =
       {

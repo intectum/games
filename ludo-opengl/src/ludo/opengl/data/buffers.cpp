@@ -4,9 +4,9 @@
 
 #include <unordered_map>
 
-#include <ludo/buffers.h>
+#include <ludo/data/buffers.h>
 
-#include "util.h"
+#include "../util.h"
 
 namespace ludo
 {

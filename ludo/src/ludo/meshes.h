@@ -5,19 +5,14 @@
 #ifndef LUDO_GEOMETRY_H
 #define LUDO_GEOMETRY_H
 
-#include "buffers.h"
-#include "data.h"
+#include "data/buffers.h"
+#include "data/data.h"
 #include "math/mat.h"
 #include "math/vec.h"
 #include "util.h"
 
 namespace ludo
 {
-  struct texture;
-
-  struct index_t { uint32_t data; };
-  struct vertex_t { std::byte data; };
-
   ///
   /// A mesh primitive.
   enum class mesh_primitive
@@ -178,15 +173,10 @@ namespace ludo
 
   ///
   /// Retrieves the transform from a mesh instance.
-  /// \param mesh_instance The transform to retrieve from the mesh instance.
+  /// \param mesh_instance The transform to retrieve.
   /// \return The transform.
-  LUDO_API mat4 get_transform(const mesh_instance& mesh_instance);
-
-  ///
-  /// Sets the transform of a mesh instance.
-  /// \param mesh_instance The mesh instance to set the transform of.
-  /// \param transform The transform.
-  LUDO_API void set_transform(mesh_instance& mesh_instance, const mat4& transform);
+  mat4& instance_transform(mesh_instance& mesh_instance);
+  const mat4& instance_transform(const mesh_instance& mesh_instance);
 }
 
 #endif // LUDO_GEOMETRY_H

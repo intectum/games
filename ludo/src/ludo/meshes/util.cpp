@@ -13,11 +13,11 @@ namespace ludo
       auto byte_index = 0;
       for (auto existing_vertex_index = 0; existing_vertex_index < vertex_index; existing_vertex_index++)
       {
-        if (near(read<vec3>(mesh.vertex_buffer, byte_index + format.position_offset), position) &&
-            (no_normal_check || !format.has_normal || near(read<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset), normal)) &&
-            (!format.has_texture_coordinate || near(read<vec2>(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset), tex_coord)))
+        if (near(cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset), position) &&
+            (no_normal_check || !format.has_normal || near(cast<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset), normal)) &&
+            (!format.has_texture_coordinate || near(cast<vec2>(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset), tex_coord)))
         {
-          write(mesh.index_buffer, index_index * sizeof(uint32_t), existing_vertex_index);
+          cast<uint32_t>(mesh.index_buffer, index_index * sizeof(uint32_t)) = existing_vertex_index;
 
           index_index++;
 
@@ -29,11 +29,11 @@ namespace ludo
     }
 
     auto byte_index = vertex_index * format.size;
-    write(mesh.vertex_buffer, byte_index + format.position_offset, position);
-    if (format.has_normal) write(mesh.vertex_buffer, byte_index + format.normal_offset, normal);
-    if (format.has_texture_coordinate) write(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset, tex_coord);
+    cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset) = position;
+    if (format.has_normal) cast<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset) = normal;
+    if (format.has_texture_coordinate) cast<vec2>(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset) = tex_coord;
 
-    write(mesh.index_buffer, index_index * sizeof(uint32_t), vertex_index);
+    cast<uint32_t>(mesh.index_buffer, index_index * sizeof(uint32_t)) = vertex_index;
 
     vertex_index++;
     index_index++;
