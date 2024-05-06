@@ -12,25 +12,27 @@
 
 namespace ludo
 {
-  void write_mesh_data(mesh& mesh, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const mat4& transform, uint32_t index_start, uint32_t vertex_start);
+  vertex_format format(const aiScene& assimp_scene, const aiMesh& assimp_mesh);
+  void write_mesh_data(mesh& mesh, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform, uint32_t index_start, uint32_t vertex_start);
 
   const auto bone_data_size = max_bone_weights_per_vertex * sizeof(uint32_t) + max_bone_weights_per_vertex * sizeof(float);
 
-  std::vector<mesh> import_meshes(instance& instance, const render_program& render_program, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition)
+  std::vector<mesh> import_meshes(instance& instance, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition)
   {
     auto meshes = std::vector<mesh>();
 
     if (options.merge_meshes)
     {
       auto mesh_counts = import_counts(assimp_scene, mesh_objects);
-      auto texture_count = std::count_if(textures.begin(), textures.end(), [](const ludo::texture* texture) { return texture != nullptr; });
+      // TODO could maybe combine from all meshes? Not really sure what the best thing to do here is...
+      auto format = ludo::format(assimp_scene, *assimp_scene.mMeshes[0]);
 
       auto mesh = add(
         instance,
-        ludo::mesh { .render_program_id = render_program.id },
+        ludo::mesh(),
         mesh_counts.first,
         mesh_counts.second,
-        render_program.format.size,
+        format.size,
         partition
       );
 
@@ -43,13 +45,14 @@ namespace ludo
     {
       auto& mesh_object = mesh_objects[index];
       auto& assimp_mesh = *assimp_scene.mMeshes[mesh_object.mesh_index];
+      auto format = ludo::format(assimp_scene, assimp_mesh);
 
       auto index_count = assimp_mesh.mNumFaces * assimp_mesh.mFaces[0].mNumIndices; // We use aiProcess_SortByPType so all faces should have the same number of indices.
       auto vertex_count = assimp_mesh.mNumVertices;
 
       if (options.merge_meshes)
       {
-        write_mesh_data(meshes[0], assimp_scene, assimp_mesh, mesh_object.transform, index_start, vertex_start);
+        write_mesh_data(meshes[0], assimp_mesh, format, mesh_object.transform, index_start, vertex_start);
 
         index_start += index_count;
         vertex_start += vertex_count;
@@ -58,14 +61,14 @@ namespace ludo
       {
         auto mesh = add(
           instance,
-          ludo::mesh { .render_program_id = render_program.id, .texture_id = textures[index] ? textures[index]->id : 0 },
+          ludo::mesh { .texture_id = textures[index] ? textures[index]->id : 0 },
           index_count,
           vertex_count,
-          render_program.format.size,
+          format.size,
           partition
         );
 
-        write_mesh_data(*mesh, assimp_scene, assimp_mesh, mesh_object.transform, 0, 0);
+        write_mesh_data(*mesh, assimp_mesh, format, mesh_object.transform, 0, 0);
 
         if (assimp_mesh.mNumBones)
         {
@@ -80,18 +83,23 @@ namespace ludo
     return meshes;
   }
 
-  void write_mesh_data(mesh& mesh, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const mat4& transform, uint32_t index_start, uint32_t vertex_start)
+  vertex_format format(const aiScene& assimp_scene, const aiMesh& assimp_mesh)
   {
-    auto has_colors = assimp_mesh.GetNumColorChannels() > 0;
-    auto has_bones = assimp_mesh.mNumBones > 0;
+    assert(assimp_mesh.mNumBones <= max_bones_per_armature && "max bone count exceeded");
+
     auto texture_path = aiString();
     assimp_scene.mMaterials[assimp_mesh.mMaterialIndex]->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
-    auto has_texture = texture_path.length > 0;
 
-    auto bones_offset = sizeof(vec3) + sizeof(vec3) + (has_colors ? sizeof(vec4) : 0) + (has_texture ? sizeof(vec2) : 0);
-    auto vertex_size = bones_offset;
-    vertex_size += has_bones ? bone_data_size : 0;
+    return ludo::format(
+      true,
+      assimp_mesh.GetNumColorChannels() > 0,
+      texture_path.length > 0,
+      assimp_mesh.mNumBones > 0
+    );
+  }
 
+  void write_mesh_data(mesh& mesh, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform, uint32_t index_start, uint32_t vertex_start)
+  {
     auto index_stream = ludo::stream(mesh.index_buffer, index_start * sizeof(uint32_t));
     for (auto face_index = 0; face_index < assimp_mesh.mNumFaces; face_index++)
     {
@@ -102,7 +110,7 @@ namespace ludo
       }
     }
 
-    auto vertex_stream = ludo::stream(mesh.vertex_buffer, vertex_start * vertex_size);
+    auto vertex_stream = ludo::stream(mesh.vertex_buffer, vertex_start * format.size);
     for (auto vertex_index = 0; vertex_index < assimp_mesh.mNumVertices; vertex_index++)
     {
       auto position = vec3(transform * vec4(to_vec3(assimp_mesh.mVertices[vertex_index])));
@@ -111,17 +119,17 @@ namespace ludo
       auto normal = mat3(transform) * to_vec3(assimp_mesh.mNormals[vertex_index]);
       write(vertex_stream, normal);
 
-      if (has_colors)
+      if (format.has_color)
       {
         write(vertex_stream, to_vec4(assimp_mesh.mColors[0][vertex_index]));
       }
 
-      if (has_texture)
+      if (format.has_texture_coordinate)
       {
         write(vertex_stream, to_vec2(assimp_mesh.mTextureCoords[0][vertex_index]));
       }
 
-      if (has_bones)
+      if (format.has_bone_weights)
       {
         // Initialize bone indices and weights to 0
         std::memset(mesh.vertex_buffer.data + vertex_stream.position, 0, bone_data_size);
@@ -129,7 +137,7 @@ namespace ludo
       }
     }
 
-    if (!has_bones)
+    if (!format.has_bone_weights)
     {
       return;
     }
@@ -141,7 +149,7 @@ namespace ludo
       {
         auto& assimp_vertex_weight = assimp_bone->mWeights[weight_index];
 
-        auto first_bone_index_byte_index = (vertex_start + assimp_vertex_weight.mVertexId) * vertex_size + bones_offset;
+        auto first_bone_index_byte_index = (vertex_start + assimp_vertex_weight.mVertexId) * format.size + format.bone_weights_offset;
         auto bone_index_byte_index = first_bone_index_byte_index;
         auto first_bone_weight_byte_index = first_bone_index_byte_index + max_bone_weights_per_vertex * sizeof(uint32_t);
         auto bone_weight_byte_index = first_bone_weight_byte_index;

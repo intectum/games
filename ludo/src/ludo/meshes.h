@@ -51,6 +51,7 @@ namespace ludo
     uint32_t normal_offset = 0; ///< The offset in bytes to the normal.
     uint32_t color_offset = 0; ///< The offset in bytes to the color.
     uint32_t texture_coordinate_offset = 0; ///< The offset in bytes to the texture coordinate.
+    uint32_t bone_weights_offset = 0; ///< The offset in bytes to the bone weights.
   };
 
   ///
@@ -58,7 +59,6 @@ namespace ludo
   struct LUDO_API mesh
   {
     uint64_t id = 0; ///< The ID of the mesh.
-    uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh.
     uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
     uint64_t armature_id = 0; ///< The ID of the armature instance used to animate this mesh.
     std::vector<uint64_t> animation_ids; ///< The ID of the armature instance used to animate this mesh.
@@ -73,7 +73,6 @@ namespace ludo
   struct LUDO_API mesh_instance
   {
     uint64_t id = 0; ///< The ID of the mesh instance.
-    uint64_t mesh_id = 0; ///< The ID of the mesh this instance is based on.
     uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh instance.
 
     uint32_t instance_index = 0; ///< The index of this instance within the render program.

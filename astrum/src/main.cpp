@@ -163,19 +163,24 @@ int main()
 
     auto bullet_debug_mesh = ludo::add(
       inst,
-      ludo::mesh { .render_program_id = bullet_debug_render_program->id },
+      ludo::mesh(),
       bullet_debug_counts.first,
       bullet_debug_counts.second,
       bullet_debug_render_program->format.size,
       "ludo-bullet::visualizations"
     );
 
-    auto bullet_debug_mesh_ininstance = ludo::add(inst, ludo::mesh_instance(), *bullet_debug_mesh, "ludo-bullet::visualizations");
+    auto bullet_debug_mesh_instance = ludo::add(
+      inst,
+      ludo::mesh_instance { .render_program_id = bullet_debug_render_program->id },
+      *bullet_debug_mesh,
+      "ludo-bullet::visualizations"
+    );
 
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
     {
       .frame_buffer_id = msaa_frame_buffer->id,
-      .mesh_instance_ids = { bullet_debug_mesh_ininstance->id },
+      .mesh_instance_ids = { bullet_debug_mesh_instance->id },
       .clear_frame_buffer = false
     });
   }

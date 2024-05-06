@@ -54,9 +54,10 @@ int main()
 
   // RENDER PROGRAMS
 
-  auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::format(), 1);
-  auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::format(false, true), 1);
-  auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::format(false, false, true), 1);
+  auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::vertex_format_p, 1);
+  auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::vertex_format_pc, 1);
+  auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::vertex_format_pt, 1);
+  auto render_program_pnct = ludo::add(inst, ludo::render_program(), ludo::format(true, true, true, true), 1);
 
   // TEXTURE
 
@@ -70,7 +71,7 @@ int main()
 
   auto cuby = ludo::add(
     inst,
-    ludo::mesh { .render_program_id = render_program_p->id },
+    ludo::mesh(),
     box_counts.first,
     box_counts.second,
     render_program_p->format.size
@@ -80,13 +81,13 @@ int main()
   auto vertex_index = uint32_t(0);
   ludo::box(*cuby, render_program_p->format, index_index, vertex_index);
 
-  ludo::add(inst, ludo::mesh_instance(), *cuby);
+  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_p->id }, *cuby);
 
   // RUBY
 
   auto ruby_cuby = ludo::add(
     inst,
-    ludo::mesh { .render_program_id = render_program_pc->id },
+    ludo::mesh(),
     box_counts.first,
     box_counts.second,
     render_program_pc->format.size
@@ -97,13 +98,13 @@ int main()
   ludo::box(*ruby_cuby, render_program_pc->format, index_index, vertex_index);
   ludo::colorize(*ruby_cuby, render_program_pc->format, 0, box_counts.second, ludo::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-  ludo::add(inst, ludo::mesh_instance(), *ruby_cuby);
+  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pc->id }, *ruby_cuby);
 
   // TUBY
 
   auto tuby_cuby = ludo::add(
     inst,
-    ludo::mesh { .render_program_id = render_program_pt->id, .texture_id = texture->id },
+    ludo::mesh { .texture_id = texture->id },
     box_counts.first,
     box_counts.second,
     render_program_pt->format.size
@@ -113,13 +114,13 @@ int main()
   vertex_index = uint32_t(0);
   ludo::box(*tuby_cuby, render_program_pt->format, index_index, vertex_index);
 
-  ludo::add(inst, ludo::mesh_instance(), *tuby_cuby);
+  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pt->id }, *tuby_cuby);
 
   // MINIFIG
 
   auto minifig_meshes = ludo::import(inst, "assets/models/minifig.dae");
 
-  ludo::add(inst, ludo::mesh_instance(), minifig_meshes[0]);
+  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pnct->id }, minifig_meshes[0]);
 
 /*
 

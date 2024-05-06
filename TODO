@@ -2,7 +2,6 @@
 - Parallel rendering
 - Occlusion culling
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
-- Remove all global state from ludo (ghost data!)
 - Switch to bazel
 - Remove dynamic containers from data types stored in the instance
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
@@ -12,3 +11,5 @@
 - Phong and PBR lights
 - CEF/UI
 - Trees, rocks and grass
+- Remove unneeded ids from data types
+- Make consistent that add() with no extra params does nothing more than add with an ID?

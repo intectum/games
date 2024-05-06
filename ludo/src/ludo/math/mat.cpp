@@ -23,6 +23,7 @@ namespace ludo
     }
   {}
 
+  // TODO can this have a consistent rotation order with quat please?
   mat3::mat3(float x, float y, float z) : std::array<float, 9>()
   {
     auto cosines = vec3

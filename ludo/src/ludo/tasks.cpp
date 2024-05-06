@@ -12,10 +12,15 @@
 
 namespace ludo
 {
-  std::deque<task>& background_queue(instance& instance);
-  std::vector<task_finalizer>& background_queue_finalizers(instance& instance);
-  std::mutex& background_mutex(instance& instance);
-  std::binary_semaphore& background_semaphore(instance& instance);
+  struct background_task_queue
+  {
+    std::deque<task> tasks;
+    std::vector<task_finalizer> finalizers;
+    std::mutex mutex;
+    std::binary_semaphore semaphore = std::binary_semaphore(1);
+  };
+
+  const auto background_task_queue_key = "ludo::background_task_queue";
 
   void execute(const task& task)
   {
@@ -97,113 +102,71 @@ namespace ludo
     }
   }
 
-  void enqueue_background(instance& instance, const task& task)
+  void enqueue_background_task(instance& instance, const task& task)
   {
-    auto& queue = background_queue(instance);
-    auto& queue_finalizers = background_queue_finalizers(instance);
-    auto& mutex = background_mutex(instance);
-    auto& semaphore = background_semaphore(instance);
-
+    if (!instance.data.contains(background_task_queue_key))
     {
-      auto lock = std::scoped_lock(mutex);
-      queue.emplace_back(task);
+      instance.data[background_task_queue_key] = new background_task_queue();
     }
 
-    if (!semaphore.try_acquire())
+    auto queue = static_cast<background_task_queue*>(instance.data.at(background_task_queue_key));
+
+    {
+      auto lock = std::scoped_lock(queue->mutex);
+      queue->tasks.emplace_back(task);
+    }
+
+    if (!queue->semaphore.try_acquire())
     {
       return;
     }
 
-    auto thread = std::thread([&queue, &queue_finalizers, &mutex, &semaphore]()
+    auto thread = std::thread([queue]()
     {
       while (true)
       {
         auto task = ludo::task();
 
         {
-          auto lock = std::scoped_lock(mutex);
-          if (queue.empty())
+          auto lock = std::scoped_lock(queue->mutex);
+          if (queue->tasks.empty())
           {
             break;
           }
 
-          task = queue.front();
-          queue.pop_front();
+          task = queue->tasks.front();
+          queue->tasks.pop_front();
         }
 
         auto finalize = task();
 
         {
-          auto lock = std::scoped_lock(mutex);
-          queue_finalizers.emplace_back(finalize);
+          auto lock = std::scoped_lock(queue->mutex);
+          queue->finalizers.emplace_back(finalize);
         }
       }
 
-      semaphore.release();
+      queue->semaphore.release();
     });
 
     thread.detach();
   }
 
-  void finalize_background(instance& instance)
+  void finalize_background_tasks(instance& instance)
   {
-    auto& queue_finalizers = background_queue_finalizers(instance);
-    auto& mutex = background_mutex(instance);
+    if (!instance.data.contains(background_task_queue_key))
+    {
+      instance.data[background_task_queue_key] = new background_task_queue();
+    }
 
-    auto lock = std::scoped_lock(mutex);
-    for (auto& finalizer : queue_finalizers)
+    auto queue = static_cast<background_task_queue*>(instance.data.at(background_task_queue_key));
+
+    auto lock = std::scoped_lock(queue->mutex);
+    for (auto& finalizer : queue->finalizers)
     {
       finalizer();
     }
 
-    queue_finalizers.clear();
-  }
-
-  std::deque<task>& background_queue(instance& instance)
-  {
-    auto name = "ludo::background::queue";
-
-    if (instance.data.find(name) == instance.data.end())
-    {
-      instance.data[name] = new std::deque<task>();
-    }
-
-    return *static_cast<std::deque<task>*>(instance.data.at(name));
-  }
-
-  std::vector<task_finalizer>& background_queue_finalizers(instance& instance)
-  {
-    auto name = "ludo::background::queue-finalizers";
-
-    if (instance.data.find(name) == instance.data.end())
-    {
-      instance.data[name] = new std::vector<task_finalizer>();
-    }
-
-    return *static_cast<std::vector<task_finalizer>*>(instance.data.at(name));
-  }
-
-  std::mutex& background_mutex(instance& instance)
-  {
-    auto name = "ludo::background::mutex";
-
-    if (instance.data.find(name) == instance.data.end())
-    {
-      instance.data[name] = new std::mutex();
-    }
-
-    return *static_cast<std::mutex*>(instance.data.at(name));
-  }
-
-  std::binary_semaphore& background_semaphore(instance& instance)
-  {
-    auto name = "ludo::background::semaphore";
-
-    if (instance.data.find(name) == instance.data.end())
-    {
-      instance.data[name] = new std::binary_semaphore(1);
-    }
-
-    return *static_cast<std::binary_semaphore*>(instance.data.at(name));
+    queue->finalizers.clear();
   }
 }

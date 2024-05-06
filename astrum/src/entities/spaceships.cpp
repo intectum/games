@@ -8,7 +8,20 @@ namespace astrum
     auto linear_octree = ludo::first<ludo::linear_octree>(inst, "default");
     auto mesh = ludo::first<ludo::mesh>(inst, "spaceships");
 
-    auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "spaceships");
+    auto render_program = ludo::add(
+      inst,
+      ludo::render_program(),
+      ludo::vertex_format_pn,
+      1,
+      "spaceships"
+    );
+
+    auto mesh_instance = ludo::add(
+      inst,
+      ludo::mesh_instance { .render_program_id = render_program->id },
+      *mesh,
+      "spaceships"
+    );
 
     ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);

@@ -45,6 +45,7 @@ namespace ludo
     if (bone_weights)
     {
       format.has_bone_weights = true;
+      format.bone_weights_offset = format.size;
 
       format.components.emplace_back(std::pair { 'b', max_bone_weights_per_vertex });
       format.size += max_bone_weights_per_vertex * (sizeof(uint32_t) + sizeof(float));
@@ -89,9 +90,6 @@ namespace ludo
   mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition)
   {
     auto mesh_instance = add(instance, init, partition);
-
-    mesh_instance->mesh_id = mesh.id; // TODO remove mesh_id from mesh_instance?
-    mesh_instance->render_program_id = init.render_program_id ? init.render_program_id : mesh.render_program_id; // TODO remove render_program_id from mesh?
 
     auto& indices = data_heap(instance, "ludo::vram_indices");
     mesh_instance->indices.start = (mesh.index_buffer.data - indices.data) / sizeof(uint32_t);

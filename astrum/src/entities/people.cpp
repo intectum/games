@@ -11,7 +11,20 @@ namespace astrum
     auto mesh = ludo::first<ludo::mesh>(inst, "people");
     auto body_shape = ludo::first<ludo::body_shape>(inst, "people");
 
-    auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "people");
+    auto render_program = ludo::add(
+      inst,
+      ludo::render_program(),
+      ludo::format(true, true, true, true),
+      1,
+      "people"
+    );
+
+    auto mesh_instance = ludo::add(
+      inst,
+      ludo::mesh_instance { .render_program_id = render_program->id },
+      *mesh,
+      "people"
+    );
 
     ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
     ludo::add(*linear_octree, *mesh_instance, initial_transform.position);

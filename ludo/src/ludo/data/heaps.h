@@ -15,7 +15,7 @@ namespace ludo
   /// A (very basically managed) heap from which buffers can be allocated.
   struct LUDO_API heap
   {
-    uint64_t id = 0; ///< The ID of the heap.
+    uint64_t id = 0; ///< The ID of the heap (heaps allocated in VRAM may have overlapping IDs with heaps not allocated in VRAM).
     std::byte* data = nullptr; ///< The data.
     uint64_t size = 0; ///< The size (in bytes).
     std::vector<ludo::buffer> free; ///< The data available for allocation.

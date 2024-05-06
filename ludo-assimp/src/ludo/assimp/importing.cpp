@@ -19,14 +19,6 @@ namespace ludo
 {
   void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes);
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
-  vertex_format build_vertex_format(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options);
-
-  auto primitives = std::unordered_map<uint8_t, mesh_primitive>
-  {
-    { aiPrimitiveType_POINT, mesh_primitive::POINT_LIST },
-    { aiPrimitiveType_LINE, mesh_primitive::LINE_LIST },
-    { aiPrimitiveType_TRIANGLE, mesh_primitive::TRIANGLE_LIST }
-  };
 
   std::vector<mesh> import(instance& instance, const std::string& file_name, const import_options& options, const std::string& partition)
   {
@@ -51,14 +43,9 @@ namespace ludo
 
     if (!mesh_objects.empty())
     {
-      auto primitive = primitives[assimp_scene->mMeshes[mesh_objects[0].mesh_index]->mPrimitiveTypes]; // We use aiProcess_SortByPType so all primitives should be the same.
-      // TODO should really do meshes individually and create multiple vertex format if needed
-      auto vertex_format = build_vertex_format(*assimp_scene, mesh_objects, options);
-      auto render_program = add(instance, ludo::render_program { .primitive = primitive }, vertex_format, mesh_objects.size(), partition);
-
       auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
       auto textures = import_textures(instance, folder, *assimp_scene, mesh_objects, partition);
-      return import_meshes(instance, *render_program, *assimp_scene, mesh_objects, textures, options, partition);
+      return import_meshes(instance, *assimp_scene, mesh_objects, textures, options, partition);
     }
 
     return {};
@@ -120,32 +107,5 @@ namespace ludo
       assert(assimp_mesh.mPrimitiveTypes == assimp_primitive && "meshes must have the same primitive");
       assert(assimp_scene.mMaterials[assimp_mesh.mMaterialIndex] == assimp_material && "meshes must have the same material");
     }
-  }
-
-  vertex_format build_vertex_format(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
-  {
-    auto color_count = uint8_t(0);
-    auto bone_count = uint8_t(0);
-    auto texture_count = uint8_t(0);
-
-    for (auto& mesh_object : mesh_objects)
-    {
-      auto& assimp_mesh = *assimp_scene.mMeshes[mesh_object.mesh_index];
-
-      color_count = std::max(color_count, static_cast<uint8_t>(assimp_mesh.GetNumColorChannels()));
-      bone_count = std::max(bone_count, static_cast<uint8_t>(assimp_mesh.mNumBones));
-
-      auto assimp_material = assimp_scene.mMaterials[assimp_mesh.mMaterialIndex];
-      auto texture_path = aiString();
-      assimp_material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
-      if (texture_path.length > 0)
-      {
-        texture_count++;
-      }
-    }
-
-    assert(bone_count <= max_bones_per_armature && "max bone count exceeded");
-
-    return ludo::format(true, color_count > 0, texture_count > 0, bone_count > 0);
   }
 }

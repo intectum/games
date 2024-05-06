@@ -2,8 +2,6 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <iostream>
-
 #include "util.h"
 
 namespace ludo
@@ -27,9 +25,6 @@ namespace ludo
     { pixel_datatype::FLOAT16, GL_HALF_FLOAT },
     { pixel_datatype::FLOAT32, GL_FLOAT }
   };
-
-  // TODO something much better than this *global* hack
-  auto texture_handles = std::unordered_map<uint64_t, uint64_t>();
 
   template<>
   texture* add(instance& instance, const texture& init, const std::string& partition)
@@ -117,15 +112,14 @@ namespace ludo
 
   uint64_t handle(const texture& texture)
   {
-    if (!texture_handles.contains(texture.id))
+    auto handle = glGetTextureHandleARB(texture.id); check_opengl_error();
+    auto resident = glIsTextureHandleResidentARB(handle); check_opengl_error();
+    if (!resident)
     {
-      auto handle = glGetTextureHandleARB(texture.id); check_opengl_error();
       glMakeTextureHandleResidentARB(handle); check_opengl_error();
-
-      texture_handles[texture.id] = handle;
     }
 
-    return texture_handles[texture.id];
+    return handle;
   }
 
   GLint internal_pixel_format(const texture& texture)

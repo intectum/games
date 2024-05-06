@@ -20,6 +20,7 @@ namespace astrum
 
   struct terrain_chunk
   {
+    uint64_t mesh_id = 0;
     uint64_t mesh_instance_id = 0;
 
     ludo::vec3 center;

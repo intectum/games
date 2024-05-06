@@ -5,7 +5,10 @@
 #ifndef LUDO_TASKS_H
 #define LUDO_TASKS_H
 
+#include <deque>
 #include <functional>
+#include <mutex>
+#include <semaphore>
 
 #include "core.h"
 
@@ -52,16 +55,16 @@ namespace ludo
   LUDO_API void divide_and_conquer(uint32_t range, const ranged_task& task, uint32_t max_thread_count = 0);
 
   ///
-  /// Enqueues a task to be executed in the background. finalize_background(instance& instance) must be called to
+  /// Enqueues a task to be executed in the background. finalize_background_tasks(instance& instance) must be called to
   /// perform finalization.
   /// \param instance The instance in which the task will be enqueued.
-  /// \param task The task to execute.
-  LUDO_API void enqueue_background(instance& instance, const task& task);
+  /// \param task The task to enqueue.
+  LUDO_API void enqueue_background_task(instance& instance, const task& task);
 
   ///
-  /// Finalizes all tasks that have completed execution in the background but not yet finalized.
+  /// Finalizes all tasks that have completed execution in the background but are not yet finalized.
   /// \param instance The instance in which the tasks were executed.
-  LUDO_API void finalize_background(instance& instance);
+  LUDO_API void finalize_background_tasks(instance& instance);
 }
 
 #endif // LUDO_TASKS_H

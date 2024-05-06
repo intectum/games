@@ -83,9 +83,7 @@ namespace astrum
       );
     }
 
-    // Had to put this at the start to prevent frames with unaligned LOD sections
-    // Buffer sync issues?
-    ludo::add<ludo::script>(inst, ludo::finalize_background);
+    ludo::add<ludo::script>(inst, ludo::finalize_background_tasks);
 
     ludo::add<ludo::script>(inst, center_universe);
     ludo::add<ludo::script>(inst, relativize_universe);

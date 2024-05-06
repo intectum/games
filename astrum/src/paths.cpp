@@ -34,7 +34,7 @@ namespace astrum
     {
       auto mesh = ludo::add(
         inst,
-        ludo::mesh { .render_program_id = render_program->id },
+        ludo::mesh(),
         path_steps,
         path_steps,
         ludo::vertex_format_p.size,
@@ -47,7 +47,12 @@ namespace astrum
         ludo::write(index_stream, step_index);
       }
 
-      auto mesh_instance = ludo::add(inst, ludo::mesh_instance(), *mesh, "prediction-paths");
+      auto mesh_instance = ludo::add(
+        inst,
+        ludo::mesh_instance { .render_program_id = render_program->id },
+        *mesh,
+        "prediction-paths"
+      );
       ludo::add(always_render_linear_octree, *mesh_instance, ludo::vec3_zero);
     }
   }

@@ -93,7 +93,7 @@ namespace astrum
 
       auto mesh = ludo::add(
         inst,
-        ludo::mesh { .render_program_id = render_program->id },
+        ludo::mesh(),
         count,
         count,
         render_program->format.size,
@@ -104,7 +104,6 @@ namespace astrum
         inst,
         ludo::mesh_instance
         {
-          .mesh_id = mesh->id,
           .render_program_id = render_program->id,
           .instance_index = chunk_index,
           .instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size),
@@ -122,6 +121,7 @@ namespace astrum
         "terrain"
       );
 
+      chunk.mesh_id = mesh->id;
       chunk.mesh_instance_id = mesh_instance->id;
 
       load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
@@ -221,7 +221,7 @@ namespace astrum
             auto lock = std::lock_guard(mutex);
             auto new_mesh = *ludo::add(
               inst,
-              ludo::mesh { .render_program_id = render_program.id },
+              ludo::mesh(),
               count,
               count,
               render_program.format.size,
@@ -230,7 +230,7 @@ namespace astrum
 
             // Purposely take a copy of the new mesh!
             // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
-            ludo::enqueue_background(inst, [&inst, &celestial_body, &terrain, &linear_octree, chunk_index, new_mesh, new_lod_index, new_position]()
+            ludo::enqueue_background_task(inst, [&inst, &celestial_body, &terrain, &linear_octree, chunk_index, new_mesh, new_lod_index, new_position]()
             {
               auto local_new_mesh = new_mesh;
               load_terrain_chunk(terrain, celestial_body.radius, chunk_index, new_lod_index, local_new_mesh);
@@ -240,10 +240,10 @@ namespace astrum
                 auto& chunk = terrain.chunks[chunk_index];
 
                 auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, chunk.mesh_instance_id);
-                auto mesh = ludo::get<ludo::mesh>(inst, mesh_instance->mesh_id);
+                auto mesh = ludo::get<ludo::mesh>(inst, chunk.mesh_id);
                 ludo::remove(inst, mesh, "terrain");
 
-                mesh_instance->mesh_id = new_mesh.id;
+                chunk.mesh_id = new_mesh.id;
 
                 auto& indices = data_heap(inst, "ludo::vram_indices");
                 mesh_instance->indices.start = (new_mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
