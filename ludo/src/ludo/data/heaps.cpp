@@ -68,6 +68,11 @@ namespace ludo
 
   buffer allocate(heap& heap, uint64_t size, uint8_t alignment)
   {
+    if (size == 0)
+    {
+      return {};
+    }
+
     for (auto free_iter = heap.free.begin(); free_iter < heap.free.end(); free_iter++)
     {
       auto start = free_iter->data;
@@ -113,6 +118,7 @@ namespace ludo
     }
 
     assert(false && "could not fit buffer");
+    return {};
   }
 
   void deallocate(heap& heap, ludo::buffer& buffer)

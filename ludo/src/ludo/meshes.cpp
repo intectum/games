@@ -87,7 +87,7 @@ namespace ludo
     remove(data<mesh>(instance), element, partition);
   }
 
-  mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition)
+  mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, uint32_t capacity, const std::string& partition)
   {
     auto mesh_instance = add(instance, init, partition);
 
@@ -102,21 +102,25 @@ namespace ludo
     if (mesh_instance->render_program_id)
     {
       auto render_program = get<ludo::render_program>(instance, mesh_instance->render_program_id);
-      mesh_instance->instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size);
+      mesh_instance->instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size * capacity);
+      mesh_instance->instance_size = render_program->instance_size;
 
-      instance_transform(*mesh_instance) = mat4_identity;
-
-      if (mesh.texture_id)
+      for (auto instance_index = uint32_t(0); instance_index < capacity; instance_index++)
       {
-        set_texture(*mesh_instance, texture { .id = mesh.texture_id });
-      }
+        instance_transform(*mesh_instance, instance_index) = mat4_identity;
 
-      if (mesh.armature_id)
-      {
-        std::array<mat4, max_bones_per_armature> bone_transforms;
-        bone_transforms.fill(mat4_identity);
+        if (mesh.texture_id)
+        {
+          set_texture(*mesh_instance, texture { .id = mesh.texture_id }, instance_index);
+        }
 
-        set_bone_transforms(*mesh_instance, bone_transforms);
+        if (mesh.armature_id)
+        {
+          std::array<mat4, max_bones_per_armature> bone_transforms;
+          bone_transforms.fill(mat4_identity);
+
+          set_bone_transforms(*mesh_instance, bone_transforms, instance_index);
+        }
       }
     }
 
@@ -135,13 +139,13 @@ namespace ludo
     remove(data<mesh_instance>(instance), element, partition);
   }
 
-  mat4& instance_transform(mesh_instance& mesh_instance)
+  mat4& instance_transform(mesh_instance& mesh_instance, uint32_t instance_index)
   {
-    return cast<mat4>(mesh_instance.instance_buffer, 0);
+    return cast<mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size);
   }
 
-  const mat4& instance_transform(const mesh_instance& mesh_instance)
+  const mat4& instance_transform(const mesh_instance& mesh_instance, uint32_t instance_index)
   {
-    return cast<const mat4>(mesh_instance.instance_buffer, 0);
+    return cast<const mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size);
   }
 }

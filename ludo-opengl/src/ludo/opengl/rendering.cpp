@@ -4,7 +4,7 @@
 
 #include <GL/glew.h>
 
-#include <ludo/graphs.h>
+#include <ludo/spatial/grid3.h>
 #include <ludo/timer.h>
 #include <ludo/windowing.h>
 
@@ -125,7 +125,7 @@ namespace ludo
         write_command(instance, options, *mesh_instance);
       }
     }
-    else if (!options.linear_octree_ids.empty())
+    else if (!options.grid_ids.empty())
     {
       auto& render_programs = data<render_program>(instance);
       auto rendering_context = first<ludo::rendering_context>(instance);
@@ -153,23 +153,19 @@ namespace ludo
         write(stream, render_program.active_commands.count);
       }
 
-      for (auto linear_octree_id : options.linear_octree_ids)
+      for (auto grid_id : options.grid_ids)
       {
-        auto linear_octree = get<ludo::linear_octree>(instance, linear_octree_id);
-        assert(linear_octree && "linear octree not found");
+        auto grid = get<ludo::grid3>(instance, grid_id);
+        assert(grid && "grid not found");
 
-        // TODO move this out of here... This is the slow part...
-        ludo::push(*linear_octree);
-
-        auto linear_octree_compute_program = get<ludo::compute_program>(instance, linear_octree->compute_program_id);
-        assert(linear_octree_compute_program && "compute program not found");
+        auto grid_compute_program = get<ludo::compute_program>(instance, grid->compute_program_id);
+        assert(grid_compute_program && "compute program not found");
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, context_buffer.id); check_opengl_error();
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, linear_octree->front_buffer.id); check_opengl_error();
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, grid->buffer.front.id); check_opengl_error();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, draw_commands.id); check_opengl_error();
 
-        auto octant_count_1d = static_cast<uint32_t>(std::pow(2.0f, linear_octree->depth));
-        ludo::execute(*linear_octree_compute_program, octant_count_1d / 8, octant_count_1d / 4, octant_count_1d); check_opengl_error();
+        ludo::execute(*grid_compute_program, grid->cell_count_1d / 8, grid->cell_count_1d / 4, grid->cell_count_1d); check_opengl_error();
       }
 
       auto fence = create_fence();
@@ -202,9 +198,10 @@ namespace ludo
     cast<draw_command>(render_program->command_buffer, position) =
     {
       .index_count = mesh_instance.indices.count,
+      .instance_count = mesh_instance.instances.count,
       .index_start = mesh_instance.indices.start,
       .vertex_start = mesh_instance.vertices.start,
-      .instance_start = mesh_instance.instance_index
+      .instance_start = mesh_instance.instances.start
     };
   }
 

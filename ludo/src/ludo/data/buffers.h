@@ -125,6 +125,12 @@ namespace ludo
   /// \param value The data to write.
   template<typename T>
   LUDO_API void write(stream& stream, const T& value);
+
+  ///
+  /// Determines if the stream has reached the end of the data.
+  /// \param stream The stream to check.
+  /// \return True the stream has reached the end of the data, false otherwise.
+  LUDO_API bool end_reached(stream& stream);
 }
 
 #include "buffers.hpp"

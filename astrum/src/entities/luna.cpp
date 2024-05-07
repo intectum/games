@@ -8,6 +8,10 @@
 
 namespace astrum
 {
+  float luna_height(const ludo::vec3& position);
+  ludo::vec4 luna_color(float longitude, const std::array<float, 3>& heights, float gradient);
+  std::vector<tree> luna_tree(const terrain& terrain, float radius, uint32_t chunk_index);
+
   const auto seed = 123456;
   const auto crater_count = 100;
   const auto crater_min_radius = 0.05f;
@@ -118,7 +122,7 @@ namespace astrum
     return ludo::vec4_one;
   }
 
-  std::vector<tree> luna_tree(uint64_t patch_id)
+  std::vector<tree> luna_tree(const terrain& terrain, float radius, uint32_t chunk_index)
   {
     return {};
   }

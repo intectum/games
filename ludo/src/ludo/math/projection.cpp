@@ -21,9 +21,6 @@ namespace ludo
     auto to_plane = point - target_point;
     auto perpendicular_distance_to_plane = ludo::dot(to_plane, target_normal);
 
-    auto point_normalized = point;
-    normalize(point_normalized);
-
     return point - target_normal * perpendicular_distance_to_plane;
   }
 }

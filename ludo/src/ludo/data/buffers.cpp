@@ -43,12 +43,17 @@ namespace ludo
 
   void deallocate_dual(double_buffer& buffer)
   {
-    deallocate(buffer.front);
-    deallocate_vram(buffer.back);
+    deallocate_vram(buffer.front);
+    deallocate(buffer.back);
   }
 
   void push(double_buffer& buffer)
   {
     std::memcpy(buffer.front.data, buffer.back.data, buffer.front.size);
+  }
+
+  bool end_reached(stream& stream)
+  {
+    return stream.position >= stream.size;
   }
 }

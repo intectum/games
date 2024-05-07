@@ -433,6 +433,16 @@ namespace ludo
     };
   }
 
+  void rotate(vec3& vector, vec3& axis, float angle)
+  {
+    assert(near(length(axis), 1.0f) && "'axis' must be unit length");
+
+    vector =
+      vector * std::cos(angle) +
+      cross(axis, vector) * std::sin(angle) +
+      axis * dot(axis, vector) * (1 - std::cos(angle));
+  }
+
   void homogenize(vec4& vector)
   {
     vector /= vector[3];
@@ -518,7 +528,7 @@ namespace ludo
 
     float dot = ludo::dot(a, b);
     // Clamp to the range [-1,1] in case floating point inaccuracy manages to put it out of that range...
-    float clamped_dot = std::max(std::min(dot, 1.0f), -1.0f);
+    float clamped_dot = std::clamp(dot, -1.0f, 1.0f);
     return std::acos(clamped_dot);
   }
 
@@ -529,7 +539,7 @@ namespace ludo
 
     float dot = ludo::dot(a, b);
     // Clamp to the range [-1,1] in case floating point inaccuracy manages to put it out of that range...
-    float clamped_dot = std::max(std::min(dot, 1.0f), -1.0f);
+    float clamped_dot = std::clamp(dot, -1.0f, 1.0f);
     return std::acos(clamped_dot);
   }
 }

@@ -21,15 +21,4 @@ namespace ludo
     test_equal<void*>("buffer: deallocate (data)", buffer.data, nullptr);
     test_equal("buffer: deallocate (size)", buffer.size, 0ul);
   }
-
-  // dummy functions so that buffers compile
-  buffer allocate_vram(uint64_t size, vram_buffer_access_hint access_hint)
-  {
-    return allocate(size);
-  }
-
-  void deallocate_vram(buffer& buffer)
-  {
-    deallocate(buffer);
-  }
 }

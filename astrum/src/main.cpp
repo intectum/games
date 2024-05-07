@@ -20,18 +20,21 @@ int main()
 
   auto inst = ludo::instance();
 
-  auto max_terrain_chunks = 25;
+  auto max_terrain_bodies = 25;
   auto post_processing_rectangle_counts = ludo::rectangle_counts();
   auto sol_mesh_counts = astrum::terrain_counts(astrum::sol_lods);
   auto terra_mesh_counts = astrum::terrain_counts(astrum::terra_lods);
   auto luna_mesh_counts = astrum::terrain_counts(astrum::luna_lods);
+  auto fruit_tree_1_counts = ludo::import_counts("assets/models/fruit-tree-1.dae");
+  auto fruit_tree_2_counts = ludo::import_counts("assets/models/fruit-tree-2.dae");
   auto person_mesh_counts = ludo::import_counts("assets/models/minifig.dae");
   auto spaceship_mesh_counts = ludo::import_counts("assets/models/spaceship.obj");
-  auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_chunks * 48 * 2, max_terrain_chunks * 48 * 2 };
+  auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_bodies * 48 * 2, max_terrain_bodies * 48 * 2 };
 
   auto max_rendered_instances =
     14 + // post-processing
-    3 * (5120 * 2) + // celestial bodies (doubled to account for re-allocations - overkill)
+    3 * (5120 * 2) + // terrains (doubled to account for re-allocations - overkill)
+    5120 * 200 + // trees
     1 + // person
     1; // spaceship
   auto max_indices =
@@ -39,6 +42,8 @@ int main()
     sol_mesh_counts.first +
     terra_mesh_counts.first +
     luna_mesh_counts.first +
+    fruit_tree_1_counts.first +
+    fruit_tree_2_counts.first +
     person_mesh_counts.first +
     spaceship_mesh_counts.first;
   auto max_vertices =
@@ -46,6 +51,8 @@ int main()
     sol_mesh_counts.second +
     terra_mesh_counts.second +
     luna_mesh_counts.second +
+    fruit_tree_1_counts.second +
+    fruit_tree_2_counts.second +
     person_mesh_counts.second +
     spaceship_mesh_counts.second;
 
@@ -70,18 +77,18 @@ int main()
   ludo::allocate<ludo::animation>(inst, 1);
   ludo::allocate<ludo::armature>(inst, 1);
   ludo::allocate<ludo::body_shape>(inst, 3);
-  ludo::allocate<ludo::compute_program>(inst, 4);
+  ludo::allocate<ludo::compute_program>(inst, 5);
   ludo::allocate<ludo::dynamic_body>(inst, 0);
   ludo::allocate<ludo::frame_buffer>(inst, 16);
   ludo::allocate<ludo::ghost_body>(inst, 1);
+  ludo::allocate<ludo::grid3>(inst, 5);
   ludo::allocate<ludo::kinematic_body>(inst, 2);
-  ludo::allocate<ludo::linear_octree>(inst, 4);
   ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::mesh_instance>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
   ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::shader>(inst, 22);
-  ludo::allocate<ludo::static_body>(inst, max_terrain_chunks);
+  ludo::allocate<ludo::static_body>(inst, max_terrain_bodies);
   ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
 
@@ -105,16 +112,16 @@ int main()
   ludo::allocate_heap_vram(inst, "ludo::vram_indices", max_indices * sizeof(uint32_t));
   ludo::allocate_heap_vram(inst, "ludo::vram_vertices", max_vertices * ludo::vertex_format_pnc.size);
 
-  ludo::add(
+  auto default_grid = ludo::add(
     inst,
-    ludo::linear_octree
+    ludo::grid3
       {
         .bounds =
         {
           .min = { -2.0f * astrum::astronomical_unit, -2.0f * astrum::astronomical_unit, -2.0f * astrum::astronomical_unit },
           .max = { 2.0f * astrum::astronomical_unit, 2.0f * astrum::astronomical_unit, 2.0f * astrum::astronomical_unit }
         },
-        .depth = 4
+        .cell_count_1d = 16
       }
   );
 
@@ -126,20 +133,22 @@ int main()
 
   astrum::add_solar_system(inst);
 
+  ludo::push(*default_grid);
+
   ludo::add<ludo::script>(inst, ludo::prepare_render);
   ludo::add<ludo::script>(inst, ludo::update_windows);
 
-  auto& linear_octrees = data<ludo::linear_octree>(inst);
-  auto linear_octree_ids = std::vector<uint64_t>();
-  for (auto& linear_octree : linear_octrees)
+  auto& grids = data<ludo::grid3>(inst);
+  auto grid_ids = std::vector<uint64_t>();
+  for (auto& grid : grids)
   {
-    linear_octree_ids.push_back(linear_octree.id);
+    grid_ids.push_back(grid.id);
   }
 
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
   {
     .frame_buffer_id = msaa_frame_buffer->id,
-    .linear_octree_ids = linear_octree_ids
+    .grid_ids = grid_ids
   });
 
   if (astrum::visualize_physics)
@@ -165,6 +174,7 @@ int main()
       inst,
       ludo::mesh_instance { .render_program_id = bullet_debug_render_program->id },
       *bullet_debug_mesh,
+      1,
       "ludo-bullet::visualizations"
     );
 
@@ -193,42 +203,4 @@ int main()
   std::cout << std::fixed << std::setprecision(4) << "load time (seconds): " << ludo::elapsed(timer) << std::endl;
 
   ludo::play(inst);
-
-  ludo::deallocate<ludo::animation>(inst);
-  ludo::deallocate<ludo::armature>(inst);
-  ludo::deallocate<ludo::body_shape>(inst);
-  ludo::deallocate<ludo::dynamic_body>(inst);
-  ludo::deallocate<ludo::compute_program>(inst);
-  ludo::deallocate<ludo::frame_buffer>(inst);
-  ludo::deallocate<ludo::ghost_body>(inst);
-  ludo::deallocate<ludo::kinematic_body>(inst);
-  ludo::deallocate<ludo::linear_octree>(inst);
-  ludo::deallocate<ludo::mesh>(inst);
-  ludo::deallocate<ludo::mesh_instance>(inst);
-  ludo::deallocate<ludo::render_program>(inst);
-  ludo::deallocate<ludo::script>(inst);
-  ludo::deallocate<ludo::shader>(inst);
-  ludo::deallocate<ludo::static_body>(inst);
-  ludo::deallocate<ludo::texture>(inst);
-  ludo::deallocate<ludo::window>(inst);
-
-  ludo::deallocate<ludo::physics_context>(inst);
-  ludo::deallocate<ludo::rendering_context>(inst);
-  ludo::deallocate<ludo::windowing_context>(inst);
-
-  ludo::deallocate<astrum::celestial_body>(inst);
-  ludo::deallocate<astrum::game_controls>(inst);
-  ludo::deallocate<astrum::map_controls>(inst);
-  ludo::deallocate<astrum::person>(inst);
-  ludo::deallocate<astrum::person_controls>(inst);
-  ludo::deallocate<astrum::point_mass>(inst);
-  ludo::deallocate<astrum::solar_system>(inst);
-  ludo::deallocate<astrum::spaceship_controls>(inst);
-  ludo::deallocate<astrum::terrain>(inst);
-
-  ludo::deallocate_heap_vram(inst, "ludo::vram_draw_commands");
-  ludo::deallocate_heap_vram(inst, "ludo::vram_indices");
-  ludo::deallocate_heap_vram(inst, "ludo::vram_vertices");
-
-  return 0;
 }

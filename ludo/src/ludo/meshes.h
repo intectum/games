@@ -70,16 +70,17 @@ namespace ludo
 
   ///
   /// An instance of a mesh.
-  struct LUDO_API mesh_instance
+  struct LUDO_API mesh_instance // TODO naming? can now represent multiple instances...
   {
     uint64_t id = 0; ///< The ID of the mesh instance.
     uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh instance.
 
-    uint32_t instance_index = 0; ///< The index of this instance within the render program.
-    buffer instance_buffer; ///< A buffer containing instance data for this mesh instance.
-
+    range instances = { 0, 1 }; ///< The instances of this mesh instance.
     range indices; ///< The indices of this mesh instance.
     range vertices; ///< The vertices of this mesh instance.
+
+    buffer instance_buffer; ///< A buffer containing instance data for this mesh instance.
+    uint32_t instance_size = 0; ///< The size in bytes of an instance within this mesh instance.
   };
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information
@@ -163,9 +164,10 @@ namespace ludo
   /// \param instance The instance to add the mesh instance to.
   /// \param init The initial state of the new mesh instance.
   /// \param mesh The mesh to base the mesh instance on.
+  /// \param capacity The maximum number of instances that can be contained in the mesh instance.
   /// \param partition The name of the partition.
   /// \return A pointer to the new mesh instance. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, const std::string& partition = "default");
+  LUDO_API mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, uint32_t capacity = 1, const std::string& partition = "default");
 
   template<>
   LUDO_API void remove<mesh_instance>(instance& instance, mesh_instance* element, const std::string& partition);
@@ -173,9 +175,10 @@ namespace ludo
   ///
   /// Retrieves the transform from a mesh instance.
   /// \param mesh_instance The transform to retrieve.
+  /// \param instance_index The index of the instance to retrieve the transform for.
   /// \return The transform.
-  mat4& instance_transform(mesh_instance& mesh_instance);
-  const mat4& instance_transform(const mesh_instance& mesh_instance);
+  mat4& instance_transform(mesh_instance& mesh_instance, uint32_t instance_index = 0);
+  const mat4& instance_transform(const mesh_instance& mesh_instance, uint32_t instance_index = 0);
 }
 
 #endif // LUDO_GEOMETRY_H

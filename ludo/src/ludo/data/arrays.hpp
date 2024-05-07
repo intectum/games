@@ -10,7 +10,7 @@
 namespace ludo
 {
   template<typename T>
-  T& array<T>::operator[](uint64_t index)
+  T& array<T>::operator[](uint32_t index)
   {
     assert(index >= 0 && index < length && "index out of range");
 
@@ -18,7 +18,7 @@ namespace ludo
   }
 
   template<typename T>
-  const T& array<T>::operator[](uint64_t index) const
+  const T& array<T>::operator[](uint32_t index) const
   {
     assert(index >= 0 && index < length && "index out of range");
 
@@ -62,7 +62,7 @@ namespace ludo
   }
 
   template<typename T>
-  array<T> allocate_array(uint64_t capacity)
+  array<T> allocate_array(uint32_t capacity)
   {
     auto buffer = allocate(capacity * sizeof(T));
 
@@ -75,7 +75,7 @@ namespace ludo
   }
 
   template<typename T>
-  array<T> allocate_array_vram(uint64_t capacity, vram_buffer_access_hint access_hint)
+  array<T> allocate_array_vram(uint32_t capacity, vram_buffer_access_hint access_hint)
   {
     auto buffer = allocate_vram(capacity * sizeof(T), access_hint);
 
@@ -155,7 +155,7 @@ namespace ludo
   }
 
   template<typename T>
-  partitioned_array<T> allocate_partitioned_array(uint64_t capacity)
+  partitioned_array<T> allocate_partitioned_array(uint32_t capacity)
   {
     auto buffer = allocate(capacity * sizeof(T));
 
@@ -168,7 +168,7 @@ namespace ludo
   }
 
   template<typename T>
-  partitioned_array<T> allocate_partitioned_array_vram(uint64_t capacity, vram_buffer_access_hint access_hint)
+  partitioned_array<T> allocate_partitioned_array_vram(uint32_t capacity, vram_buffer_access_hint access_hint)
   {
     auto buffer = allocate_vram(capacity * sizeof(T), access_hint);
 

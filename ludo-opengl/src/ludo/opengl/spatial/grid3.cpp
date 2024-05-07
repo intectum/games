@@ -4,11 +4,11 @@
 
 #include <sstream>
 
-#include <ludo/graphs.h>
+#include <ludo/spatial/grid3.h>
 
 namespace ludo
 {
-  compute_program* add_linear_octree_compute_program(instance& instance, const linear_octree& octree)
+  compute_program* add_grid_compute_program(instance& instance, const grid3& grid)
   {
     auto code = std::stringstream();
 
@@ -41,18 +41,20 @@ struct mesh_instance_t
 {
   uint64_t id;
   uint64_t render_program_id;
-  uint instance_index;
+  uint instance_start;
+  uint instance_count;
   uint index_start;
   uint index_count;
   uint vertex_start;
+  uint vertex_count;
 };
 
-struct octant_t
+struct cell_t
 {
   uint count;
 )--";
 
-    code << "  mesh_instance_t mesh_instances[" << octree.octant_capacity << "];" << std::endl;
+    code << "  mesh_instance_t mesh_instances[" << grid.cell_capacity << "];" << std::endl;
 
     code <<
 R"--(
@@ -73,11 +75,11 @@ layout(std430, binding = 1) buffer context_layout
   render_program_t render_programs[];
 };
 
-layout(std430, binding = 2) buffer linear_octree_layout
+layout(std430, binding = 2) buffer grid_layout
 {
   aabb_t bounds;
-  vec3 octant_dimensions;
-  octant_t octants[];
+  vec3 cell_dimensions;
+  cell_t cells[];
 };
 
 layout(std430, binding = 3) buffer command_layout
@@ -143,21 +145,21 @@ int frustum_test(aabb_t bounds)
 
 void main()
 {
-  uint octant_count_1d = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
-  uint octant_index =
-    gl_GlobalInvocationID.x * octant_count_1d * octant_count_1d +
-    gl_GlobalInvocationID.y * octant_count_1d +
+  uint cell_count_1d = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+  uint cell_index =
+    gl_GlobalInvocationID.x * cell_count_1d * cell_count_1d +
+    gl_GlobalInvocationID.y * cell_count_1d +
     gl_GlobalInvocationID.z;
 
-  vec3 octant_min = bounds.min + gl_GlobalInvocationID * octant_dimensions;
+  vec3 cell_min = bounds.min + gl_GlobalInvocationID * cell_dimensions;
 
-  // Include neighbouring octants to ensure the mesh instances that overlap from them into this octant are included.
-  aabb_t test_bounds = aabb_t(octant_min - octant_dimensions, octant_min + octant_dimensions * 2);
+  // Include neighbouring cells to ensure the mesh instances that overlap from them into this cell are included.
+  aabb_t test_bounds = aabb_t(cell_min - cell_dimensions, cell_min + cell_dimensions * 2);
   if (frustum_test(test_bounds)  != -1)
   {
-    for (uint mesh_instance_index = 0; mesh_instance_index < octants[octant_index].count; mesh_instance_index++)
+    for (uint mesh_instance_index = 0; mesh_instance_index < cells[cell_index].count; mesh_instance_index++)
     {
-      mesh_instance_t mesh_instance = octants[octant_index].mesh_instances[mesh_instance_index];
+      mesh_instance_t mesh_instance = cells[cell_index].mesh_instances[mesh_instance_index];
 
       int render_program_index = get_render_program_index(mesh_instance.render_program_id);
       if (render_program_index == -1)
@@ -168,10 +170,10 @@ void main()
       uint command_index = render_programs[render_program_index].active_command_start + atomicAdd(render_programs[render_program_index].active_command_count, 1);
 
       commands[command_index].index_count = mesh_instance.index_count;
-      commands[command_index].instance_count = 1;
+      commands[command_index].instance_count = mesh_instance.instance_count;
       commands[command_index].index_start = mesh_instance.index_start;
       commands[command_index].vertex_start = mesh_instance.vertex_start;
-      commands[command_index].instance_start = mesh_instance.instance_index;
+      commands[command_index].instance_start = mesh_instance.instance_start;
     }
   }
 }

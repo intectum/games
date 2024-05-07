@@ -1,3 +1,5 @@
+#include <set>
+
 #include "../types.h"
 #include "centering.h"
 
@@ -6,7 +8,7 @@ namespace astrum
   void center_universe(ludo::instance& inst)
   {
     auto& dynamic_bodies = ludo::data<ludo::dynamic_body>(inst);
-    auto& linear_octrees = ludo::data<ludo::linear_octree>(inst);
+    auto& grids = ludo::data<ludo::grid3>(inst);
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
     auto& static_bodies = ludo::data<ludo::static_body>(inst);
@@ -26,10 +28,11 @@ namespace astrum
 
     auto delta = camera_position * -1.0f;
 
-    for (auto& linear_octree : linear_octrees)
+    for (auto& grid : grids)
     {
-      linear_octree.bounds.min += delta;
-      linear_octree.bounds.max += delta;
+      grid.bounds.min += delta;
+      grid.bounds.max += delta;
+      ludo::push(grid, true);
     }
 
     for (auto& partition_pair : mesh_instances.partitions)
@@ -43,8 +46,11 @@ namespace astrum
       {
         if (mesh_instance.instance_buffer.data)
         {
-          auto& transform = ludo::instance_transform(mesh_instance);
-          ludo::position(transform, ludo::position(transform) + delta);
+          for (auto instance_index = uint32_t(0); instance_index < mesh_instance.instances.count; instance_index++)
+          {
+            auto& transform = ludo::instance_transform(mesh_instance, instance_index);
+            ludo::position(transform, ludo::position(transform) + delta);
+          }
         }
       }
     }

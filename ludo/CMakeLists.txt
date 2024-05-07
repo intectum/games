@@ -15,9 +15,6 @@ set(SRC_FILES
     src/ludo/data/data.cpp
     src/ludo/data/heaps.cpp
     src/ludo/files.cpp
-    src/ludo/graphs.cpp
-    src/ludo/graphs/dynamic_octree.cpp
-    src/ludo/graphs/linear_octree.cpp
     src/ludo/math/distance.cpp
     src/ludo/math/mat.cpp
     src/ludo/math/projection.cpp
@@ -37,6 +34,11 @@ set(SRC_FILES
     src/ludo/meshes/util.cpp
     src/ludo/rendering.cpp
     src/ludo/scripts.cpp
+    src/ludo/spatial/bounds.cpp
+    src/ludo/spatial/grid2.cpp
+    src/ludo/spatial/grid3.cpp
+    src/ludo/spatial/octree.cpp
+    src/ludo/spatial/quadtree.cpp
     src/ludo/tasks.cpp
     src/ludo/testing.cpp
     src/ludo/thread_pool.cpp
@@ -45,12 +47,14 @@ set(SRC_FILES
 set(TEST_SRC_FILES
     tests/data/arrays.cpp
     tests/data/buffers.cpp
-    tests/graphs/dynamic_octree.cpp
-    tests/graphs/linear_octree.cpp
     tests/math/mat.cpp
     tests/math/projection.cpp
     tests/math/quat.cpp
     tests/math/vec.cpp
+    tests/spatial/grid2.cpp
+    tests/spatial/grid3.cpp
+    tests/spatial/octree.cpp
+    tests/spatial/quadtree.cpp
     tests/tests.cpp)
 
 # Target

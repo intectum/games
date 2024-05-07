@@ -1,14 +1,21 @@
+#include <iostream>
 #include <random>
 
 #include <libnoise/noise.h>
 
 #include "../constants.h"
+#include "../spatial/icotree.h"
+#include "../terrain/mesh.h"
 #include "../terrain/terrain.h"
 #include "terra.h"
 
 namespace astrum
 {
-  const auto max_tree_count_per_section = 100;
+  float terra_height(const ludo::vec3& position);
+  ludo::vec4 terra_color(float longitude, const std::array<float, 3>& heights, float gradient);
+  std::vector<tree> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index);
+  void terra_tree_internal(uint32_t divisions, noise::module::Perlin& perlin_forest, const std::array<ludo::vec3, 3>& face, std::vector<ludo::vec3>& positions);
+
   const auto beach_max_height = 1.0001f;
 
   auto seed = 123456;
@@ -128,7 +135,12 @@ namespace astrum
     return color;
   }
 
-  std::vector<tree> terra_tree(uint32_t patch_index)
+  // Poisson disc sampling based on https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
+  // did not work because it required you to keep track of all the previously planted trees
+  // which in the case of a planet could be hundreds of thousands and memory was a problem (as well as speed).
+  // Perhaps more sophisticated poisson disc sampling does not have these same limitations?
+  // For placing them at regular intervals and applying some jitter to their positions seems adequate.
+  std::vector<tree> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index)
   {
     auto perlin_forest = noise::module::Perlin();
     perlin_forest.SetSeed(seed);
@@ -140,37 +152,105 @@ namespace astrum
       .vertex_buffer = ludo::allocate(3 * sizeof(ludo::vec3))
     };
 
-    //terrain_chunk(temp_mesh, ludo::vertex_format_p, 0, chunk_index, 5, 5, 0); TODO!
+    terrain_mesh(terrain, radius, temp_mesh, ludo::vertex_format_p, ludo::vertex_format_p, false, chunk_index, 5, 5, 5);
 
-    auto positions = std::vector<ludo::vec3>(3);
-    std::memcpy(positions.data(), temp_mesh.vertex_buffer.data, 3 * sizeof(ludo::vec3));
+    auto vertex_stream = ludo::stream(temp_mesh.vertex_buffer);
+    auto face = std::array<ludo::vec3, 3>
+    {
+      read<ludo::vec3>(vertex_stream),
+      read<ludo::vec3>(vertex_stream),
+      read<ludo::vec3>(vertex_stream)
+    };
+
+    ludo::normalize(face[0]);
+    ludo::normalize(face[1]);
+    ludo::normalize(face[2]);
 
     ludo::deallocate(temp_mesh.index_buffer);
     ludo::deallocate(temp_mesh.vertex_buffer);
 
+    auto positions = std::vector<ludo::vec3>();
+    terra_tree_internal(6, perlin_forest, face, positions);
+
     auto trees = std::vector<tree>();
-    for (auto tree_index = 0; tree_index < max_tree_count_per_section; tree_index++)
+    for (auto& position : positions)
     {
-      auto position_barycentric = ludo::vec3 { tree_distribution(tree_random), tree_distribution(tree_random), tree_distribution(tree_random) };
-      auto position = position_barycentric[0] * positions[0] + position_barycentric[1] * positions[1] + position_barycentric[2] * positions[2];
+      auto jitter = ludo::vec3
+      {
+        tree_distribution(tree_random) * 2.0f / radius,
+        tree_distribution(tree_random) * 2.0f / radius,
+        tree_distribution(tree_random) * 2.0f / radius
+      };
+
+      position += jitter;
       ludo::normalize(position);
 
-      auto height = terra_height(position);
-      auto snow_min_height = (1.0f - std::pow(position[1], 20.0f)) * 1.08f;
-      if (height < beach_max_height || height > snow_min_height)
+      trees.emplace_back(tree
       {
-        continue;
-      }
-
-      // Forests
-      auto noise = static_cast<float>(perlin_forest.GetValue(position[0] + 1.0f, position[1] + 1.0f, position[2] + 1.0f));
-
-      if (noise > tree_distribution(tree_random))
-      {
-        trees.emplace_back(tree { .position = position, .rotation = tree_distribution(tree_random) * ludo::two_pi, .scale = tree_distribution(tree_random) / 2.0f + 0.5f });
-      }
+        .position = position,
+        .rotation = tree_distribution(tree_random) * ludo::two_pi,
+        .scale = tree_distribution(tree_random) / 2.0f + 0.5f
+      });
     }
 
     return trees;
+  }
+
+  void terra_tree_internal(uint32_t divisions, noise::module::Perlin& perlin_forest, const std::array<ludo::vec3, 3>& face, std::vector<ludo::vec3>& positions)
+  {
+    if (divisions == 0)
+    {
+      auto center = (face[0] + face[1] + face[2]) / 3.0f;
+
+      auto height = terra_height(center);
+      auto snow_min_height = (1.0f - std::pow(center[1], 20.0f)) * 1.08f;
+      if (height < beach_max_height || height > snow_min_height)
+      {
+        return;
+      }
+
+      // Forests
+      auto noise = static_cast<float>(perlin_forest.GetValue(center[0] + 1.0f, center[1] + 1.0f, center[2] + 1.0f));
+      if (noise < 0.3333f)
+      {
+        return;
+      }
+
+      if (noise < 0.6666f)
+      {
+        auto tree_cover = (noise - 0.3333f) / 0.3333f / 10.0f;
+        if (tree_distribution(tree_random) > tree_cover)
+        {
+          return;
+        }
+      }
+
+      positions.push_back(center);
+      return;
+    }
+
+    auto middle_positions = std::array<ludo::vec3, 3>
+    {{
+      (face[0] + face[1]) * 0.5f,
+      (face[0] + face[2]) * 0.5f,
+      (face[1] + face[2]) * 0.5f,
+    }};
+
+    normalize(middle_positions[0]);
+    normalize(middle_positions[1]);
+    normalize(middle_positions[2]);
+
+    auto divided_faces = std::array<std::array<ludo::vec3, 3>, 4>
+    {{
+      {face[0], middle_positions[0], middle_positions[1] },
+      {middle_positions[0], face[1], middle_positions[2] },
+      {middle_positions[1], middle_positions[2], face[2] },
+      {middle_positions[0], middle_positions[2], middle_positions[1] }
+    }};
+
+    for (auto face_index = uint32_t(0); face_index < divided_faces.size(); face_index++)
+    {
+      terra_tree_internal(divisions - 1, perlin_forest, divided_faces[face_index], positions);
+    }
   }
 }

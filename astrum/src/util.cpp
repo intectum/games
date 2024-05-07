@@ -12,7 +12,7 @@ namespace astrum
 
   auto script_names = std::vector<std::string>
   {
-    "ludo::finalize_background",
+    "ludo::finalize_background_tasks",
 
     "astrum::center_universe",
     "astrum::relativize_universe",
@@ -22,7 +22,7 @@ namespace astrum
     "astrum::simulate_point_mass_physics",
 
     "astrum::stream_terrain",
-    //"astrum::stream_trees",
+    "astrum::stream_trees",
 
     "astrum::sync_light_with_sol",
 
@@ -32,6 +32,8 @@ namespace astrum
     "astrum::control_game",
 
     "astrum::sync_mesh_instances_with_point_masses",
+
+    //"astrum::update_prediction_paths",
 
     "ludo::prepare_render",
     "ludo::update_windows",

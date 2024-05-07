@@ -6,6 +6,10 @@ namespace astrum
 {
   // TODO make smooth (requires indexed support for slods, or maybe this doesn't need to be a slod?)
 
+  float sol_height(const ludo::vec3& position);
+  ludo::vec4 sol_color(float longitude, const std::array<float, 3>& heights, float gradient);
+  std::vector<tree> sol_tree(const terrain& terrain, float radius, uint32_t chunk_index);
+
   void add_sol(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
     auto celestial_body = ludo::add(
@@ -55,7 +59,7 @@ namespace astrum
     return ludo::vec4_one;
   }
 
-  std::vector<tree> sol_tree(uint64_t patch_id)
+  std::vector<tree> sol_tree(const terrain& terrain, float radius, uint32_t chunk_index)
   {
     return {};
   }

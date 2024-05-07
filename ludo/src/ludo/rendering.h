@@ -38,8 +38,8 @@ namespace ludo
     uint64_t frame_buffer_id = 0; ///< The ID of the frame buffer to render to. An ID of 0 will render to the window.
     uint64_t render_program_id = 0; ///< The IDs of the render program to use. Takes precedence over render programs specified by mesh buffers.
 
-    std::vector<uint64_t> mesh_instance_ids; ///< The IDs of the mesh instances to render. Takes precedence over linear octrees. For better performance, add these meshes to the instance first.
-    std::vector<uint64_t> linear_octree_ids; ///< The IDs of the linear octrees containing meshes to render.
+    std::vector<uint64_t> mesh_instance_ids; ///< The IDs of the mesh instances to render. Takes precedence over grids. For better performance, add these meshes to the instance first.
+    std::vector<uint64_t> grid_ids; ///< The IDs of the grid containing meshes to render.
 
     bool clear_frame_buffer = true; ///< Determines if the frame buffer will be cleared before rendering.
     mutable double_buffer shader_buffer; ///< A buffer containing data available to all render programs.
@@ -65,6 +65,8 @@ namespace ludo
     uint32_t instance_size = 0; ///< The size in bytes of an instance within this render program.
 
     range active_commands; ///< The active commands to be executed by this render program.
+
+    bool push_on_bind = true; // TODO revise
   };
 
   ///
@@ -172,7 +174,7 @@ namespace ludo
 
   ///
   /// Renders meshes within the given instance.
-  /// Where linear octrees are used, meshes must have bounds that can be contained within an octant of the linear octree.
+  /// Where grids are used, meshes must have bounds that can be contained within a cell of the grid.
   /// \param instance The instance containing the meshes to render. Must contain a rendering_context.
   /// \param options The options used to render.
   LUDO_API void render(instance& instance, const render_options& options = {});
@@ -257,6 +259,11 @@ namespace ludo
   LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
 
   ///
+  /// Pushes the state of a render program to the front buffer.
+  /// \param render_program The render program to push.
+  LUDO_API void push(render_program& render_program);
+
+  ///
   /// Adds a shader to the data of an instance.
   /// \param instance The instance to add the shader to.
   /// \param init The initial state of the new shader.
@@ -327,7 +334,8 @@ namespace ludo
   /// Sets the texture of a mesh instance.
   /// \param mesh_instance The mesh instance to set the texture of.
   /// \param texture The texture.
-  LUDO_API void set_texture(mesh_instance& mesh_instance, const texture& texture);
+  /// \param instance_index The index of the instance to set the texture for.
+  LUDO_API void set_texture(mesh_instance& mesh_instance, const texture& texture, uint32_t instance_index = 0);
 
   LUDO_API fence create_fence();
 

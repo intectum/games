@@ -65,14 +65,16 @@ namespace ludo
   ///
   /// Retrieves the bone transforms from a mesh instance.
   /// \param mesh_instance The bone transforms to retrieve from the mesh instance.
+  /// \param instance_index The index of the instance to retrieve the bone transforms for.
   /// \return The bone transforms.
-  LUDO_API std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance);
+  LUDO_API std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance, uint32_t instance_index = 0);
 
   ///
   /// Sets the bone transforms of a mesh instance.
   /// \param mesh_instance The mesh instance to set the bone transforms of.
   /// \param bone_transforms The bone transforms.
-  LUDO_API void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms);
+  /// \param instance_index The index of the instance to set the bone transforms for.
+  LUDO_API void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms, uint32_t instance_index = 0);
 }
 
 #endif // LUDO_ANIMATION_H

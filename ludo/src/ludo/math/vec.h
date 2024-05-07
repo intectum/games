@@ -206,6 +206,13 @@ namespace ludo
   void rotate(vec2& vector, float angle);
 
   ///
+  /// Rotates a vector.
+  /// \param vector The vector to rotate.
+  /// \param axis The axis of rotation.
+  /// \param angle The angle around the axis of rotation.
+  void rotate(vec3& vector, vec3& axis, float angle);
+
+  ///
   /// Homogenizes a vector.
   /// \param vector The vector.
   void homogenize(vec4& vector);

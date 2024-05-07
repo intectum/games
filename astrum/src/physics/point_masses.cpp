@@ -79,7 +79,7 @@ namespace astrum
 
   void sync_mesh_instances_with_point_masses(ludo::instance& inst, const std::vector<std::string>& partitions)
   {
-    auto& linear_octree = *ludo::first<ludo::linear_octree>(inst, "default");
+    auto& grid = *ludo::first<ludo::grid3>(inst, "default");
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
     auto& point_masses = ludo::data<point_mass>(inst);
@@ -105,8 +105,8 @@ namespace astrum
         auto movement = new_position - old_position;
         if (ludo::length2(movement) > 0.0f)
         {
-          ludo::remove(linear_octree, mesh_instance, old_position);
-          ludo::add(linear_octree, mesh_instance, new_position);
+          ludo::remove(grid, mesh_instance, old_position, true);
+          ludo::add(grid, mesh_instance, new_position, true);
         }
       }
     }

@@ -9,35 +9,31 @@ int main()
 
   // SETUP
 
-  auto instance_count = 4;
+  auto instance_count = 3;
   auto box_counts = ludo::box_counts();
-  auto minifig_counts = ludo::import_counts("assets/models/minifig.dae");
 
-  auto max_indices = box_counts.first * 3 + minifig_counts.first;
-  auto max_vertices = box_counts.second * 3 + minifig_counts.second;
+  auto max_indices = box_counts.first * 3;
+  auto max_vertices = box_counts.second * 3;
 
   ludo::allocate<ludo::rendering_context>(inst, 1);
   ludo::allocate<ludo::windowing_context>(inst, 1);
 
-  ludo::allocate<ludo::animation>(inst, 1);
-  ludo::allocate<ludo::armature>(inst, 1);
-  ludo::allocate<ludo::body_shape>(inst, 1);
-  ludo::allocate<ludo::mesh>(inst, 4);
+  ludo::allocate<ludo::mesh>(inst, instance_count);
   ludo::allocate<ludo::mesh_instance>(inst, instance_count);
   ludo::allocate<ludo::render_program>(inst, instance_count);
   ludo::allocate<ludo::script>(inst, 5);
   ludo::allocate<ludo::shader>(inst, instance_count * 2);
-  ludo::allocate<ludo::texture>(inst, instance_count);
+  ludo::allocate<ludo::texture>(inst, 1);
   ludo::allocate<ludo::window>(inst, 1);
 
   ludo::add(inst, ludo::windowing_context());
-  ludo::add(inst, ludo::window { .title = "spinny cube!", .width = 1920, .height = 1080, .v_sync = false });
+  ludo::add(inst, ludo::window { .title = "spinny!", .width = 1920, .height = 1080, .v_sync = false });
 
   auto rendering_context = ludo::add(inst, ludo::rendering_context(), 1);
 
   ludo::allocate_heap_vram(inst, "ludo::vram_draw_commands", instance_count * sizeof(ludo::draw_command));
   ludo::allocate_heap_vram(inst, "ludo::vram_indices", max_indices * sizeof(uint32_t));
-  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", max_vertices * 80); // 80 is a rough guess to cover everything
+  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", max_vertices * ludo::vertex_format_pc.size);
 
   // LIGHTS
 
@@ -57,7 +53,6 @@ int main()
   auto render_program_p = ludo::add(inst, ludo::render_program(), ludo::vertex_format_p, 1);
   auto render_program_pc = ludo::add(inst, ludo::render_program(), ludo::vertex_format_pc, 1);
   auto render_program_pt = ludo::add(inst, ludo::render_program(), ludo::vertex_format_pt, 1);
-  auto render_program_pnct = ludo::add(inst, ludo::render_program(), ludo::format(true, true, true, true), 1);
 
   // TEXTURE
 
@@ -115,12 +110,6 @@ int main()
   ludo::box(*tuby_cuby, render_program_pt->format, index_index, vertex_index);
 
   ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pt->id }, *tuby_cuby);
-
-  // MINIFIG
-
-  auto minifig_meshes = ludo::import(inst, "assets/models/minifig.dae");
-
-  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pnct->id }, minifig_meshes[0]);
 
 /*
 
@@ -215,18 +204,11 @@ int main()
 
   ludo::add<ludo::script>(inst, [](ludo::instance& inst)
   {
-    auto animation = ludo::first<ludo::animation>(inst);
-    auto armature = ludo::first<ludo::armature>(inst);
     auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
 
     ludo::instance_transform(mesh_instances[0]) = ludo::mat4(ludo::vec3(-2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     ludo::instance_transform(mesh_instances[1]) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
     ludo::instance_transform(mesh_instances[2]) = ludo::mat4(ludo::vec3(2.5f, 0.0f, -4.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-    ludo::instance_transform(mesh_instances[3]) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-
-    auto bone_transforms = ludo::get_bone_transforms(mesh_instances[3]);
-    ludo::interpolate(*animation, *armature, inst.total_time, bone_transforms.data());
-    ludo::set_bone_transforms(mesh_instances[3], bone_transforms);
   });
 
   ludo::add<ludo::script>(inst, ludo::prepare_render);
@@ -237,24 +219,4 @@ int main()
   // PLAY
 
   ludo::play(inst);
-
-  // TEARDOWN
-
-  ludo::deallocate<ludo::animation>(inst);
-  ludo::deallocate<ludo::armature>(inst);
-  ludo::deallocate<ludo::body_shape>(inst);
-  ludo::deallocate<ludo::mesh>(inst);
-  ludo::deallocate<ludo::mesh_instance>(inst);
-  ludo::deallocate<ludo::render_program>(inst);
-  ludo::deallocate<ludo::script>(inst);
-  ludo::deallocate<ludo::shader>(inst);
-  ludo::deallocate<ludo::texture>(inst);
-  ludo::deallocate<ludo::window>(inst);
-
-  ludo::deallocate<ludo::rendering_context>(inst);
-  ludo::deallocate<ludo::windowing_context>(inst);
-
-  ludo::deallocate_heap_vram(inst, "ludo::vram_draw_commands");
-  ludo::deallocate_heap_vram(inst, "ludo::vram_indices");
-  ludo::deallocate_heap_vram(inst, "ludo::vram_vertices");
 }

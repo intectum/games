@@ -130,6 +130,12 @@ namespace ludo
     remove(data<render_program>(instance), element, partition);
   }
 
+  void push(render_program& render_program)
+  {
+    push(render_program.shader_buffer);
+    std::memcpy(render_program.instance_buffer_front.data, render_program.instance_buffer_back.data, render_program.instance_buffer_front.size);
+  }
+
   void bind(render_program& render_program)
   {
     glValidateProgram(render_program.id); check_opengl_error();
@@ -148,10 +154,12 @@ namespace ludo
 
     glUseProgram(render_program.id); check_opengl_error();
 
-    push(render_program.shader_buffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.front.id); check_opengl_error();
+    if (render_program.push_on_bind)
+    {
+      push(render_program);
+    }
 
-    std::memcpy(render_program.instance_buffer_front.data, render_program.instance_buffer_back.data, render_program.instance_buffer_front.size);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.front.id); check_opengl_error();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, render_program.instance_buffer_front.id); check_opengl_error();
 
     // Convert b4 to u4f4

@@ -5,7 +5,7 @@ namespace astrum
 {
   void add_spaceship(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
-    auto linear_octree = ludo::first<ludo::linear_octree>(inst, "default");
+    auto grid = ludo::first<ludo::grid3>(inst, "default");
     auto mesh = ludo::first<ludo::mesh>(inst, "spaceships");
 
     auto render_program = ludo::add(
@@ -20,11 +20,12 @@ namespace astrum
       inst,
       ludo::mesh_instance { .render_program_id = render_program->id },
       *mesh,
+      1,
       "spaceships"
     );
 
     ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
-    ludo::add(*linear_octree, *mesh_instance, initial_transform.position);
+    ludo::add(*grid, *mesh_instance, initial_transform.position);
 
     ludo::add(
       inst,

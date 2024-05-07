@@ -67,16 +67,16 @@ namespace astrum
     ludo::cast<ludo::mat4>(render_program->shader_buffer.back, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
-    auto linear_octree = ludo::add(
+    auto grid = ludo::add(
       inst,
-      ludo::linear_octree
+      ludo::grid3
       {
         .bounds =
         {
           .min = point_mass.transform.position - bounds_half_dimensions,
           .max = point_mass.transform.position + bounds_half_dimensions
         },
-        .depth = 4
+        .cell_count_1d = 16
       },
       "terrain"
     );
@@ -87,7 +87,7 @@ namespace astrum
     for (auto chunk_index = uint32_t(0); chunk_index < terrain->chunks.size(); chunk_index++)
     {
       auto& chunk = terrain->chunks[chunk_index];
-      chunk.lod_index = terrain_chunk_lod_index(*terrain, chunk_index, camera_position, point_mass.transform.position);
+      chunk.lod_index = terrain_chunk_lod_index(*terrain, chunk_index, terrain->lods, camera_position, point_mass.transform.position);
 
       auto count = 3 * static_cast<uint32_t>(std::pow(4, init.lods[chunk.lod_index].level - init.lods[0].level));
 
@@ -105,8 +105,11 @@ namespace astrum
         ludo::mesh_instance
         {
           .render_program_id = render_program->id,
-          .instance_index = chunk_index,
-          .instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size),
+          .instances =
+          {
+            .start = chunk_index,
+            .count = 1
+          },
           .indices =
           {
             .start = static_cast<uint32_t>((mesh->index_buffer.data - indices.data) / sizeof(uint32_t)),
@@ -116,7 +119,9 @@ namespace astrum
           {
             .start = static_cast<uint32_t>((mesh->vertex_buffer.data - vertices.data) / mesh->vertex_size),
             .count = static_cast<uint32_t>(mesh->vertex_buffer.size / mesh->vertex_size)
-          }
+          },
+          .instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size),
+          .instance_size = render_program->instance_size
         },
         "terrain"
       );
@@ -127,7 +132,7 @@ namespace astrum
       load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
       init_terrain_chunk(*terrain, chunk_index, *mesh_instance);
 
-      ludo::add(*linear_octree, *mesh_instance, point_mass.transform.position + chunk.center);
+      ludo::add(*grid, *mesh_instance, point_mass.transform.position + chunk.center);
     }
 
     /* TODO ludo::divide_and_conquer(terrain->chunks.size(), [&](uint32_t start, uint32_t end)
@@ -144,6 +149,8 @@ namespace astrum
 
       return [] {};
     });*/
+
+    ludo::push(*grid);
 
     update_terrain_static_bodies(inst, *terrain, celestial_body.radius, point_mass.transform.position, celestial_body.radius * 1.25f);
   }
@@ -166,7 +173,7 @@ namespace astrum
   {
     auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
 
-    auto& linear_octrees = ludo::data<ludo::linear_octree>(inst, "terrain");
+    auto& grids = ludo::data<ludo::grid3>(inst, "terrain");
     auto& render_programs = ludo::data<ludo::render_program>(inst, "terrain");
 
     auto& celestial_bodies = ludo::data<celestial_body>(inst, "celestial-bodies");
@@ -178,7 +185,7 @@ namespace astrum
 
     for (auto index = uint32_t(0); index < terrains.length; index++)
     {
-      auto& linear_octree = linear_octrees[index];
+      auto& grid = grids[index];
       auto& render_program = render_programs[index];
 
       auto& celestial_body = celestial_bodies[index];
@@ -191,8 +198,9 @@ namespace astrum
       auto movement = new_position - old_position;
       if (ludo::length2(movement) > 0.0f)
       {
-        linear_octree.bounds.min += movement;
-        linear_octree.bounds.max += movement;
+        grid.bounds.min += movement;
+        grid.bounds.max += movement;
+        ludo::push(grid, true);
 
         ludo::cast<ludo::mat4>(render_program.shader_buffer.back, 0) = ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation));
       }
@@ -210,7 +218,7 @@ namespace astrum
             continue;
           }
 
-          auto new_lod_index = terrain_chunk_lod_index(terrain, chunk_index, camera_position, new_position);
+          auto new_lod_index = terrain_chunk_lod_index(terrain, chunk_index, terrain.lods, camera_position, new_position);
           if (new_lod_index != chunk.lod_index)
           {
             chunk.locked = true;
@@ -230,12 +238,12 @@ namespace astrum
 
             // Purposely take a copy of the new mesh!
             // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
-            ludo::enqueue_background_task(inst, [&inst, &celestial_body, &terrain, &linear_octree, chunk_index, new_mesh, new_lod_index, new_position]()
+            ludo::enqueue_background_task(inst, [&inst, &celestial_body, &terrain, &grid, chunk_index, new_mesh, new_lod_index, new_position]()
             {
               auto local_new_mesh = new_mesh;
               load_terrain_chunk(terrain, celestial_body.radius, chunk_index, new_lod_index, local_new_mesh);
 
-              return [&inst, &terrain, &linear_octree, chunk_index, new_mesh, new_lod_index, new_position]()
+              return [&inst, &terrain, &grid, chunk_index, new_mesh, new_lod_index, new_position]()
               {
                 auto& chunk = terrain.chunks[chunk_index];
 
@@ -256,8 +264,8 @@ namespace astrum
                 chunk.lod_index = new_lod_index;
                 chunk.locked = false;
 
-                ludo::remove(linear_octree, *mesh_instance, new_position + chunk.center);
-                ludo::add(linear_octree, *mesh_instance, new_position + chunk.center);
+                ludo::remove(grid, *mesh_instance, new_position + chunk.center, true);
+                ludo::add(grid, *mesh_instance, new_position + chunk.center, true);
 
                 init_terrain_chunk(terrain, chunk_index, *mesh_instance);
               };

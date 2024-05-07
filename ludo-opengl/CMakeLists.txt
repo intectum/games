@@ -27,12 +27,12 @@ set(SRC_FILES
     src/ludo/opengl/data/buffers.cpp
     src/ludo/opengl/fences.cpp
     src/ludo/opengl/frame_buffers.cpp
-    src/ludo/opengl/graphs/linear_octree.cpp
     src/ludo/opengl/meshes.cpp
     src/ludo/opengl/render_programs.cpp
     src/ludo/opengl/rendering.cpp
     src/ludo/opengl/rendering_contexts.cpp
     src/ludo/opengl/shaders.cpp
+    src/ludo/opengl/spatial/grid3.cpp
     src/ludo/opengl/standardized_shaders.cpp
     src/ludo/opengl/textures.cpp
     src/ludo/opengl/util.cpp)

@@ -10,7 +10,7 @@ namespace astrum
 {
   void add_prediction_paths(ludo::instance& inst, const std::vector<ludo::vec4>& colors)
   {
-    auto& always_render_linear_octree = ludo::data<ludo::linear_octree>(inst, "default")[1];
+    auto& always_render_grid = ludo::data<ludo::grid3>(inst, "default")[1];
 
     auto path_count = static_cast<uint32_t>(colors.size());
 
@@ -51,9 +51,10 @@ namespace astrum
         inst,
         ludo::mesh_instance { .render_program_id = render_program->id },
         *mesh,
+        1,
         "prediction-paths"
       );
-      ludo::add(always_render_linear_octree, *mesh_instance, ludo::vec3_zero);
+      ludo::add(always_render_grid, *mesh_instance, ludo::vec3_zero);
     }
   }
 

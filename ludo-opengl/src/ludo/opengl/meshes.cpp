@@ -8,8 +8,8 @@
 
 namespace ludo
 {
-  void set_texture(mesh_instance &mesh_instance, const texture &texture)
+  void set_texture(mesh_instance &mesh_instance, const texture &texture, uint32_t instance_index)
   {
-    cast<uint64_t>(mesh_instance.instance_buffer, sizeof(mat4)) = handle(texture);
+    cast<uint64_t>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size + sizeof(mat4)) = handle(texture);
   }
 }

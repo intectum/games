@@ -36,7 +36,7 @@ namespace astrum
     ludo::cast<float>(mesh_instance.instance_buffer, sizeof(float)) = high_detail_distance;
   }
 
-  uint32_t terrain_chunk_lod_index(const terrain& terrain, uint32_t chunk_index, const ludo::vec3& camera_position, const ludo::vec3& position)
+  uint32_t terrain_chunk_lod_index(const terrain& terrain, uint32_t chunk_index, const std::vector<lod>& lods, const ludo::vec3& camera_position, const ludo::vec3& position)
   {
     auto& chunk = terrain.chunks[chunk_index];
     auto to_camera = camera_position - (position + chunk.center);
@@ -50,9 +50,9 @@ namespace astrum
 
     auto distance_to_camera = ludo::length(to_camera);
 
-    for (auto variant_index = uint32_t(terrain.lods.size() - 1); variant_index < terrain.lods.size(); variant_index--)
+    for (auto variant_index = uint32_t(lods.size() - 1); variant_index < lods.size(); variant_index--)
     {
-      if (distance_to_camera < terrain.lods[variant_index].max_distance)
+      if (distance_to_camera < lods[variant_index].max_distance)
       {
         return variant_index;
       }

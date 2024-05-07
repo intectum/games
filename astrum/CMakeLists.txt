@@ -31,8 +31,9 @@ set(SRC_FILES
     src/entities/sol.cpp
     src/entities/spaceships.cpp
     src/entities/terra.cpp
-    #src/entities/trees.cpp
+    src/entities/trees.cpp
     src/main.cpp
+    src/meshes/ico_faces.cpp
     src/paths.cpp
     src/physics/centering.cpp
     src/physics/gravity.cpp
@@ -45,6 +46,7 @@ set(SRC_FILES
     src/post-processing/pass.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
+    src/spatial/icotree.cpp
     src/terrain/mesh.cpp
     src/terrain/metadata.cpp
     src/terrain/shaders.cpp
@@ -84,16 +86,27 @@ ENDIF(UNIX)
 add_custom_command(TARGET astrum PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/assets ${PROJECT_SOURCE_DIR}/build/assets)
 
-# Spinny Cube Target
+# Demo Targets
 #########################
-add_executable(spinny-cube src/spinny_cube.cpp)
-set_target_properties(spinny-cube PROPERTIES INSTALL_RPATH "./lib")
+add_executable(importy src/demos/importy.cpp)
+set_target_properties(importy PROPERTIES INSTALL_RPATH "./lib")
+add_executable(noisy src/demos/noisy.cpp)
+set_target_properties(noisy PROPERTIES INSTALL_RPATH "./lib")
+add_executable(spinny src/demos/spinny.cpp)
+set_target_properties(spinny PROPERTIES INSTALL_RPATH "./lib")
 
-# Spinny Cube Target Dependencies
+# Demo Target Dependencies
 #########################
 
 # ludo
-target_link_libraries(spinny-cube ludo-assimp)
-target_link_libraries(spinny-cube ludo-glfw)
-target_link_libraries(spinny-cube ludo-opengl)
-target_link_libraries(spinny-cube ludo)
+target_link_libraries(importy ludo-assimp)
+target_link_libraries(importy ludo-glfw)
+target_link_libraries(importy ludo-opengl)
+target_link_libraries(importy ludo)
+target_link_libraries(noisy ludo-glfw)
+target_link_libraries(noisy ludo-opengl)
+target_link_libraries(noisy ludo)
+target_link_libraries(spinny ludo-assimp) # TODO remove, only for FreeImage...
+target_link_libraries(spinny ludo-glfw)
+target_link_libraries(spinny ludo-opengl)
+target_link_libraries(spinny ludo)

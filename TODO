@@ -1,15 +1,25 @@
+Features
 - Deferred rendering
 - Occlusion culling
-- Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
-- Switch to bazel
-- Remove dynamic containers from data types stored in the instance
+- Shadow mapping
+- Phong and PBR lights
+- UI
+- Rocks and grass
+
+Bugs
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
 - Fix slight head movement in spaceship when rolling
 - Refine atmosphere, looks better at altitude and is slow
-- Shadow mapping
-- Phong and PBR lights
-- CEF/UI
-- Trees, rocks and grass
+
+Structural
+- Switch to bazel
+- Remove dynamic containers from data types stored in the instance
 - Remove unneeded IDs from data types
-- Make consistent that add() with no extra params does nothing more than add with an ID?
-- Trees: dynamic_octree => octree (linear - SIMD?), linear_octree => grid or something? That's all it is really - I don't think it is actually a linear octree.
+- Make consistent that add() with no extra params does nothing more than add with an ID? Separate add() into add() and init()?
+- add() should not fetch other data or do crazy slow things like that!
+- Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
+- Vulkan
+- In-house physics
+- In-house noise
+- Job scheduler a la Unity DOTS
+- Split buffer and allocators instead of having separate heap type etc.

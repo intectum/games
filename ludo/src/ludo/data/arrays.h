@@ -21,8 +21,8 @@ namespace ludo
     uint32_t capacity = 0; ///< The maximum number of elements.
     uint32_t length = 0; ///< The current number of elements.
 
-    T& operator[](uint64_t index);
-    const T& operator[](uint64_t index) const;
+    T& operator[](uint32_t index);
+    const T& operator[](uint32_t index) const;
 
     T* begin();
     const T* begin() const;
@@ -46,7 +46,7 @@ namespace ludo
   /// \param capacity The maximum number of elements.
   /// \return The array.
   template<typename T>
-  LUDO_API array<T> allocate_array(uint64_t capacity);
+  LUDO_API array<T> allocate_array(uint32_t capacity);
 
   ///
   /// Allocates an array in VRAM.
@@ -54,7 +54,7 @@ namespace ludo
   /// \param access_hint The type of access desired.
   /// \return The array.
   template<typename T>
-  LUDO_API array<T> allocate_array_vram(uint64_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
+  LUDO_API array<T> allocate_array_vram(uint32_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
 
   ///
   /// Deallocates an array.
@@ -93,7 +93,7 @@ namespace ludo
   /// \param capacity The maximum number of elements.
   /// \return The partitioned array.
   template<typename T>
-  LUDO_API partitioned_array<T> allocate_partitioned_array(uint64_t capacity);
+  LUDO_API partitioned_array<T> allocate_partitioned_array(uint32_t capacity);
 
   ///
   /// Allocates a partitioned array in VRAM.
@@ -101,7 +101,7 @@ namespace ludo
   /// \param access_hint The type of access desired.
   /// \return The partitioned array.
   template<typename T>
-  LUDO_API partitioned_array<T> allocate_partitioned_array_vram(uint64_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
+  LUDO_API partitioned_array<T> allocate_partitioned_array_vram(uint32_t capacity, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
 
   ///
   /// Deallocates a partitioned array.

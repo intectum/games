@@ -23,9 +23,9 @@ namespace ludo
     interpolate(animation, armature, tick_time, mat4_identity, final_transforms);
   }
 
-  std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance)
+  std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance, uint32_t instance_index)
   {
-    auto instance_bone_transforms = reinterpret_cast<ludo::mat4*>(mesh_instance.instance_buffer.data + sizeof(ludo::mat4) + 16);
+    auto instance_bone_transforms = &cast<ludo::mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size + sizeof(ludo::mat4) + 16);
 
     std::array<mat4, max_bones_per_armature> bone_transforms;
     std::memcpy(bone_transforms.data(), instance_bone_transforms, sizeof(ludo::mat4) * max_bones_per_armature);
@@ -33,9 +33,9 @@ namespace ludo
     return bone_transforms;
   }
 
-  void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms)
+  void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms, uint32_t instance_index)
   {
-    auto instance_bone_transforms = reinterpret_cast<ludo::mat4*>(mesh_instance.instance_buffer.data + sizeof(ludo::mat4) + 16);
+    auto instance_bone_transforms = &cast<ludo::mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size + sizeof(ludo::mat4) + 16);
 
     std::memcpy(instance_bone_transforms, bone_transforms.data(), sizeof(ludo::mat4) * max_bones_per_armature);
   }

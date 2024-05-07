@@ -50,14 +50,17 @@ namespace astrum
   const auto terra_atmosphere_scale = 1.3f;
   const auto terra_surface_gravity = 9.8f;
   const auto terra_mass = terra_surface_gravity * terra_radius * terra_radius * gravitational_constant;
-  const auto terra_lods = std::vector<lod> { { 5, 25.6f }, { 6, terra_radius * 6.4f }, { 8, terra_radius * 1.6f }, { 10, terra_radius * 0.4f }, { 12, terra_radius * 0.1f } };
+  const auto terra_lods = std::vector<lod> { { 5, terra_radius * 25.6f }, { 6, terra_radius * 6.4f }, { 8, terra_radius * 1.6f }, { 10, terra_radius * 0.4f }, { 12, terra_radius * 0.1f } };
 
   // Luna
   const auto luna_orbit_distance = 0.00257f * astronomical_unit;
   const auto luna_radius = 1737400.0f * planetary_scale;
   const auto luna_surface_gravity = 1.6209f;
   const auto luna_mass = luna_surface_gravity * luna_radius * luna_radius * gravitational_constant;
-  const auto luna_lods = std::vector<lod> { { 5, 6.4f }, { 7, luna_radius * 1.6f }, { 9, luna_radius * 0.4f }, { 11, luna_radius * 0.1f } };
+  const auto luna_lods = std::vector<lod> { { 5, luna_radius * 6.4f }, { 7, luna_radius * 1.6f }, { 9, luna_radius * 0.4f }, { 11, luna_radius * 0.1f } };
+
+  // Trees
+  const auto tree_lods = std::vector<lod> { { 0, terra_radius * 3.2f }, { 1, terra_radius * 0.8f }, { 2, terra_radius * 0.2f } };
 }
 
 #endif // ASTRUM_CONSTANTS_H
