@@ -66,7 +66,7 @@ namespace astrum
 
     for (auto index = uint32_t(0); index < terrains.length; index++)
     {
-      auto& transform = ludo::cast<ludo::mat4>(terrain_render_programs[index].shader_buffer, 0);
+      auto& transform = ludo::cast<ludo::mat4>(terrain_render_programs[index].shader_buffer.back, 0);
       ludo::position(transform, ludo::position(transform) + delta);
     }
 

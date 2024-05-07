@@ -56,7 +56,7 @@ namespace astrum
         .vertex_shader_id = vertex_shader->id,
         .fragment_shader_id = fragment_shader->id,
         .format = terrain->format,
-        .shader_buffer = ludo::allocate_vram(sizeof(ludo::mat4)),
+        .shader_buffer = ludo::allocate_dual(sizeof(ludo::mat4)),
         .instance_size = 2 * sizeof(float)
       },
       terrain->format,
@@ -64,7 +64,7 @@ namespace astrum
       "terrain"
     );
 
-    ludo::cast<ludo::mat4>(render_program->shader_buffer, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
+    ludo::cast<ludo::mat4>(render_program->shader_buffer.back, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
     auto linear_octree = ludo::add(
@@ -185,7 +185,7 @@ namespace astrum
       auto& point_mass = point_masses[index];
       auto& terrain = terrains[index];
 
-      auto old_position = ludo::position(ludo::cast<ludo::mat4>(render_program.shader_buffer, 0));
+      auto old_position = ludo::position(ludo::cast<ludo::mat4>(render_program.shader_buffer.back, 0));
       auto new_position = point_mass.transform.position;
 
       auto movement = new_position - old_position;
@@ -194,7 +194,7 @@ namespace astrum
         linear_octree.bounds.min += movement;
         linear_octree.bounds.max += movement;
 
-        ludo::cast<ludo::mat4>(render_program.shader_buffer, 0) = ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation));
+        ludo::cast<ludo::mat4>(render_program.shader_buffer.back, 0) = ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation));
       }
 
       update_terrain_static_bodies(inst, terrain, celestial_body.radius, new_position, celestial_body.radius * 1.25f);

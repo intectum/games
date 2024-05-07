@@ -15,9 +15,17 @@ namespace ludo
   /// A buffer
   struct LUDO_API buffer
   {
-    uint64_t id = 0; ///< The ID of the buffer (buffers allocated in VRAM may have overlapping IDs with buffers not allocated in VRAM).
+    uint64_t id = 0; ///< The ID of the buffer (buffers allocated in VRAM may have overlapping IDs with buffers allocated in RAM).
     std::byte* data = nullptr; ///< The data.
     uint64_t size = 0; ///< The size (in bytes).
+  };
+
+  ///
+  /// A double buffer
+  struct LUDO_API double_buffer
+  {
+    buffer front; ///< The front buffer.
+    buffer back; ///< The back buffer.
   };
 
   ///
@@ -75,6 +83,23 @@ namespace ludo
   LUDO_API T& cast(buffer& buffer, uint64_t position);
   template<typename T>
   LUDO_API const T& cast(const buffer& buffer, uint64_t position);
+
+  ///
+  /// Allocates a 'dual residency' double buffer i.e with the front buffer in VRAM and the back buffer in RAM.
+  /// \param size The size (in bytes).
+  /// \param access_hint The type of access desired.
+  /// \return The double buffer.
+  LUDO_API double_buffer allocate_dual(uint64_t size, vram_buffer_access_hint access_hint = vram_buffer_access_hint::WRITE);
+
+  ///
+  /// Deallocates 'dual residency' double buffer.
+  /// \param buffer The double buffer to deallocate.
+  LUDO_API void deallocate_dual(double_buffer& buffer);
+
+  ///
+  /// Pushes data from the back buffer to the front buffer.
+  /// \param buffer The double buffer to push.
+  LUDO_API void push(double_buffer& buffer);
 
   ///
   /// Reads data from a stream (does not change the position).

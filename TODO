@@ -1,15 +1,15 @@
 - Deferred rendering
-- Parallel rendering
 - Occlusion culling
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
 - Switch to bazel
 - Remove dynamic containers from data types stored in the instance
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
 - Fix slight head movement in spaceship when rolling
-- Refine atmosphere, looks better at altitude
+- Refine atmosphere, looks better at altitude and is slow
 - Shadow mapping
 - Phong and PBR lights
 - CEF/UI
 - Trees, rocks and grass
-- Remove unneeded ids from data types
+- Remove unneeded IDs from data types
 - Make consistent that add() with no extra params does nothing more than add with an ID?
+- Trees: dynamic_octree => octree (linear - SIMD?), linear_octree => grid or something? That's all it is really - I don't think it is actually a linear octree.

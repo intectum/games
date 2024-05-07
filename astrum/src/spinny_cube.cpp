@@ -229,20 +229,10 @@ int main()
     ludo::set_bone_transforms(mesh_instances[3], bone_transforms);
   });
 
+  ludo::add<ludo::script>(inst, ludo::prepare_render);
   ludo::add<ludo::script>(inst, ludo::update_windows);
-
-  // TODO Maybe find a better way to do this?
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto& render_programs = data<ludo::render_program>(inst);
-    for (auto& render_program : render_programs)
-    {
-      render_program.active_commands.start = 0;
-    }
-  });
-
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
-  ludo::add<ludo::script>(inst, ludo::wait_for_render);
+  ludo::add<ludo::script>(inst, ludo::finalize_render);
 
   // PLAY
 

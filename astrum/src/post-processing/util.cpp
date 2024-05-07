@@ -52,10 +52,10 @@ namespace astrum
     return ludo::add(inst, ludo::frame_buffer { .width = width, .height = height, .color_texture_ids = { color_texture->id }, .depth_texture_id = depth_texture_id });
   }
 
-  ludo::buffer create_post_processing_shader_buffer(uint64_t texture_id_0, uint64_t texture_id_1)
+  ludo::double_buffer create_post_processing_shader_buffer(uint64_t texture_id_0, uint64_t texture_id_1)
   {
-    auto buffer = ludo::allocate_vram(16);
-    auto stream = ludo::stream(buffer);
+    auto buffer = ludo::allocate_dual(16);
+    auto stream = ludo::stream(buffer.back);
 
     ludo::write(stream, texture_id_0 == 0 ? uint64_t(0) : ludo::handle(ludo::texture { .id = texture_id_0 }));
     ludo::write(stream, texture_id_1 == 0 ? uint64_t(0) : ludo::handle(ludo::texture { .id = texture_id_1 }));

@@ -16,7 +16,7 @@ namespace ludo
   template<typename T>
   struct LUDO_API array
   {
-    uint64_t id = 0; ///< The ID of the array (arrays allocated in VRAM may have overlapping IDs with arrays not allocated in VRAM).
+    uint64_t id = 0; ///< The ID of the array (arrays allocated in VRAM may have overlapping IDs with arrays allocated in RAM).
     T* data = nullptr; ///< The data.
     uint32_t capacity = 0; ///< The maximum number of elements.
     uint32_t length = 0; ///< The current number of elements.

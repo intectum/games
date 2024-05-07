@@ -15,8 +15,6 @@
 
 namespace ludo
 {
-  const uint64_t sync_timeout = 1000000000; // One second.
-
   auto draw_modes = std::unordered_map<mesh_primitive, GLenum>
   {
     { mesh_primitive::POINT_LIST, GL_POINTS },
@@ -26,28 +24,45 @@ namespace ludo
     { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
   };
 
-  void write_commands(instance& instance, const rendering_context& rendering_context, const render_options& options);
+  void write_commands(instance& instance, const render_options& options);
   void write_command(instance& instance, const render_options& options, const mesh_instance& mesh_instance);
   uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance);
   std::array<vec4, 6> frustum_planes(const camera& camera);
+
+  void prepare_render(instance& instance)
+  {
+    auto& render_programs = data<render_program>(instance);
+    auto rendering_context = first<ludo::rendering_context>(instance);
+    assert(rendering_context && "rendering context not found");
+
+    wait_for_fence(rendering_context->fence);
+
+    for (auto& render_program : render_programs)
+    {
+      render_program.active_commands.start = 0;
+    }
+  }
 
   void render(instance& instance, const render_options& options)
   {
     auto& render_programs = data<render_program>(instance);
     auto rendering_context = first<ludo::rendering_context>(instance);
+    assert(rendering_context && "rendering context not found");
 
     auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
     auto& indices = data_heap(instance, "ludo::vram_indices");
     auto& vertices = data_heap(instance, "ludo::vram_vertices");
 
-    write_commands(instance, *rendering_context, options);
+    write_commands(instance, options);
 
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_commands.id); check_opengl_error();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices.id); check_opengl_error();
     glBindBuffer(GL_ARRAY_BUFFER, vertices.id); check_opengl_error();
 
-    assert(rendering_context && "rendering context not found");
     bind(*rendering_context);
+
+    push(options.shader_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, options.shader_buffer.front.id); check_opengl_error();
 
     if (options.frame_buffer_id)
     {
@@ -67,8 +82,6 @@ namespace ludo
     {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
     }
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, options.shader_buffer.id); check_opengl_error();
 
     for (auto& render_program : render_programs)
     {
@@ -92,7 +105,15 @@ namespace ludo
     }
   }
 
-  void write_commands(instance& instance, const rendering_context& rendering_context, const render_options& options)
+  void finalize_render(instance& instance)
+  {
+    auto rendering_context = first<ludo::rendering_context>(instance);
+    assert(rendering_context && "rendering context not found");
+
+    rendering_context->fence = create_fence();
+  }
+
+  void write_commands(instance& instance, const render_options& options)
   {
     if (!options.mesh_instance_ids.empty())
     {
@@ -107,10 +128,11 @@ namespace ludo
     else if (!options.linear_octree_ids.empty())
     {
       auto& render_programs = data<render_program>(instance);
+      auto rendering_context = first<ludo::rendering_context>(instance);
 
       auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
 
-      auto planes = frustum_planes(get_camera(rendering_context));
+      auto planes = frustum_planes(get_camera(*rendering_context));
 
       // TODO take allocation out of frame?
       auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.length * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
@@ -150,8 +172,8 @@ namespace ludo
         ludo::execute(*linear_octree_compute_program, octant_count_1d / 8, octant_count_1d / 4, octant_count_1d); check_opengl_error();
       }
 
-      // TODO memory barrier can do it faster?
-      wait_for_render(instance);
+      auto fence = create_fence();
+      wait_for_fence(fence);
 
       for (auto index = 0; index < render_programs.length; index++)
       {
@@ -192,21 +214,6 @@ namespace ludo
     assert(render_program_id && "render program not specified");
 
     return render_program_id;
-  }
-
-  void wait_for_render(instance& instance)
-  {
-    auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0); check_opengl_error();
-
-    // First do a quick check.
-    auto result = glClientWaitSync(sync, 0, 0); check_opengl_error();
-    while (result == GL_TIMEOUT_EXPIRED)
-    {
-      // Now flush and wait...
-      result = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, sync_timeout); check_opengl_error();
-    }
-
-    glDeleteSync(sync); check_opengl_error();
   }
 
   // Generate the planes of the view frustum.

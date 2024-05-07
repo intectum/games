@@ -112,9 +112,9 @@ namespace ludo
       deallocate(draw_commands, element->command_buffer);
     }
 
-    if (element->shader_buffer.data)
+    if (element->shader_buffer.back.data)
     {
-      deallocate_vram(element->shader_buffer);
+      deallocate_dual(element->shader_buffer);
     }
 
     if (element->instance_buffer_front.data)
@@ -130,7 +130,7 @@ namespace ludo
     remove(data<render_program>(instance), element, partition);
   }
 
-  void bind(const render_program& render_program)
+  void bind(render_program& render_program)
   {
     glValidateProgram(render_program.id); check_opengl_error();
 
@@ -147,9 +147,10 @@ namespace ludo
     assert(validate_status && "failed to validate render program");
 
     glUseProgram(render_program.id); check_opengl_error();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.id); check_opengl_error();
 
-    // TODO do this during 'pre_render' step?
+    push(render_program.shader_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.shader_buffer.front.id); check_opengl_error();
+
     std::memcpy(render_program.instance_buffer_front.data, render_program.instance_buffer_back.data, render_program.instance_buffer_front.size);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, render_program.instance_buffer_front.id); check_opengl_error();
 

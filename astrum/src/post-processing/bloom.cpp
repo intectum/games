@@ -72,7 +72,7 @@ namespace astrum
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
       auto horizontal_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::cast<bool>(horizontal_shader_buffer, 8) = true;
+      ludo::cast<bool>(horizontal_shader_buffer.back, 8) = true;
 
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {
@@ -86,7 +86,7 @@ namespace astrum
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
       auto vertical_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::cast<bool>(horizontal_shader_buffer, 8) = false;
+      ludo::cast<bool>(horizontal_shader_buffer.back, 8) = false;
 
       ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
       {

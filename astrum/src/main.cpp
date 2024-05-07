@@ -126,17 +126,8 @@ int main()
 
   astrum::add_solar_system(inst);
 
+  ludo::add<ludo::script>(inst, ludo::prepare_render);
   ludo::add<ludo::script>(inst, ludo::update_windows);
-
-  // TODO Maybe find a better way to do this?
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto& render_programs = data<ludo::render_program>(inst);
-    for (auto& render_program : render_programs)
-    {
-      render_program.active_commands.start = 0;
-    }
-  });
 
   auto& linear_octrees = data<ludo::linear_octree>(inst);
   auto linear_octree_ids = std::vector<uint64_t>();
@@ -195,7 +186,7 @@ int main()
   astrum::add_hdr_resolve(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id);
   astrum::add_pass(inst, true);
 
-  ludo::add<ludo::script>(inst, ludo::wait_for_render);
+  ludo::add<ludo::script>(inst, ludo::finalize_render);
 
   ludo::add<ludo::script>(inst, astrum::print_timings);
 

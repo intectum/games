@@ -9,7 +9,7 @@
 
 namespace ludo
 {
-  LUDO_API void bind(const rendering_context& rendering_context);
+  LUDO_API void bind(rendering_context& rendering_context);
 }
 
 #endif // LUDO_OPENGL_RENDERING_CONTEXTS_H

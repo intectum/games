@@ -34,12 +34,12 @@ namespace astrum
         .fragment_shader_id = fragment_shader->id,
         .format = ludo::vertex_format_pt,
         .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command)),
-        .shader_buffer = ludo::allocate_vram(16 * 3)
+        .shader_buffer = ludo::allocate_dual(16 * 3)
       },
       "atmosphere"
     );
 
-    auto stream = ludo::stream(render_program->shader_buffer);
+    auto stream = ludo::stream(render_program->shader_buffer.back);
 
     auto atmosphere_image = fipImage();
     atmosphere_image.load("assets/effects/atmosphere.tiff");
@@ -67,7 +67,7 @@ namespace astrum
       auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
       auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-      ludo::cast<ludo::vec3>(render_program->shader_buffer, 16) = celestial_body_point_masses[celestial_body_index].transform.position;
+      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 16) = celestial_body_point_masses[celestial_body_index].transform.position;
     });
 
     ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,

@@ -45,7 +45,7 @@ namespace ludo
     auto light_size = 112;
     auto data_size = camera_size + 16 + light_count * light_size;
 
-    rendering_context->shader_buffer = allocate_vram(data_size);
+    rendering_context->shader_buffer = allocate_dual(data_size);
 
     // Default camera.
     set_camera(*rendering_context, camera
@@ -54,7 +54,7 @@ namespace ludo
       .projection = perspective(60.0f, 16.0f / 9.0f, 0.1f, 1000.0f)
     });
 
-    cast<uint32_t>(rendering_context->shader_buffer, camera_size) = light_count;
+    cast<uint32_t>(rendering_context->shader_buffer.back, camera_size) = light_count;
 
     // Lights that don't do anything...
     for (auto index = 0; index < light_count; index++)
@@ -78,9 +78,9 @@ namespace ludo
   template<>
   void remove<rendering_context>(instance& instance, rendering_context* element, const std::string& partition)
   {
-    if (element->shader_buffer.size)
+    if (element->shader_buffer.back.size)
     {
-      deallocate_vram(element->shader_buffer);
+      deallocate_dual(element->shader_buffer);
     }
 
     remove(data<rendering_context>(instance), element, partition);
@@ -88,7 +88,7 @@ namespace ludo
 
   camera get_camera(const rendering_context& rendering_context)
   {
-    auto stream = ludo::stream(rendering_context.shader_buffer);
+    auto stream = ludo::stream(rendering_context.shader_buffer.back);
     auto camera = ludo::camera();
 
     camera.near_clipping_distance = read<float>(stream);
@@ -102,7 +102,7 @@ namespace ludo
 
   void set_camera(rendering_context& rendering_context, const camera& camera)
   {
-    auto stream = ludo::stream(rendering_context.shader_buffer);
+    auto stream = ludo::stream(rendering_context.shader_buffer.back);
     auto view_inverse = camera.view;
     invert(view_inverse);
     auto view_projection = camera.projection * view_inverse;
@@ -124,9 +124,9 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer.back, camera_size) && "index out of bounds");
 
-    auto stream = ludo::stream(rendering_context.shader_buffer, camera_size + 16 + index * light_size);
+    auto stream = ludo::stream(rendering_context.shader_buffer.back, camera_size + 16 + index * light_size);
     light.ambient = read<vec4>(stream);
     light.diffuse = read<vec4>(stream);
     light.specular = read<vec4>(stream);
@@ -146,9 +146,9 @@ namespace ludo
     auto camera_size = 224;
     auto light_size = 112;
 
-    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer, camera_size) && "index out of bounds");
+    assert(index >= 0 && index < cast<uint32_t>(rendering_context.shader_buffer.back, camera_size) && "index out of bounds");
 
-    auto stream = ludo::stream(rendering_context.shader_buffer, camera_size + 16 + index * light_size);
+    auto stream = ludo::stream(rendering_context.shader_buffer.back, camera_size + 16 + index * light_size);
     write(stream, light.ambient);
     write(stream, light.diffuse);
     write(stream, light.specular);
@@ -161,8 +161,9 @@ namespace ludo
     write(stream, light.range);
   }
 
-  void bind(const rendering_context& rendering_context)
+  void bind(rendering_context& rendering_context)
   {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.shader_buffer.id); check_opengl_error();
+    push(rendering_context.shader_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.shader_buffer.front.id); check_opengl_error();
   }
 }

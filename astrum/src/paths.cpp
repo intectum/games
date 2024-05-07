@@ -20,9 +20,9 @@ namespace astrum
     auto render_program = ludo::add(inst, ludo::render_program { .vertex_shader_id = vertex_shader->id, .fragment_shader_id = fragment_shader->id });
     render_program->primitive = ludo::mesh_primitive::LINE_STRIP;
     render_program->format = ludo::vertex_format_p;
-    render_program->shader_buffer = ludo::allocate_vram(16 + path_count * sizeof(ludo::vec4));
+    render_program->shader_buffer = ludo::allocate_dual(16 + path_count * sizeof(ludo::vec4));
 
-    auto render_program_stream = ludo::stream(render_program->shader_buffer);
+    auto render_program_stream = ludo::stream(render_program->shader_buffer.back);
     ludo::write(render_program_stream, path_steps);
     render_program_stream.position += 12; // align 16
     for (auto index = 0; index < path_count; index++)

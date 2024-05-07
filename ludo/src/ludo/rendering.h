@@ -14,12 +14,21 @@
 namespace ludo
 {
   ///
+  /// A fence.
+  struct LUDO_API fence
+  {
+    uint64_t id = 0; ///< The ID of the fence.
+  };
+
+  ///
   /// A rendering context.
   struct LUDO_API rendering_context
   {
     uint64_t id = 0; ///< The ID of the render context.
 
-    buffer shader_buffer; ///< A buffer containing data available to all render programs within the context.
+    ludo::fence fence;
+
+    double_buffer shader_buffer; ///< A buffer containing data available to all render programs within the context.
   };
 
   ///
@@ -33,7 +42,7 @@ namespace ludo
     std::vector<uint64_t> linear_octree_ids; ///< The IDs of the linear octrees containing meshes to render.
 
     bool clear_frame_buffer = true; ///< Determines if the frame buffer will be cleared before rendering.
-    buffer shader_buffer; ///< A buffer containing data available to all render programs.
+    mutable double_buffer shader_buffer; ///< A buffer containing data available to all render programs.
   };
 
   ///
@@ -49,7 +58,7 @@ namespace ludo
     vertex_format format; ///< The vertex format this render program expects.
 
     buffer command_buffer; ///< A buffer containing commands to be executed by this render program.
-    buffer shader_buffer; ///< A buffer containing data available to this render program.
+    double_buffer shader_buffer; ///< A buffer containing data available to this render program.
 
     buffer instance_buffer_front; ///< A buffer containing instance data available to this render program.
     heap instance_buffer_back; ///< A buffer containing instance data available to this render program.
@@ -157,18 +166,21 @@ namespace ludo
   };
 
   ///
+  /// Prepares rendering for the instance. Must be called before any calls to render(instance& instance, const render_options& options)
+  /// \param instance The instance containing the meshes to render. Must contain a rendering_context.
+  LUDO_API void prepare_render(instance& instance);
+
+  ///
   /// Renders meshes within the given instance.
-  /// If no meshes or linear octrees are specified in the options:
-  /// - Renders all linear octrees, or if there are no linear octrees:
-  /// - Renders all meshes
   /// Where linear octrees are used, meshes must have bounds that can be contained within an octant of the linear octree.
   /// \param instance The instance containing the meshes to render. Must contain a rendering_context.
   /// \param options The options used to render.
   LUDO_API void render(instance& instance, const render_options& options = {});
 
   ///
-  /// Waits for rendering to complete.
-  LUDO_API void wait_for_render(instance& instance);
+  /// Finalizes rendering for the instance. Must be called before any calls to render(instance& instance, const render_options& options)
+  /// \param instance The instance containing the meshes to render. Must contain a rendering_context.
+  LUDO_API void finalize_render(instance& instance);
 
   template<>
   LUDO_API rendering_context* add(instance& instance, const rendering_context& init, const std::string& partition);
@@ -189,21 +201,21 @@ namespace ludo
 
   ///
   /// Retrieves a camera from a rendering context.
-  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(instance& instance, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to retrieve the camera from.
   /// \return The camera.
   LUDO_API camera get_camera(const rendering_context& rendering_context);
 
   ///
   /// Sets a camera of a rendering context.
-  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(instance& instance, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to set the camera of.
   /// \param camera The camera.
   LUDO_API void set_camera(rendering_context& rendering_context, const camera& camera);
 
   ///
   /// Retrieves a light from a rendering context.
-  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(instance& instance, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to retrieve the light from.
   /// \param index The index of the light within the rendering context.
   /// \return The light.
@@ -211,7 +223,7 @@ namespace ludo
 
   ///
   /// Sets a light of a rendering context.
-  /// The shader buffer must be of the form of that created via the add(context& context, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
+  /// The shader buffer must be of the form of that created via the add(instance& instance, const rendering_context& init, uint32_t light_count, const std::string& partition) function.
   /// \param rendering_context The rendering context to set the light of.
   /// \param light The light.
   /// \param index The index of the light within the rendering context.
@@ -316,6 +328,10 @@ namespace ludo
   /// \param mesh_instance The mesh instance to set the texture of.
   /// \param texture The texture.
   LUDO_API void set_texture(mesh_instance& mesh_instance, const texture& texture);
+
+  LUDO_API fence create_fence();
+
+  LUDO_API void wait_for_fence(fence& fence);
 }
 
 #endif // LUDO_RENDERING_H

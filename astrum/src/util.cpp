@@ -33,8 +33,8 @@ namespace astrum
 
     "astrum::sync_mesh_instances_with_point_masses",
 
+    "ludo::prepare_render",
     "ludo::update_windows",
-    "ludo::clear_vram_data",
     "ludo::render/geometry",
     "ludo::blit",
     "astrum::update_atmosphere",
@@ -53,7 +53,7 @@ namespace astrum
     "ludo::render/bloom/additive",
     "ludo::render/hdr_resolve",
     "ludo::blit",
-    "ludo::wait_for_render",
+    "ludo::finalize_render",
 
     "astrum::print_timings"
   };
