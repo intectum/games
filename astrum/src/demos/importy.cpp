@@ -20,7 +20,7 @@ int main()
   ludo::allocate<ludo::mesh>(inst, 1);
   ludo::allocate<ludo::mesh_instance>(inst, 1);
   ludo::allocate<ludo::render_program>(inst, 1);
-  ludo::allocate<ludo::script>(inst, 5);
+  ludo::allocate<ludo::script>(inst, 6);
   ludo::allocate<ludo::shader>(inst, 2);
   ludo::allocate<ludo::texture>(inst, 1);
   ludo::allocate<ludo::window>(inst, 1);
@@ -74,6 +74,12 @@ int main()
 
   ludo::add<ludo::script>(inst, ludo::prepare_render);
   ludo::add<ludo::script>(inst, ludo::update_windows);
+  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  {
+    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+
+    ludo::add_draw_command(*render_program, mesh_instances[0]);
+  });
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
   ludo::add<ludo::script>(inst, ludo::finalize_render);
 

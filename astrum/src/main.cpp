@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "post-processing/atmosphere.h"
 #include "post-processing/bloom.h"
-#include "post-processing/hdr_resolve.h"
+#include "post-processing/tone_mapping.h"
 #include "post-processing/pass.h"
 #include "post-processing/util.h"
 #include "solar_system.h"
@@ -178,11 +178,16 @@ int main()
       "ludo-bullet::visualizations"
     );
 
-    ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+    ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
     {
-      .frame_buffer_id = msaa_frame_buffer->id,
-      .mesh_instance_ids = { bullet_debug_mesh_instance->id },
-      .clear_frame_buffer = false
+      auto mesh_instance = ludo::first<ludo::mesh_instance>(inst, "ludo-bullet::visualizations");
+      auto render_program = ludo::first<ludo::render_program>(inst, "ludo-bullet::visualizations");
+
+      ludo::add_draw_command(*render_program, *mesh_instance);
+      ludo::render(inst, {
+        .frame_buffer_id = msaa_frame_buffer->id,
+        .clear_frame_buffer = false
+      });
     });
   }
 
@@ -191,9 +196,9 @@ int main()
   auto post_processing_vertex_shader = astrum::add_post_processing_vertex_shader(inst);
   astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
   //astrum::write_atmosphere_texture(50, 0.25f, 1.0f, astrum::terra_atmosphere_scale, "assets/effects/atmosphere.tiff", 1024);
-  astrum::add_atmosphere(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
-  astrum::add_bloom(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id, 5, 0.1f);
-  astrum::add_hdr_resolve(inst, post_processing_vertex_shader->id, post_processing_mesh_instance->id);
+  astrum::add_atmosphere(inst, post_processing_vertex_shader->id, *post_processing_mesh_instance, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
+  astrum::add_bloom(inst, post_processing_vertex_shader->id, *post_processing_mesh_instance, 5, 0.1f);
+  astrum::add_tone_mapping(inst, post_processing_vertex_shader->id, *post_processing_mesh_instance);
   astrum::add_pass(inst, true);
 
   ludo::add<ludo::script>(inst, ludo::finalize_render);

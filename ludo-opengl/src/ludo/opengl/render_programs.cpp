@@ -12,6 +12,15 @@
 
 namespace ludo
 {
+  auto draw_modes = std::unordered_map<mesh_primitive, GLenum>
+  {
+    { mesh_primitive::POINT_LIST, GL_POINTS },
+    { mesh_primitive::LINE_LIST, GL_LINES },
+    { mesh_primitive::LINE_STRIP, GL_LINE_STRIP },
+    { mesh_primitive::TRIANGLE_LIST, GL_TRIANGLES },
+    { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
+  };
+
   template<>
   render_program* add(instance& instance, const render_program& init, const std::string& partition)
   {
@@ -128,6 +137,40 @@ namespace ludo
     }
 
     remove(data<render_program>(instance), element, partition);
+  }
+
+  void add_draw_command(render_program& render_program, const mesh_instance& mesh_instance)
+  {
+    auto position = (render_program.active_commands.start + render_program.active_commands.count++) * sizeof(draw_command);
+    cast<draw_command>(render_program.command_buffer, position) =
+    {
+      .index_count = mesh_instance.indices.count,
+      .instance_count = mesh_instance.instances.count,
+      .index_start = mesh_instance.indices.start,
+      .vertex_start = mesh_instance.vertices.start,
+      .instance_start = mesh_instance.instances.start
+    };
+  }
+
+  void commit_draw_commands(const heap& draw_commands, render_program& render_program)
+  {
+    if (!render_program.active_commands.count)
+    {
+      return;
+    }
+
+    bind(render_program);
+
+    glMultiDrawElementsIndirect(
+      draw_modes[render_program.primitive],
+      GL_UNSIGNED_INT,
+      reinterpret_cast<void*>((render_program.command_buffer.data - draw_commands.data) + render_program.active_commands.start * sizeof(draw_command)),
+      static_cast<GLsizei>(render_program.active_commands.count),
+      sizeof(draw_command)
+    ); check_opengl_error();
+
+    render_program.active_commands.start += render_program.active_commands.count;
+    render_program.active_commands.count = 0;
   }
 
   void push(render_program& render_program)

@@ -7,7 +7,7 @@
 
 namespace astrum
 {
-  void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id, uint32_t iterations, float final_texture_size)
+  void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, const ludo::mesh_instance& mesh_instance, uint32_t iterations, float final_texture_size)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto original_frame_buffer = &frame_buffers[frame_buffers.length - 1];
@@ -56,12 +56,16 @@ namespace astrum
     auto previous_frame_buffer = original_frame_buffer;
     auto current_frame_buffer = add_post_processing_frame_buffer(inst);
 
-    ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+    auto brightness_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
+
+    ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      .frame_buffer_id = current_frame_buffer->id,
-      .render_program_id = brightness_render_program->id,
-      .mesh_instance_ids = { mesh_instance_id },
-      .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0)
+      ludo::add_draw_command(*brightness_render_program, mesh_instance);
+      ludo::render(inst,
+      {
+        .frame_buffer_id = current_frame_buffer->id,
+        .shader_buffer = brightness_shader_buffer
+      });
     });
 
     for (auto iteration = 0; iteration < iterations; iteration++)
@@ -74,38 +78,46 @@ namespace astrum
       auto horizontal_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
       ludo::cast<bool>(horizontal_shader_buffer.back, 8) = true;
 
-      ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+      ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
       {
-        .frame_buffer_id = current_frame_buffer->id,
-        .render_program_id = gaussian_render_program->id,
-        .mesh_instance_ids = { mesh_instance_id },
-        .shader_buffer = horizontal_shader_buffer
+        ludo::add_draw_command(*gaussian_render_program, mesh_instance);
+        ludo::render(inst,
+        {
+          .frame_buffer_id = current_frame_buffer->id,
+          .shader_buffer = horizontal_shader_buffer
+        });
       });
 
       previous_frame_buffer = current_frame_buffer;
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
       auto vertical_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::cast<bool>(horizontal_shader_buffer.back, 8) = false;
+      ludo::cast<bool>(vertical_shader_buffer.back, 8) = false;
 
-      ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+      ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
       {
-        .frame_buffer_id = current_frame_buffer->id,
-        .render_program_id = gaussian_render_program->id,
-        .mesh_instance_ids = { mesh_instance_id },
-        .shader_buffer = vertical_shader_buffer
+        ludo::add_draw_command(*gaussian_render_program, mesh_instance);
+        ludo::render(inst,
+        {
+          .frame_buffer_id = current_frame_buffer->id,
+          .shader_buffer = vertical_shader_buffer
+        });
       });
     }
 
     previous_frame_buffer = current_frame_buffer;
     current_frame_buffer = add_post_processing_frame_buffer(inst);
 
-    ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+    auto additive_shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0]);
+
+    ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      .frame_buffer_id = current_frame_buffer->id,
-      .render_program_id = additive_render_program->id,
-      .mesh_instance_ids = { mesh_instance_id },
-      .shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0])
+      ludo::add_draw_command(*additive_render_program, mesh_instance);
+      ludo::render(inst,
+      {
+        .frame_buffer_id = current_frame_buffer->id,
+        .shader_buffer = additive_shader_buffer
+      });
     });
   }
 }

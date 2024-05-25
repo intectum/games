@@ -42,8 +42,8 @@ set(SRC_FILES
     src/physics/util.cpp
     src/post-processing/atmosphere.cpp
     src/post-processing/bloom.cpp
-    src/post-processing/hdr_resolve.cpp
     src/post-processing/pass.cpp
+    src/post-processing/tone_mapping.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
     src/spatial/icotree.cpp

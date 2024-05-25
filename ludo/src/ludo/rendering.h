@@ -36,9 +36,7 @@ namespace ludo
   struct LUDO_API render_options
   {
     uint64_t frame_buffer_id = 0; ///< The ID of the frame buffer to render to. An ID of 0 will render to the window.
-    uint64_t render_program_id = 0; ///< The IDs of the render program to use. Takes precedence over render programs specified by mesh buffers.
 
-    std::vector<uint64_t> mesh_instance_ids; ///< The IDs of the mesh instances to render. Takes precedence over grids. For better performance, add these meshes to the instance first.
     std::vector<uint64_t> grid_ids; ///< The IDs of the grid containing meshes to render.
 
     bool clear_frame_buffer = true; ///< Determines if the frame buffer will be cleared before rendering.
@@ -257,6 +255,18 @@ namespace ludo
 
   template<>
   LUDO_API void remove<render_program>(instance& instance, render_program* element, const std::string& partition);
+
+  ///
+  /// Adds a draw command to the render program's command buffer and increments the active command count.
+  /// \param render_program The render program to write to.
+  /// \param mesh_instance The mes instance to write the draw command for.
+  LUDO_API void add_draw_command(render_program& render_program, const mesh_instance& mesh_instance);
+
+  ///
+  /// Commits the active draw commands for a render programs.
+  /// \param draw_commands The instance draw commands.
+  /// \param render_program The render program to commit draw commands for.
+  LUDO_API void commit_draw_commands(const heap& draw_commands, render_program& render_program);
 
   ///
   /// Pushes the state of a render program to the front buffer.

@@ -21,7 +21,7 @@ int main()
   ludo::allocate<ludo::mesh>(inst, instance_count);
   ludo::allocate<ludo::mesh_instance>(inst, instance_count);
   ludo::allocate<ludo::render_program>(inst, instance_count);
-  ludo::allocate<ludo::script>(inst, 5);
+  ludo::allocate<ludo::script>(inst, 6);
   ludo::allocate<ludo::shader>(inst, instance_count * 2);
   ludo::allocate<ludo::texture>(inst, 1);
   ludo::allocate<ludo::window>(inst, 1);
@@ -111,95 +111,6 @@ int main()
 
   ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program_pt->id }, *tuby_cuby);
 
-/*
-
-  auto low_level_position_offset = ludo::offset(render_program_sphere->format, 'f');
-  auto low_level_normal_offset = low_level_position_offset + sizeof(ludo::vec3);
-  auto low_level_color_offset = low_level_normal_offset + sizeof(ludo::vec3);
-  auto has_normals = ludo::count(render_program_sphere->format, 'n') > 0;
-  auto has_colors = ludo::count(render_program_sphere->format, 'c') > 0;
-
-  for (auto triangle_index = uint32_t(0); triangle_index < sphere_ico_counts.first / 3; triangle_index++)
-  {
-    auto triangles_per_low_detail = static_cast<uint32_t>(std::pow(4, 2));
-    auto low_detail_triangle_index = triangle_index / triangles_per_low_detail;
-    auto low_detail_base_vertex_index = low_detail_triangle_index * triangles_per_low_detail * 3;
-
-    auto low_detail_triangle_indices = std::array<uint32_t, 3>
-    {
-      low_detail_base_vertex_index,
-      low_detail_base_vertex_index + triangles_per_low_detail,
-      low_detail_base_vertex_index + triangles_per_low_detail * 2
-    };
-
-    auto low_detail_positions = std::array<ludo::vec3, 3>
-    {
-      ludo::read<ludo::vec3>(sphere->vertex_buffer, low_detail_triangle_indices[0] * render_program_sphere->format.size),
-      ludo::read<ludo::vec3>(sphere->vertex_buffer, low_detail_triangle_indices[1] * render_program_sphere->format.size),
-      ludo::read<ludo::vec3>(sphere->vertex_buffer, low_detail_triangle_indices[2] * render_program_sphere->format.size)
-    };
-
-    auto low_detail_normal = ludo::cross(low_detail_positions[1] - low_detail_positions[0], low_detail_positions[2] - low_detail_positions[0]);
-    ludo::normalize(low_detail_normal);
-
-    for (auto triangle_vertex_index = 0; triangle_vertex_index < 3; triangle_vertex_index++)
-    {
-      auto position = ludo::read<ludo::vec3>(sphere->vertex_buffer, (triangle_index * 3 + triangle_vertex_index) * render_program_sphere->format.size);
-
-      */
-/*position = ludo::project_point_onto_plane(position, low_detail_positions[triangle_vertex_index], low_detail_normal);
-
-      auto distance_0 = ludo::distance_point_to_line_segment(position, { low_detail_positions[0], low_detail_positions[1] });
-      auto distance_1 = ludo::distance_point_to_line_segment(position, { low_detail_positions[1], low_detail_positions[2] });
-      auto distance_2 = ludo::distance_point_to_line_segment(position, { low_detail_positions[2], low_detail_positions[0] });
-      if (distance_0 < distance_1 && distance_0 < distance_2)
-      {
-        auto target = low_detail_positions[1] - low_detail_positions[0];
-        position = ludo::project_point_onto_line(position, low_detail_positions[0], target);
-      }
-      else if (distance_1 < distance_2)
-      {
-        auto target = low_detail_positions[2] - low_detail_positions[1];
-        position = ludo::project_point_onto_line(position, low_detail_positions[1], target);
-      }
-      else
-      {
-        auto target = low_detail_positions[0] - low_detail_positions[2];
-        position = ludo::project_point_onto_line(position, low_detail_positions[2], target);
-      }*//*
-
-
-      auto distance_0 = ludo::length(low_detail_positions[0] - position);
-      auto distance_1 = ludo::length(low_detail_positions[1] - position);
-      auto distance_2 = ludo::length(low_detail_positions[2] - position);
-      if (distance_0 < distance_1 && distance_0 < distance_2)
-      {
-        position = low_detail_positions[0];
-      }
-      else if (distance_1 < distance_2)
-      {
-        position = low_detail_positions[1];
-      }
-      else
-      {
-        position = low_detail_positions[2];
-      }
-
-      ludo::write(sphere->vertex_buffer, (triangle_index * 3 + triangle_vertex_index) * render_program_sphere->format.size + low_level_position_offset, position);
-
-      if (has_normals)
-      {
-        ludo::write(sphere->vertex_buffer, (triangle_index * 3 + triangle_vertex_index) * render_program_sphere->format.size + low_level_normal_offset, low_detail_normal);
-      }
-
-      if (has_colors)
-      {
-        ludo::write(sphere->vertex_buffer, (triangle_index * 3 + triangle_vertex_index) * render_program_sphere->format.size + low_level_color_offset, ludo::vec4 {triangle_index % 3 == 0 ? 1.0f : 0.0f, triangle_index % 3 == 1 ? 1.0f : 0.0f, triangle_index % 3 == 2 ? 1.0f : 0.0f, 1.0f });
-      }
-    }
-  }
-*/
-
   // SCRIPTS
 
   ludo::add<ludo::script>(inst, [](ludo::instance& inst)
@@ -213,6 +124,14 @@ int main()
 
   ludo::add<ludo::script>(inst, ludo::prepare_render);
   ludo::add<ludo::script>(inst, ludo::update_windows);
+  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  {
+    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+
+    ludo::add_draw_command(*render_program_p, mesh_instances[0]);
+    ludo::add_draw_command(*render_program_pc, mesh_instances[1]);
+    ludo::add_draw_command(*render_program_pt, mesh_instances[2]);
+  });
   ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
   ludo::add<ludo::script>(inst, ludo::finalize_render);
 

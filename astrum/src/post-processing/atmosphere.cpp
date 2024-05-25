@@ -17,7 +17,7 @@ namespace astrum
   float atmospheric_density(float scale_height, float altitude);
   float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position);
 
-  void add_atmosphere(ludo::instance& inst, uint64_t vertex_shader_id, uint64_t mesh_instance_id, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
+  void add_atmosphere(ludo::instance& inst, uint64_t vertex_shader_id, const ludo::mesh_instance& mesh_instance, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto& previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
@@ -38,6 +38,9 @@ namespace astrum
       },
       "atmosphere"
     );
+
+    auto frame_buffer = add_post_processing_frame_buffer(inst);
+    auto shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], previous_frame_buffer.depth_texture_id);
 
     auto stream = ludo::stream(render_program->shader_buffer.back);
 
@@ -70,12 +73,14 @@ namespace astrum
       ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 16) = celestial_body_point_masses[celestial_body_index].transform.position;
     });
 
-    ludo::add<ludo::script, ludo::render_options>(inst, ludo::render,
+    ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      .frame_buffer_id = add_post_processing_frame_buffer(inst)->id,
-      .render_program_id = render_program->id,
-      .mesh_instance_ids = { mesh_instance_id },
-      .shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], previous_frame_buffer.depth_texture_id)
+      ludo::add_draw_command(*render_program, mesh_instance);
+      ludo::render(inst,
+      {
+        .frame_buffer_id = frame_buffer->id,
+        .shader_buffer = shader_buffer
+      });
     });
   }
 

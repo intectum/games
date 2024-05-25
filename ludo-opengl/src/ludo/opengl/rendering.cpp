@@ -9,24 +9,12 @@
 #include <ludo/windowing.h>
 
 #include "frame_buffers.h"
-#include "render_programs.h"
 #include "rendering_contexts.h"
 #include "util.h"
 
 namespace ludo
 {
-  auto draw_modes = std::unordered_map<mesh_primitive, GLenum>
-  {
-    { mesh_primitive::POINT_LIST, GL_POINTS },
-    { mesh_primitive::LINE_LIST, GL_LINES },
-    { mesh_primitive::LINE_STRIP, GL_LINE_STRIP },
-    { mesh_primitive::TRIANGLE_LIST, GL_TRIANGLES },
-    { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
-  };
-
   void write_commands(instance& instance, const render_options& options);
-  void write_command(instance& instance, const render_options& options, const mesh_instance& mesh_instance);
-  uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance);
   std::array<vec4, 6> frustum_planes(const camera& camera);
 
   void prepare_render(instance& instance)
@@ -85,23 +73,7 @@ namespace ludo
 
     for (auto& render_program : render_programs)
     {
-      if (!render_program.active_commands.count)
-      {
-        continue;
-      }
-
-      bind(render_program);
-
-      glMultiDrawElementsIndirect(
-        draw_modes[render_program.primitive],
-        GL_UNSIGNED_INT,
-        reinterpret_cast<void*>((render_program.command_buffer.data - draw_commands.data) + render_program.active_commands.start * sizeof(draw_command)),
-        static_cast<GLsizei>(render_program.active_commands.count),
-        sizeof(draw_command)
-      ); check_opengl_error();
-
-      render_program.active_commands.start += render_program.active_commands.count;
-      render_program.active_commands.count = 0;
+      commit_draw_commands(draw_commands, render_program);
     }
   }
 
@@ -115,17 +87,7 @@ namespace ludo
 
   void write_commands(instance& instance, const render_options& options)
   {
-    if (!options.mesh_instance_ids.empty())
-    {
-      for (auto mesh_instance_id : options.mesh_instance_ids)
-      {
-        auto mesh_instance = get<ludo::mesh_instance>(instance, mesh_instance_id);
-        assert(mesh_instance && "mesh instance not found");
-
-        write_command(instance, options, *mesh_instance);
-      }
-    }
-    else if (!options.grid_ids.empty())
+    if (!options.grid_ids.empty())
     {
       auto& render_programs = data<render_program>(instance);
       auto rendering_context = first<ludo::rendering_context>(instance);
@@ -179,38 +141,6 @@ namespace ludo
 
       deallocate_vram(context_buffer);
     }
-    else if (exists<mesh_instance>(instance))
-    {
-      auto& mesh_instances = data<mesh_instance>(instance);
-      for (auto& mesh_instance : mesh_instances)
-      {
-        write_command(instance, options, mesh_instance);
-      }
-    }
-  }
-
-  void write_command(instance& instance, const render_options& options, const mesh_instance& mesh_instance)
-  {
-    auto render_program = get<ludo::render_program>(instance, get_render_program_id(options, mesh_instance));
-    assert(render_program && "render program not found");
-
-    auto position = (render_program->active_commands.start + render_program->active_commands.count++) * sizeof(draw_command);
-    cast<draw_command>(render_program->command_buffer, position) =
-    {
-      .index_count = mesh_instance.indices.count,
-      .instance_count = mesh_instance.instances.count,
-      .index_start = mesh_instance.indices.start,
-      .vertex_start = mesh_instance.vertices.start,
-      .instance_start = mesh_instance.instances.start
-    };
-  }
-
-  uint64_t get_render_program_id(const render_options& options, const mesh_instance& mesh_instance)
-  {
-    auto render_program_id = options.render_program_id ? options.render_program_id : mesh_instance.render_program_id;
-    assert(render_program_id && "render program not specified");
-
-    return render_program_id;
   }
 
   // Generate the planes of the view frustum.
