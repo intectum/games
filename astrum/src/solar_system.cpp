@@ -10,6 +10,7 @@
 #include "entities/spaceships.h"
 #include "entities/terra.h"
 #include "entities/trees.h"
+#include "meshes/lods.h"
 #include "paths.h"
 #include "physics/centering.h"
 #include "physics/gravity.h"
@@ -26,10 +27,28 @@ namespace astrum
     auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
     auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
-    auto fruit_tree_1 = ludo::import(ludo::asset_folder + "/models/fruit-tree-1.dae", indices, vertices, { .merge_meshes = true });
-    ludo::add(inst, fruit_tree_1.meshes[0], "trees");
-    auto fruit_tree_2 = ludo::import(ludo::asset_folder + "/models/fruit-tree-2.dae", indices, vertices, { .merge_meshes = true });
-    ludo::add(inst, fruit_tree_2.meshes[0], "trees");
+    auto fruit_tree_lod_meshes = std::vector<ludo::mesh>();
+    if (import_assets)
+    {
+      auto fruit_tree = ludo::import(ludo::asset_folder + "/models/fruit-tree.dae", indices, vertices, { .merge_meshes = true });
+      fruit_tree_lod_meshes = build_lod_meshes(fruit_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 250, 50 });
+      std::reverse(fruit_tree_lod_meshes.begin(), fruit_tree_lod_meshes.end());
+      ludo::save(fruit_tree_lod_meshes[0], ludo::asset_folder + "/meshes/fruit-tree-0.lmesh");
+      ludo::save(fruit_tree_lod_meshes[1], ludo::asset_folder + "/meshes/fruit-tree-1.lmesh");
+      //ludo::save(fruit_tree_lod_meshes[2], ludo::asset_folder + "/meshes/fruit-tree-2.lmesh");
+    }
+    else
+    {
+      fruit_tree_lod_meshes =
+      {
+        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-0.lmesh", indices, vertices),
+        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-1.lmesh", indices, vertices),
+        //ludo::load(ludo::asset_folder + "/meshes/fruit-tree-2.lmesh", indices, vertices)
+      };
+    }
+    ludo::add(inst, fruit_tree_lod_meshes[0], "trees");
+    ludo::add(inst, fruit_tree_lod_meshes[1], "trees");
+    //ludo::add(inst, fruit_tree_lod_meshes[2], "trees");
     auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
     ludo::add(inst, minifig.animations[0], "people");
     ludo::add(inst, minifig.armatures[0], "people");

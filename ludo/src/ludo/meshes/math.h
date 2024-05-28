@@ -2,8 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_GEOMETRY_MATH_H
-#define LUDO_GEOMETRY_MATH_H
+#ifndef LUDO_MESHES_MATH_H
+#define LUDO_MESHES_MATH_H
 
 #include "../meshes.h"
 
@@ -18,4 +18,4 @@ namespace ludo
   LUDO_API mesh* subtract(instance& instance, const vertex_format& format, const mesh& lhs, const mesh& rhs, const mat4& relative_transform);
 }
 
-#endif // LUDO_GEOMETRY_MATH_H
+#endif // LUDO_MESHES_MATH_H

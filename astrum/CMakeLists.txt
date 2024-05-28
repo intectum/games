@@ -33,7 +33,10 @@ set(SRC_FILES
     src/entities/terra.cpp
     src/entities/trees.cpp
     src/main.cpp
+    src/meshes/ico_chunks.cpp
     src/meshes/ico_faces.cpp
+    src/meshes/lod_shaders.cpp
+    src/meshes/lods.cpp
     src/paths.cpp
     src/physics/centering.cpp
     src/physics/gravity.cpp
@@ -49,8 +52,6 @@ set(SRC_FILES
     src/spatial/icotree.cpp
     src/terrain/mesh.cpp
     src/terrain/metadata.cpp
-    src/terrain/shaders.cpp
-    src/terrain/sphere_ico.cpp
     src/terrain/static_bodies.cpp
     src/terrain/terrain.cpp
     src/terrain/terrain_chunk.cpp
@@ -90,6 +91,8 @@ add_custom_command(TARGET astrum PRE_BUILD
 #########################
 add_executable(importy src/demos/importy.cpp)
 set_target_properties(importy PROPERTIES INSTALL_RPATH "./lib")
+add_executable(loddy src/demos/loddy.cpp src/meshes/lod_shaders.cpp src/meshes/lods.cpp)
+set_target_properties(loddy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(noisy src/demos/noisy.cpp)
 set_target_properties(noisy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(physicy src/demos/physicy.cpp)
@@ -106,6 +109,11 @@ target_link_libraries(importy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(importy ludo-glfw)
 target_link_libraries(importy ludo-opengl)
 target_link_libraries(importy ludo)
+target_link_libraries(loddy ludo-assimp)
+target_link_libraries(loddy ludo-bullet) # TODO revise, only for assimp...
+target_link_libraries(loddy ludo-glfw)
+target_link_libraries(loddy ludo-opengl)
+target_link_libraries(loddy ludo)
 target_link_libraries(noisy ludo-glfw)
 target_link_libraries(noisy ludo-opengl)
 target_link_libraries(noisy ludo)

@@ -20,9 +20,7 @@ namespace astrum
     ludo::init(*render_program, ludo::format(true, true, true, true), render_commands, 1);
 
     auto render_mesh = ludo::add(inst, ludo::render_mesh(), "people");
-    ludo::init(*render_mesh);
-    ludo::connect(*render_mesh, *render_program, 1);
-    ludo::connect(*render_mesh, *mesh, indices, vertices);
+    ludo::init(*render_mesh, *render_program, *mesh, indices, vertices, 1);
 
     ludo::instance_transform(*render_mesh) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
     ludo::add(*grid, *render_mesh, initial_transform.position);

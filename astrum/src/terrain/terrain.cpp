@@ -1,9 +1,9 @@
 #include <fstream>
 
 #include "constants.h"
+#include "meshes/lod_shaders.h"
 #include "metadata.h"
 #include "terrain.h"
-#include "shaders.h"
 #include "static_bodies.h"
 #include "terrain_chunk.h"
 
@@ -35,35 +35,40 @@ namespace astrum
       write_terrain_metadata(write_stream, *terrain);
     }
 
-    terrain->format.components.emplace_back(std::pair { 'f', 3 });
-    terrain->format.size += sizeof(float) * 3;
-    if (terrain->format.has_normal)
-    {
-      terrain->format.components.emplace_back(std::pair { 'f', 3 });
-      terrain->format.size += sizeof(float) * 3;
-    }
-    if (terrain->format.has_color)
-    {
-      terrain->format.components.emplace_back(std::pair { 'f', 4 });
-      terrain->format.size += sizeof(float) * 4;
-    }
+    terrain->format.components.insert(terrain->format.components.end(), terrain->format.components.begin(), terrain->format.components.end());
+    terrain->format.size *= 2;
 
     auto render_program = ludo::add(
       inst,
       ludo::render_program
       {
         .format = terrain->format,
-        .shader_buffer = ludo::allocate_dual(sizeof(ludo::mat4)),
-        .instance_size = 2 * sizeof(float)
+        .shader_buffer = ludo::allocate_dual(sizeof(ludo::mat4) + terrain->lods.size() * 2 * sizeof(float)),
+        .instance_size = sizeof(uint32_t)
       },
       "terrain"
     );
 
-    auto vertex_shader_code = terrain_vertex_shader_code(terrain->format);
-    auto fragment_shader_code = terrain_fragment_shader_code(terrain->format);
+    auto vertex_shader_code = lod_vertex_shader_code(terrain->format, true);
+    auto fragment_shader_code = lod_fragment_shader_code(terrain->format, true);
     ludo::init(*render_program, vertex_shader_code, fragment_shader_code, render_commands, terrain->chunks.size());
 
-    ludo::cast<ludo::mat4>(render_program->shader_buffer.back, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
+    auto stream = ludo::stream(render_program->shader_buffer.back);
+    ludo::write(stream, ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation)));
+    for (auto lod_index = uint32_t(0); lod_index < terrain->lods.size(); lod_index++)
+    {
+      auto is_highest_detail = lod_index == terrain->lods.size() - 1;
+
+      auto max_distance = terrain->lods[lod_index].max_distance;
+      auto min_distance = is_highest_detail ? 0.0f : terrain->lods[lod_index + 1].max_distance;
+      auto distance_range = max_distance - min_distance;
+
+      auto low_detail_distance = min_distance + distance_range * 0.66f;
+      auto high_detail_distance = min_distance + distance_range * 0.33f;
+
+      ludo::write(stream, low_detail_distance);
+      ludo::write(stream, high_detail_distance);
+    }
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
     auto grid = ludo::add(
@@ -88,50 +93,23 @@ namespace astrum
     for (auto chunk_index = uint32_t(0); chunk_index < terrain->chunks.size(); chunk_index++)
     {
       auto& chunk = terrain->chunks[chunk_index];
-      chunk.lod_index = terrain_chunk_lod_index(*terrain, chunk_index, terrain->lods, camera_position, point_mass.transform.position);
+      chunk.lod_index = find_lod_index(terrain->lods, camera_position, point_mass.transform.position + chunk.center, chunk.normal);
 
       auto count = 3 * static_cast<uint32_t>(std::pow(4, init.lods[chunk.lod_index].level - init.lods[0].level));
 
       auto mesh = ludo::add(inst, ludo::mesh(), "terrain");
       ludo::init(*mesh, indices, vertices, count, count, render_program->format.size);
 
-      auto render_mesh = add(
-        inst,
-        ludo::render_mesh
-        {
-          .render_program_id = render_program->id,
-          .instances =
-          {
-            .start = chunk_index,
-            .count = 1
-          },
-          .indices =
-          {
-            .start = static_cast<uint32_t>((mesh->index_buffer.data - indices.data) / sizeof(uint32_t)),
-            .count = static_cast<uint32_t>(mesh->index_buffer.size / sizeof(uint32_t))
-          },
-          .vertices =
-          {
-            .start = static_cast<uint32_t>((mesh->vertex_buffer.data - vertices.data) / mesh->vertex_size),
-            .count = static_cast<uint32_t>(mesh->vertex_buffer.size / mesh->vertex_size)
-          },
-          .instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size),
-          .instance_size = render_program->instance_size
-        },
-        "terrain"
-      );
+      auto render_mesh = add(inst, ludo::render_mesh { .instances = { .start = chunk_index, .count = 1 } }, "terrain" );
       ludo::init(*render_mesh);
+      ludo::connect(*render_mesh, *render_program, 1);
+      ludo::connect(*render_mesh, *mesh, indices, vertices);
+      ludo::cast<uint32_t>(render_mesh->instance_buffer, 0) = chunk.lod_index;
 
       chunk.mesh_id = mesh->id;
       chunk.render_mesh_id = render_mesh->id;
 
-      if (chunk.mesh_id == 33844)
-      {
-        std::cout << "33844 added" << std::endl;
-      }
-
       load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
-      init_terrain_chunk(*terrain, chunk_index, *render_mesh);
 
       ludo::add(*grid, *render_mesh, point_mass.transform.position + chunk.center);
     }
@@ -204,7 +182,7 @@ namespace astrum
           continue;
         }
 
-        auto new_lod_index = terrain_chunk_lod_index(terrain, chunk_index, terrain.lods, camera_position, new_position);
+        auto new_lod_index = find_lod_index(terrain.lods, camera_position, new_position + chunk.center, chunk.normal);
         if (new_lod_index != chunk.lod_index)
         {
           chunk.locked = true;
@@ -235,21 +213,16 @@ namespace astrum
               ludo::de_init(*mesh, indices, vertices);
               ludo::remove(inst, mesh, "terrain");
 
+              ludo::connect(*render_mesh, new_mesh_copy, indices, vertices);
+
               chunk.mesh_id = new_mesh_copy.id;
-
-              render_mesh->indices.start = (new_mesh_copy.index_buffer.data - indices.data) / sizeof(uint32_t);
-              render_mesh->indices.count = new_mesh_copy.index_buffer.size / sizeof(uint32_t);
-
-              render_mesh->vertices.start = (new_mesh_copy.vertex_buffer.data - vertices.data) / new_mesh_copy.vertex_size;
-              render_mesh->vertices.count = new_mesh_copy.vertex_buffer.size / new_mesh_copy.vertex_size;
-
               chunk.lod_index = new_lod_index;
               chunk.locked = false;
 
               ludo::remove(grid, *render_mesh, new_position + chunk.center);
               ludo::add(grid, *render_mesh, new_position + chunk.center);
 
-              init_terrain_chunk(terrain, chunk_index, *render_mesh);
+              ludo::cast<uint32_t>(render_mesh->instance_buffer, 0) = chunk.lod_index;
             };
           });
         }

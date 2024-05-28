@@ -2,8 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_QUAT_H_
-#define LUDO_MATH_QUAT_H_
+#ifndef LUDO_MATH_QUAT_H
+#define LUDO_MATH_QUAT_H
 
 #include <array>
 #include <ostream>
@@ -153,4 +153,4 @@ namespace ludo
   quat slerp(const quat& from, const quat& to, float time);
 }
 
-#endif /* LUDO_MATH_QUAT_H_ */
+#endif /* LUDO_MATH_QUAT_H */

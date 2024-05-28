@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <fstream>
+
 #include "animation.h"
 #include "meshes.h"
 
@@ -75,5 +77,70 @@ namespace ludo
     {
       deallocate(vertices, mesh.vertex_buffer);
     }
+  }
+
+  mesh load(const std::string& file_name, heap& indices, heap& vertices)
+  {
+    auto stream = std::ifstream(file_name);
+
+    return load(stream, indices, vertices);
+  }
+
+  mesh load(std::istream& stream, heap& indices, heap& vertices)
+  {
+    auto mesh = ludo::mesh();
+    mesh.id = next_id++;
+
+    stream.read(reinterpret_cast<char*>(&mesh.index_buffer.size), sizeof(uint64_t));
+    mesh.index_buffer = allocate(indices, mesh.index_buffer.size);
+    stream.read(reinterpret_cast<char*>(mesh.index_buffer.data), static_cast<int64_t>(mesh.index_buffer.size));
+
+    stream.read(reinterpret_cast<char*>(&mesh.vertex_size), sizeof(uint32_t));
+
+    stream.read(reinterpret_cast<char*>(&mesh.vertex_buffer.size), sizeof(uint64_t));
+    mesh.vertex_buffer = allocate(vertices, mesh.vertex_buffer.size, mesh.vertex_size);
+    stream.read(reinterpret_cast<char*>(mesh.vertex_buffer.data), static_cast<int64_t>(mesh.vertex_buffer.size));
+
+    return mesh;
+  }
+
+  void save(const mesh& mesh, const std::string& file_name)
+  {
+    auto stream = std::ofstream(file_name);
+
+    save(mesh, stream);
+  }
+
+  void save(const mesh& mesh, std::ostream& stream)
+  {
+    stream.write(reinterpret_cast<const char*>(&mesh.index_buffer.size), sizeof(uint64_t));
+    stream.write(reinterpret_cast<const char*>(mesh.index_buffer.data), static_cast<int64_t>(mesh.index_buffer.size));
+
+    stream.write(reinterpret_cast<const char*>(&mesh.vertex_size), sizeof(uint32_t));
+
+    stream.write(reinterpret_cast<const char*>(&mesh.vertex_buffer.size), sizeof(uint64_t));
+    stream.write(reinterpret_cast<const char*>(mesh.vertex_buffer.data), static_cast<int64_t>(mesh.vertex_buffer.size));
+  }
+
+  std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name)
+  {
+    auto stream = std::ifstream(file_name);
+
+    return mesh_counts(stream);
+  }
+
+  std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream)
+  {
+    auto index_buffer_size = uint64_t(0);
+    stream.read(reinterpret_cast<char*>(&index_buffer_size), sizeof(uint64_t));
+    stream.seekg(static_cast<int64_t>(index_buffer_size), std::ios_base::cur);
+
+    auto vertex_size = uint32_t(0);
+    stream.read(reinterpret_cast<char*>(&vertex_size), sizeof(uint32_t));
+
+    auto vertex_buffer_size = uint64_t(0);
+    stream.read(reinterpret_cast<char*>(&vertex_buffer_size), sizeof(uint64_t));
+
+    return { index_buffer_size / sizeof(uint32_t), vertex_buffer_size / vertex_size };
   }
 }

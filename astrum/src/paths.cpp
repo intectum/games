@@ -50,9 +50,7 @@ namespace astrum
       }
 
       auto render_mesh = ludo::add(inst, ludo::render_mesh(), "prediction-paths");
-      ludo::init(*render_mesh);
-      ludo::connect(*render_mesh, *render_program, 1);
-      ludo::connect(*render_mesh, *mesh, indices, vertices);
+      ludo::init(*render_mesh, *render_program, *mesh, indices, vertices, 1);
 
       // TODO this grid is not a thing anymore...
       ludo::add(always_render_grid, *render_mesh, ludo::vec3_zero);

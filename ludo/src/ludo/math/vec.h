@@ -2,8 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_VEC_H_
-#define LUDO_MATH_VEC_H_
+#ifndef LUDO_MATH_VEC_H
+#define LUDO_MATH_VEC_H
 
 #include <array>
 #include <ostream>
@@ -271,4 +271,4 @@ namespace ludo
   float angle_between(const vec3& a, const vec3& b);
 }
 
-#endif /* LUDO_MATH_VEC_H_ */
+#endif /* LUDO_MATH_VEC_H */

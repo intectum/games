@@ -102,7 +102,7 @@ int get_render_program_index(uint64_t id)
   return -1;
 }
 
-// Based on: https://old.cescg.org/CESCG-2002/DSykoraJJelinek/index.html
+// Based on https://old.cescg.org/CESCG-2002/DSykoraJJelinek/index.html
 int frustum_test(aabb_t bounds)
 {
   for (uint index = 0; index < 6; index++)

@@ -22,7 +22,7 @@ int main()
   });
 
   auto max_instance_count = uint32_t(1920 * 1080);
-  auto circle_counts = ludo::circle_counts({ .divisions = 20 });
+  auto circle_counts = ludo::circle_counts(ludo::vertex_format_pc, { .divisions = 20 });
 
   auto render_commands = ludo::allocate_heap_vram(2 * max_instance_count * sizeof(ludo::render_command));
   auto indices = ludo::allocate_heap_vram(2 * circle_counts.first * sizeof(uint32_t));
@@ -38,21 +38,15 @@ int main()
 
   auto exclusion_zone_mesh = ludo::mesh();
   ludo::init(exclusion_zone_mesh, indices, vertices, circle_counts.first, circle_counts.second, render_program->format.size);
-  ludo::colorize(exclusion_zone_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 0.5f, 1.0f });
 
   auto exclusion_zone_render_mesh = ludo::render_mesh { .instances = { 0, 0 } };
-  ludo::init(exclusion_zone_render_mesh);
-  ludo::connect(exclusion_zone_render_mesh, *render_program, max_instance_count);
-  ludo::connect(exclusion_zone_render_mesh, exclusion_zone_mesh, indices, vertices);
+  ludo::init(exclusion_zone_render_mesh, *render_program, exclusion_zone_mesh, indices, vertices, max_instance_count);
 
   auto sample_mesh = ludo::mesh();
   ludo::init(sample_mesh, indices, vertices, circle_counts.first, circle_counts.second, render_program->format.size);
-  ludo::colorize(sample_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 1.0f, 1.0f });
 
   auto sample_render_mesh = ludo::render_mesh { .instances = { max_instance_count, 0 } };
-  ludo::init(sample_render_mesh);
-  ludo::connect(sample_render_mesh, *render_program, max_instance_count);
-  ludo::connect(sample_render_mesh, sample_mesh, indices, vertices);
+  ludo::init(sample_render_mesh, *render_program, sample_mesh, indices, vertices, max_instance_count);
 
   // POISSON DISC
   // Based on https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
@@ -62,13 +56,8 @@ int main()
   auto minimum_distance = 10.0f / 180.0f * ludo::pi;
   auto maximum_attempts = 30;
 
-  auto index_index = uint32_t(0);
-  auto vertex_index = uint32_t(0);
-  ludo::circle(sample_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance * 0.1f, 0.0f, 0.0f }, .divisions = 20 });
-
-  index_index = uint32_t(0);
-  vertex_index = uint32_t(0);
-  ludo::circle(exclusion_zone_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance, 0.0f, 0.0f }, .divisions = 20 });
+  ludo::circle(sample_mesh, render_program->format, 0, 0, { .dimensions = { minimum_distance * 0.1f, 0.0f, 0.0f }, .divisions = 20, .color = { 0.0f, 0.0f, 0.5f, 1.0f } });
+  ludo::circle(exclusion_zone_mesh, render_program->format, 0, 0, { .dimensions = { minimum_distance, 0.0f, 0.0f }, .divisions = 20, .color = { 0.0f, 0.0f, 1.0f, 1.0f } });
 
   auto samples = std::vector<ludo::vec3> { { 0.0f, 1.0f, 0.0f } };
   auto active_samples = std::vector<ludo::vec3> { { 0.0f, 1.0f, 0.0f } }; // TODO make this a random point

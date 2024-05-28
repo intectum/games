@@ -70,9 +70,7 @@ int main()
   ludo::init(physics_mesh, indices, vertices, 10000, 10000, ludo::vertex_format_pc.size);
 
   auto physics_render_mesh = ludo::render_mesh();
-  ludo::init(physics_render_mesh);
-  ludo::connect(physics_render_mesh, *render_program);
-  ludo::connect(physics_render_mesh, physics_mesh, indices, vertices);
+  ludo::init(physics_render_mesh, *render_program, physics_mesh, indices, vertices, 1);
 
   // SCRIPTS
 

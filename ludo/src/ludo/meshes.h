@@ -5,6 +5,9 @@
 #ifndef LUDO_GEOMETRY_H
 #define LUDO_GEOMETRY_H
 
+#include <istream>
+#include <ostream>
+
 #include "data/buffers.h"
 #include "data/data.h"
 #include "math/mat.h"
@@ -144,6 +147,50 @@ namespace ludo
   /// \param indices The indices to reclaim to.
   /// \param vertices The vertices to reclaim to.
   LUDO_API void de_init(mesh& mesh, heap& indices, heap& vertices);
+
+  ///
+  /// Loads a mesh from a ludo mesh file.
+  /// \param file_name The name of the file containing the mesh data.
+  /// \param indices The indices to allocate from.
+  /// \param vertices The vertices to allocate from.
+  /// \return The mesh.
+  LUDO_API mesh load(const std::string& file_name, heap& indices, heap& vertices);
+
+  ///
+  /// Loads a mesh from a stream.
+  /// \param stream The mesh data.
+  /// \param indices The indices to allocate from.
+  /// \param vertices The vertices to allocate from.
+  /// \return The mesh.
+  LUDO_API mesh load(std::istream& stream, heap& indices, heap& vertices);
+
+  ///
+  /// Saves a mesh to a ludo mesh file.
+  /// \param mesh The mesh.
+  /// \param file_name The name of the file to save to.
+  LUDO_API void save(const mesh& mesh, const std::string& file_name);
+
+  ///
+  /// Saves a mesh to a stream.
+  /// \param mesh The mesh.
+  /// \param stream The mesh data.
+  LUDO_API void save(const mesh& mesh, std::ostream& stream);
+
+  ///
+  /// Reads mesh counts from a ludo mesh file.
+  /// \param file_name The name of the file containing the mesh data.
+  /// \param indices The indices to allocate from.
+  /// \param vertices The vertices to allocate from.
+  /// \return The mesh counts.
+  LUDO_API std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name);
+
+  ///
+  /// Reads mesh counts mesh from a stream.
+  /// \param stream The mesh data.
+  /// \param indices The indices to allocate from.
+  /// \param vertices The vertices to allocate from.
+  /// \return The mesh counts.
+  LUDO_API std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream);
 }
 
 #endif // LUDO_GEOMETRY_H

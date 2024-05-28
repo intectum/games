@@ -130,7 +130,7 @@ namespace ludo
   /// Determines if the stream has reached the end of the data.
   /// \param stream The stream to check.
   /// \return True the stream has reached the end of the data, false otherwise.
-  LUDO_API bool end_reached(stream& stream);
+  LUDO_API bool ended(stream& stream);
 }
 
 #include "buffers.hpp"

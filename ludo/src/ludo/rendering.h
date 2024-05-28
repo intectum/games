@@ -190,11 +190,14 @@ namespace ludo
 
   ///
   /// Initializes a rendering context.
-  /// The shader buffer will be of the form: <camera><light_count><light_0>...<light_n>
+  /// The shader buffer will be of the form <camera><light_count><light_0>...<light_n>
   /// \param rendering_context The rendering context.
   /// \param light_count The number of lights the rendering context can contain.
   LUDO_API void init(rendering_context& rendering_context, uint32_t light_count);
 
+  ///
+  /// De-initializes a rendering context.
+  /// \param rendering_context The rendering context.
   LUDO_API void de_init(rendering_context& rendering_context);
 
   ///
@@ -235,9 +238,9 @@ namespace ludo
   /// \param render_program The render program.
   /// \param format The vertex format to build the render program for.
   /// \param render_commands The render commands to allocate from.
-  /// \param capacity The maximum number of render meshes that can be rendered per frame.
+  /// \param instance_capacity The maximum number of instances.
   /// \param init_instances Determines if the instance buffers should be initialized.
-  LUDO_API void init(render_program& render_program, const vertex_format& format, heap& render_commands, uint32_t capacity);
+  LUDO_API void init(render_program& render_program, const vertex_format& format, heap& render_commands, uint32_t instance_capacity);
 
   ///
   /// Initializes a render program.
@@ -245,9 +248,9 @@ namespace ludo
   /// \param vertex_shader_file_name The name of the file containing the vertex shader source code.
   /// \param fragment_shader_file_name The name of the file containing the fragment shader source code.
   /// \param render_commands The render commands to allocate from.
-  /// \param capacity The maximum number of render meshes that can be rendered per frame.
+  /// \param instance_capacity The maximum number of instances.
   /// \param init_instances Determines if the instance buffers should be initialized.
-  LUDO_API void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, heap& render_commands, uint32_t capacity);
+  LUDO_API void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, heap& render_commands, uint32_t instance_capacity);
 
   ///
   /// Initializes a render program.
@@ -255,9 +258,9 @@ namespace ludo
   /// \param vertex_shader_code The vertex shader source code.
   /// \param fragment_shader_code The fragment shader source code.
   /// \param render_commands The render commands to allocate from.
-  /// \param capacity The maximum number of render meshes that can be rendered per frame.
+  /// \param instance_capacity The maximum number of instances.
   /// \param init_instances Determines if the instance buffers should be initialized.
-  LUDO_API void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code, heap& render_commands, uint32_t capacity);
+  LUDO_API void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code, heap& render_commands, uint32_t instance_capacity);
 
   ///
   /// Initializes a render program.
@@ -306,6 +309,17 @@ namespace ludo
   LUDO_API void init(render_mesh& render_mesh);
 
   ///
+  /// Initializes a render mesh by connecting to a render program and a mesh, then initializes it's instances.
+  /// See init_instances for the assumed instance format.
+  /// \param render_mesh The render mesh.
+  /// \param render_program The render program.
+  /// \param mesh The mesh.
+  /// \param indices The indices the mesh was allocated from. TODO remove from mesh so this is not needed?
+  /// \param vertices The vertices the mesh was allocated from. TODO remove from mesh so this is not needed?
+  /// \param instance_capacity The maximum number of instances.
+  LUDO_API void init(render_mesh& render_mesh, render_program& render_program, const mesh& mesh, const heap& indices, const heap& vertices, uint32_t instance_capacity);
+
+  ///
   /// De-initializes a render mesh.
   /// \param render_mesh The render mesh.
   LUDO_API void de_init(render_mesh& render_mesh);
@@ -314,8 +328,8 @@ namespace ludo
   /// Connects a render mesh to a render program.
   /// \param render_mesh The render mesh.
   /// \param render_program The render program.
-  /// \param capacity The maximum number of instances.
-  LUDO_API void connect(render_mesh& render_mesh, render_program& render_program, uint32_t capacity = 1);
+  /// \param instance_capacity The maximum number of instances.
+  LUDO_API void connect(render_mesh& render_mesh, render_program& render_program, uint32_t instance_capacity);
 
   ///
   /// Disconnects a render mesh from a render program.
@@ -330,6 +344,14 @@ namespace ludo
   /// \param indices The indices the mesh was allocated from. TODO remove from mesh so this is not needed?
   /// \param vertices The vertices the mesh was allocated from. TODO remove from mesh so this is not needed?
   LUDO_API void connect(render_mesh& render_mesh, const mesh& mesh, const heap& indices, const heap& vertices);
+
+  ///
+  /// Initializes the instances of a render mesh.
+  /// Instances are assumed to be of the form <transform>[<texture>][<bone transforms>]
+  /// \param render_mesh The render mesh.
+  /// \param mesh The mesh.
+  /// \param instance_count The number of instances to initialize.
+  LUDO_API void init_instances(render_mesh& render_mesh, const mesh& mesh, uint32_t instance_count);
 
   ///
   /// Retrieves the transform from a render mesh.
@@ -354,8 +376,14 @@ namespace ludo
   ludo::mat4* instance_bone_transforms(render_mesh& render_mesh, uint32_t instance_index = 0);
   const ludo::mat4* instance_bone_transforms(const render_mesh& render_mesh, uint32_t instance_index = 0);
 
+  ///
+  /// Initializes a frame buffer.
+  /// \param frame_buffer The frame buffer.
   LUDO_API void init(frame_buffer& frame_buffer);
 
+  ///
+  /// De-initializes a frame buffer.
+  /// \param frame_buffer The frame buffer.
   LUDO_API void de_init(frame_buffer& frame_buffer);
 
   ///

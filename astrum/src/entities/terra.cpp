@@ -4,7 +4,6 @@
 #include <libnoise/noise.h>
 
 #include "../constants.h"
-#include "../spatial/icotree.h"
 #include "../terrain/mesh.h"
 #include "../terrain/terrain.h"
 #include "terra.h"
@@ -139,7 +138,7 @@ namespace astrum
   // did not work because it required you to keep track of all the previously planted trees
   // which in the case of a planet could be hundreds of thousands and memory was a problem (as well as speed).
   // Perhaps more sophisticated poisson disc sampling does not have these same limitations?
-  // For placing them at regular intervals and applying some jitter to their positions seems adequate.
+  // For now, placing them at regular intervals and applying some jitter to their positions seems adequate.
   std::vector<tree> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index)
   {
     auto perlin_forest = noise::module::Perlin();
@@ -189,7 +188,7 @@ namespace astrum
       {
         .position = position,
         .rotation = tree_distribution(tree_random) * ludo::two_pi,
-        .scale = tree_distribution(tree_random) / 2.0f + 0.5f
+        .scale = tree_distribution(tree_random) * 0.5f + 0.5f
       });
     }
 

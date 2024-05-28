@@ -52,7 +52,7 @@ namespace ludo
     std::memcpy(buffer.front.data, buffer.back.data, buffer.front.size);
   }
 
-  bool end_reached(stream& stream)
+  bool ended(stream& stream)
   {
     return stream.position >= stream.size;
   }

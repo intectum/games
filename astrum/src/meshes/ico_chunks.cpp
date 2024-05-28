@@ -1,5 +1,5 @@
-#include "../meshes/ico_faces.h"
-#include "sphere_ico.h"
+#include "ico_faces.h"
+#include "ico_chunks.h"
 
 namespace astrum
 {

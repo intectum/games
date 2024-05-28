@@ -3,9 +3,10 @@
 
 #include <ludo/api.h>
 
+#include "meshes/lods.h"
+
 namespace astrum
 {
-  struct lod;
   struct patch;
   struct tree;
 
@@ -63,12 +64,6 @@ namespace astrum
 
     uint32_t person_index = 0;
     uint32_t spaceship_index = 0;
-  };
-
-  struct lod
-  {
-    uint32_t level;
-    float max_distance;
   };
 
   struct map_controls

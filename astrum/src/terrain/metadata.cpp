@@ -46,7 +46,7 @@ namespace astrum
   void write_terrain_metadata(std::ostream& stream, const terrain& terrain)
   {
     auto chunk_count = terrain.chunks.size();
-    stream.write(reinterpret_cast<char*>(&chunk_count), sizeof(uint64_t));
+    stream.write(reinterpret_cast<const char*>(&chunk_count), sizeof(uint64_t));
     for (auto& chunk : terrain.chunks)
     {
       stream.write(reinterpret_cast<const char*>(&chunk.center), sizeof(ludo::vec3));

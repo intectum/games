@@ -25,7 +25,7 @@ class ArrayIterator:
         return self.__next__()
 
 class ArrayBufferPrinter:
-    "Print an array_buffer"
+    "Print an array"
 
     def __init__ (self, val):
         self.val = val
@@ -33,17 +33,16 @@ class ArrayBufferPrinter:
     def children (self):
         element_type = self.val.type.template_argument(0)
         start = self.val['data'].cast(element_type.pointer())
-        return ArrayIterator(start, start + self.val['array_size'])
+        return ArrayIterator(start, start + self.val['length'])
 
     def to_string (self):
         element_type = self.val.type.template_argument(0)
-        capacity = self.val['size'] / element_type.sizeof
-        return '%s of length %d, capacity %d' % (self.val.type, self.val['array_size'], capacity)
+        return '%s of length %d, capacity %d' % (self.val.type, self.val['length'], self.val['capacity'])
 
     def display_hint (self):
         return 'array'
 
-ludo.add_printer('array_buffer', '^ludo::(array|partitioned)_buffer', ArrayBufferPrinter)
+ludo.add_printer('array', '^ludo::(array|partitioned_array)', ArrayBufferPrinter)
 
 gdb.printing.register_pretty_printer(gdb.current_objfile(), ludo)
 end

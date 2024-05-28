@@ -62,9 +62,7 @@ int main()
   ludo::box(cuby_mesh, render_program_p->format, 0, 0);
 
   auto cuby_render_mesh = ludo::render_mesh();
-  ludo::init(cuby_render_mesh);
-  ludo::connect(cuby_render_mesh, *render_program_p, 1);
-  ludo::connect(cuby_render_mesh, cuby_mesh, indices, vertices);
+  ludo::init(cuby_render_mesh, *render_program_p, cuby_mesh, indices, vertices, 1);
 
   // RUBY
 
@@ -73,9 +71,7 @@ int main()
   ludo::box(ruby_mesh, render_program_pc->format, 0, 0, { .color = ludo::vec4(1.0f, 0.0f, 0.0f, 1.0f) });
 
   auto ruby_render_mesh = ludo::render_mesh();
-  ludo::init(ruby_render_mesh);
-  ludo::connect(ruby_render_mesh, *render_program_pc, 1);
-  ludo::connect(ruby_render_mesh, ruby_mesh, indices, vertices);
+  ludo::init(ruby_render_mesh, *render_program_pc, ruby_mesh, indices, vertices, 1);
 
   // TUBY
 
@@ -84,9 +80,7 @@ int main()
   ludo::box(tuby_mesh, render_program_pt->format, 0, 0);
 
   auto tuby_render_mesh = ludo::render_mesh();
-  ludo::init(tuby_render_mesh);
-  ludo::connect(tuby_render_mesh, *render_program_pt, 1);
-  ludo::connect(tuby_render_mesh, tuby_mesh, indices, vertices);
+  ludo::init(tuby_render_mesh, *render_program_pt, tuby_mesh, indices, vertices, 1);
 
   // SCRIPTS
 

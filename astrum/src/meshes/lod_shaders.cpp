@@ -4,55 +4,55 @@
 
 #include <ludo/opengl/default_shaders.h>
 
-#include "shaders.h"
+#include "lod_shaders.h"
 
 namespace astrum
 {
-  void write_terrain_types(std::ostream& stream, const ludo::vertex_format& format);
-  void write_terrain_inputs(std::ostream& stream, const ludo::vertex_format& format);
-  void write_terrain_buffers(std::ostream& stream, const ludo::vertex_format& format);
-  void write_terrain_vertex_main(std::ostream& stream, const ludo::vertex_format& format);
-  void write_terrain_fragment_main(std::ostream& stream, const ludo::vertex_format& format);
+  void write_lod_types(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform);
+  void write_lod_inputs(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform);
+  void write_lod_buffers(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform);
+  void write_lod_vertex_main(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform);
+  void write_lod_fragment_main(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform);
 
-  std::stringstream terrain_vertex_shader_code(const ludo::vertex_format& format)
+  std::stringstream lod_vertex_shader_code(const ludo::vertex_format& format, bool shared_transform)
   {
     auto code = std::stringstream();
     write_header(code, format);
-    write_terrain_types(code, format);
-    write_terrain_inputs(code, format);
-    write_terrain_buffers(code, format);
+    write_lod_types(code, format, shared_transform);
+    write_lod_inputs(code, format, shared_transform);
+    write_lod_buffers(code, format, shared_transform);
     code << std::endl;
     code << "// Output" << std::endl;
     code << std::endl;
     code << "out point_t point;" << std::endl;
     code << "out sampler2D sampler;" << std::endl;
-    write_terrain_vertex_main(code, format);
+    write_lod_vertex_main(code, format, shared_transform);
 
     return code;
   }
 
-  std::stringstream terrain_fragment_shader_code(const ludo::vertex_format& format)
+  std::stringstream lod_fragment_shader_code(const ludo::vertex_format& format, bool shared_transform)
   {
     auto code = std::stringstream();
     write_header(code, format);
-    write_terrain_types(code, format);
+    write_lod_types(code, format, shared_transform);
     code << std::endl;
     code << "// Input" << std::endl;
     code << std::endl;
     code << "in point_t point;" << std::endl;
     code << "in flat sampler2D sampler;" << std::endl;
-    write_terrain_buffers(code, format);
+    write_lod_buffers(code, format, shared_transform);
     code << std::endl;
     code << "// Output" << std::endl;
     code << std::endl;
     code << "out vec4 color;" << std::endl;
     write_lighting_functions(code, format);
-    write_terrain_fragment_main(code, format);
+    write_lod_fragment_main(code, format, shared_transform);
 
     return code;
   }
 
-  void write_terrain_types(std::ostream& stream, const ludo::vertex_format& format) {
+  void write_lod_types(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform) {
     stream <<
 R"--(
 // Types
@@ -82,10 +82,21 @@ struct light_t
   float range;
 };
 
-struct instance_t
+struct lod_t
 {
   float low_detail_distance;
   float high_detail_distance;
+};
+
+struct instance_t
+{
+)--";
+
+    if (!shared_transform) stream << "  mat4 transform;" << std::endl;
+
+    stream <<
+R"--(
+  uint lod_index;
 };
 
 struct point_t
@@ -98,13 +109,14 @@ struct point_t
 )--";
   }
 
-  void write_terrain_inputs(std::ostream& stream, const ludo::vertex_format& format) {
+  void write_lod_inputs(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform) {
     stream <<
 R"--(
 // Inputs
 
 in vec3 position;
 )--";
+
     if (format.has_normal) stream << "in vec3 normal;" << std::endl;
     if (format.has_color) stream << "in vec4 color;" << std::endl;
     stream << "in vec3 low_detail_position;" << std::endl;
@@ -112,7 +124,7 @@ in vec3 position;
     if (format.has_color) stream << "in vec4 low_detail_color;" << std::endl;
   }
 
-  void write_terrain_buffers(std::ostream& stream, const ludo::vertex_format& format) {
+  void write_lod_buffers(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform) {
     stream <<
 R"--(
 // Buffers
@@ -126,7 +138,13 @@ layout(std430, binding = 0) buffer rendering_context_layout
 
 layout(std430, binding = 1) buffer render_program_layout
 {
-  mat4 transform;
+)--";
+
+    if (shared_transform) stream << "  mat4 transform;" << std::endl;
+
+    stream <<
+R"--(
+    lod_t lods[];
 };
 
 layout(std430, binding = 2) buffer instance_layout
@@ -136,15 +154,18 @@ layout(std430, binding = 2) buffer instance_layout
 )--";
   }
 
-  void write_terrain_vertex_main(std::ostream& stream, const ludo::vertex_format& format) {
+  void write_lod_vertex_main(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform) {
     stream <<
 R"--(
 void main()
 {
   instance_t instance = instances[gl_BaseInstance + gl_InstanceID];
-  mat4 world_transform = transform;
+  lod_t lod = lods[instance.lod_index];
+
 )--";
 
+    if (!shared_transform) stream << "  mat4 world_transform = instance.transform;" << std::endl;
+    if (shared_transform) stream << "  mat4 world_transform = transform;" << std::endl;
     stream << std::endl;
     stream << "  vec4 world_position = world_transform * vec4(position, 1.0);" << std::endl;
     stream << "  vec4 low_detail_world_position = world_transform * vec4(low_detail_position, 1.0);" << std::endl;
@@ -164,9 +185,8 @@ R"--(
     }
 
     stream << "  float distance = length(world_position.xyz - camera.position);" << std::endl;
-    stream << "  float foo = distance - instance.high_detail_distance;" << std::endl;
-    stream << "  float interpolation_range = instance.low_detail_distance - instance.high_detail_distance;" << std::endl;
-    stream << "  float interpolation_time = clamp((distance - instance.high_detail_distance) / interpolation_range, 0.0, 1.0);" << std::endl;
+    stream << "  float interpolation_range = lod.low_detail_distance - lod.high_detail_distance;" << std::endl;
+    stream << "  float interpolation_time = clamp((distance - lod.high_detail_distance) / interpolation_range, 0.0, 1.0);" << std::endl;
     stream << "  vec4 interpolated_world_position = world_position + (low_detail_world_position - world_position) * interpolation_time;" << std::endl;
     if (format.has_normal) stream << "  vec4 interpolated_world_normal = world_normal + (low_detail_world_normal - world_normal) * interpolation_time;" << std::endl;
     if (format.has_normal) stream << "  normalize(interpolated_world_normal);" << std::endl;
@@ -180,7 +200,7 @@ R"--(
     stream << "}" << std::endl;
   }
 
-  void write_terrain_fragment_main(std::ostream& stream, const ludo::vertex_format& format)
+  void write_lod_fragment_main(std::ostream& stream, const ludo::vertex_format& format, bool shared_transform)
   {
     stream <<
 R"--(

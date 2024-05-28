@@ -11,6 +11,7 @@ Bugs
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
 - Fix slight head movement in spaceship when rolling
 - Refine atmosphere, looks better at altitude and is slow
+- Fix bloom (compute shaders?)
 
 Structural
 - Switch to bazel
@@ -22,3 +23,4 @@ Structural
 - In-house noise
 - Job scheduler a la Unity DOTS
 - Split buffer and allocators instead of having separate heap type etc.
+- Add 'Based on' papers to Git

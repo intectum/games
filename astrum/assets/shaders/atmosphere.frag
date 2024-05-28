@@ -1,8 +1,7 @@
 #version 460 core
 #extension GL_ARB_bindless_texture : require
 
-// Based on this paper:
-// https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering
+// Based on https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering
 
 // Constants
 

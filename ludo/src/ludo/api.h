@@ -14,6 +14,8 @@
 #include "data/heaps.h"
 #include "files.h"
 #include "meshes.h"
+#include "meshes/collapse.h"
+#include "meshes/clean.h"
 #include "meshes/edit.h"
 #include "meshes/shapes.h"
 #include "meshes/util.h"

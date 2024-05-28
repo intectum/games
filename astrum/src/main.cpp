@@ -25,8 +25,11 @@ int main()
   auto sol_mesh_counts = astrum::terrain_counts(astrum::sol_lods);
   auto terra_mesh_counts = astrum::terrain_counts(astrum::terra_lods);
   auto luna_mesh_counts = astrum::terrain_counts(astrum::luna_lods);
-  auto fruit_tree_1_counts = ludo::import_counts(ludo::asset_folder + "/models/fruit-tree-1.dae");
-  auto fruit_tree_2_counts = ludo::import_counts(ludo::asset_folder + "/models/fruit-tree-2.dae");
+  auto fruit_tree_counts = std::array<std::pair<uint32_t, uint32_t>, 2>
+  {
+    astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/fruit-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/fruit-tree-0.lmesh"),
+    astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/fruit-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/fruit-tree-1.lmesh")
+  };
   auto person_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/minifig.dae");
   auto spaceship_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/spaceship.obj");
   auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_bodies * 48 * 2, max_terrain_bodies * 48 * 2 };
@@ -42,8 +45,8 @@ int main()
     sol_mesh_counts.first +
     terra_mesh_counts.first +
     luna_mesh_counts.first +
-    fruit_tree_1_counts.first +
-    fruit_tree_2_counts.first +
+    fruit_tree_counts[0].first +
+    fruit_tree_counts[1].first +
     person_mesh_counts.first +
     spaceship_mesh_counts.first;
   auto max_vertices =
@@ -51,8 +54,8 @@ int main()
     sol_mesh_counts.second +
     terra_mesh_counts.second +
     luna_mesh_counts.second +
-    fruit_tree_1_counts.second +
-    fruit_tree_2_counts.second +
+    fruit_tree_counts[0].second +
+    fruit_tree_counts[1].second +
     person_mesh_counts.second +
     spaceship_mesh_counts.second;
 
@@ -186,9 +189,7 @@ int main()
     ludo::init(*bullet_debug_mesh, indices, vertices, bullet_debug_counts.first, bullet_debug_counts.second, bullet_debug_render_program->format.size);
 
     auto bullet_debug_render_mesh = ludo::add(inst, ludo::render_mesh(), "physics");
-    ludo::init(*bullet_debug_render_mesh);
-    ludo::connect(*bullet_debug_render_mesh, *bullet_debug_render_program, 1);
-    ludo::connect(*bullet_debug_render_mesh, *bullet_debug_mesh, indices, vertices);
+    ludo::init(*bullet_debug_render_mesh, *bullet_debug_render_program, *bullet_debug_mesh, indices, vertices, 1);
 
     ludo::add<ludo::script>(inst, [](ludo::instance& inst)
     {

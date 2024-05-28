@@ -13,7 +13,7 @@
 
 namespace ludo
 {
-  void init(render_program& render_program, const vertex_format& format, heap& render_commands, uint32_t capacity)
+  void init(render_program& render_program, const vertex_format& format, heap& render_commands, uint32_t instance_capacity)
   {
     render_program.format = format;
 
@@ -32,27 +32,27 @@ namespace ludo
 
     auto vertex_shader_code = default_vertex_shader_code(format);
     auto fragment_shader_code = default_fragment_shader_code(format);
-    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, capacity);
+    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, instance_capacity);
   }
 
-  void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, heap& render_commands, uint32_t capacity)
+  void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, heap& render_commands, uint32_t instance_capacity)
   {
     auto vertex_shader_code = std::ifstream(vertex_shader_file_name);
     auto fragment_shader_code = std::ifstream(fragment_shader_file_name);
 
-    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, capacity);
+    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, instance_capacity);
   }
 
-  void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code, heap& render_commands, uint32_t capacity)
+  void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code, heap& render_commands, uint32_t instance_capacity)
   {
     init(render_program, vertex_shader_code, fragment_shader_code);
 
-    render_program.command_buffer = allocate(render_commands, capacity * sizeof(render_command));
+    render_program.command_buffer = allocate(render_commands, instance_capacity * sizeof(render_command));
 
     if (render_program.instance_size)
     {
-      render_program.instance_buffer_front = allocate_vram(capacity * render_program.instance_size);
-      render_program.instance_buffer_back = allocate_heap(capacity * render_program.instance_size);
+      render_program.instance_buffer_front = allocate_vram(instance_capacity * render_program.instance_size);
+      render_program.instance_buffer_back = allocate_heap(instance_capacity * render_program.instance_size);
     }
   }
 

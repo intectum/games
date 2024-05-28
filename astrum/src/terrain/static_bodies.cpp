@@ -1,6 +1,6 @@
 #include "../constants.h"
+#include "../meshes/ico_chunks.h"
 #include "mesh.h"
-#include "sphere_ico.h"
 #include "static_bodies.h"
 
 namespace astrum

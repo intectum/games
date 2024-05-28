@@ -10,6 +10,9 @@ namespace astrum
   // Game
   const auto visualize_physics = true;
 
+  // Assets
+  const auto import_assets = false;
+
   // Rendering
   // TODO Handle this better, 16 here crashed on my new laptop (Zephyrus G14)
   const auto msaa_samples = uint8_t(8);
@@ -59,7 +62,7 @@ namespace astrum
   const auto luna_lods = std::vector<lod> { { 5, luna_radius * 6.4f }, { 7, luna_radius * 1.6f }, { 9, luna_radius * 0.4f }, { 11, luna_radius * 0.1f } };
 
   // Trees
-  const auto tree_lods = std::vector<lod> { { 0, terra_radius * 3.2f }, { 1, terra_radius * 0.8f }, { 2, terra_radius * 0.2f } };
+  const auto tree_lods = std::vector<lod> { { 0, terra_radius * 1.2f }, { 1, terra_radius * 0.3f }, { 2, terra_radius * 0.075f } };
 }
 
 #endif // ASTRUM_CONSTANTS_H

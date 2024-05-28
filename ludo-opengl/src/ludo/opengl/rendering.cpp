@@ -66,7 +66,7 @@ namespace ludo
     init(rendering_context.fence);
   }
 
-  // Based on: http://www.cs.otago.ac.nz/postgrads/alexis/planeExtraction.pdf
+  // Based on http://www.cs.otago.ac.nz/postgrads/alexis/planeExtraction.pdf
   std::array<vec4, 6> frustum_planes(const camera& camera)
   {
     auto view_inverse = camera.view;

@@ -46,9 +46,7 @@ int main()
   auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
 
   auto render_mesh = ludo::render_mesh();
-  ludo::init(render_mesh);
-  ludo::connect(render_mesh, *render_program, 1);
-  ludo::connect(render_mesh, minifig.meshes[0], indices, vertices);
+  ludo::init(render_mesh, *render_program, minifig.meshes[0], indices, vertices, 1);
 
   // SCRIPTS
 

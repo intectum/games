@@ -2,8 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_TRANSFORM_H_
-#define LUDO_MATH_TRANSFORM_H_
+#ifndef LUDO_MATH_TRANSFORM_H
+#define LUDO_MATH_TRANSFORM_H
 
 #include "quat.h"
 #include "vec.h"
@@ -19,4 +19,4 @@ namespace ludo
   };
 }
 
-#endif /* LUDO_MATH_TRANSFORM_H_ */
+#endif /* LUDO_MATH_TRANSFORM_H */

@@ -24,6 +24,8 @@ set(SRC_FILES
     src/ludo/meshes.cpp
     src/ludo/meshes/box.cpp
     src/ludo/meshes/circle.cpp
+    src/ludo/meshes/clean.cpp
+    src/ludo/meshes/collapse.cpp
     src/ludo/meshes/cylinder.cpp
     src/ludo/meshes/edit.cpp
     src/ludo/meshes/math.cpp

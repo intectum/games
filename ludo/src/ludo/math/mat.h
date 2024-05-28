@@ -2,8 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_MAT_H_
-#define LUDO_MATH_MAT_H_
+#ifndef LUDO_MATH_MAT_H
+#define LUDO_MATH_MAT_H
 
 #include <array>
 #include <ostream>
@@ -306,4 +306,4 @@ namespace ludo
   mat4 perspective(float y_axis_field_of_view, float aspect_ratio, float near_clipping_distance, float far_clipping_distance);
 }
 
-#endif /* LUDO_MATH_MAT_H_ */
+#endif /* LUDO_MATH_MAT_H */
