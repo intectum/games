@@ -20,10 +20,11 @@ namespace ludo
   /// \param vertex_index The index at which to write the vertex. NOTE: The value passed will be incremented if a vertex was written.
   /// \param position The position to write to the vertex.
   /// \param normal The normal to write to the vertex.
+  /// \param color The color to write to the vertex.
   /// \param texture_coordinate The texture coordinate to write to the vertex.
   /// \param unique_only Determines if only unique vertices should be written.
   /// \param no_normal_check Determines if normals should be taken into account when searching for matching vertices.
-  void write_vertex(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position, const vec3& normal, const vec2& texture_coordinate, bool unique_only = true, bool no_normal_check = false);
+  void write_vertex(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position, const vec3& normal, const vec4& color, const vec2& texture_coordinate, bool unique_only = true, bool no_normal_check = false);
 }
 
 #endif // LUDO_MESHES_UTIL_H

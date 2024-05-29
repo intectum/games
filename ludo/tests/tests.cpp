@@ -47,7 +47,7 @@ namespace ludo
     deallocate(buffer);
   }
 
-  void set_texture(mesh_instance& mesh_instance, const texture& texture, uint32_t instance_index)
+  void set_instance_texture(render_mesh& render_mesh, const texture& texture, uint32_t instance_index)
   {
   }
 }

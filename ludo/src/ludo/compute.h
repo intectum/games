@@ -5,6 +5,8 @@
 #ifndef LUDO_COMPUTE_H
 #define LUDO_COMPUTE_H
 
+#include <istream>
+
 #include "data/data.h"
 
 namespace ludo
@@ -14,25 +16,26 @@ namespace ludo
   struct LUDO_API compute_program
   {
     uint64_t id = 0; ///< The ID of this compute program.
-    uint64_t compute_shader_id = 0; ///< The ID of the compute shader.
 
     buffer shader_buffer; ///< A buffer containing data available to this compute program.
   };
 
-  template<>
-  LUDO_API compute_program* add(instance& instance, const compute_program& init, const std::string& partition);
+  ///
+  /// Initializes a compute program with the given code.
+  /// \param compute_program The compute program.
+  /// \param shader_file_name The name of the file containing the shader source code.
+  LUDO_API void init(compute_program& compute_program, const std::string& shader_file_name);
 
   ///
-  /// Adds a compute program to the data of an instance.
-  /// \param instance The instance to add the compute program to.
-  /// \param init The initial state of the new compute program.
-  /// \param code The source code of the compute program.
-  /// \param partition The name of the partition.
-  /// \return A pointer to the new compute program. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API compute_program* add(instance& instance, const compute_program& init, std::istream& code, const std::string& partition = "default");
+  /// Initializes a compute program with the given code.
+  /// \param compute_program The compute program.
+  /// \param code The source code.
+  LUDO_API void init(compute_program& compute_program, std::istream& code);
 
-  template<>
-  LUDO_API void remove<compute_program>(instance& instance, compute_program* element, const std::string& partition);
+  ///
+  /// De-initializes a compute program.
+  /// \param compute_program The compute program.
+  LUDO_API void de_init(compute_program& compute_program);
 
   ///
   /// Executes a compute program on the GPU.

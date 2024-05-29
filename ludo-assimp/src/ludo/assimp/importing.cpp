@@ -8,11 +8,11 @@
 #include <assimp/postprocess.h>
 
 #include <ludo/animation.h>
+#include <ludo/importing.h>
 
 #include "math.h"
 #include "meshes.h"
 #include "physics.h"
-#include "textures.h"
 #include "util.h"
 
 namespace ludo
@@ -20,7 +20,7 @@ namespace ludo
   void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes);
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
 
-  std::vector<mesh> import(instance& instance, const std::string& file_name, const import_options& options, const std::string& partition)
+  import_results import(const std::string& file_name, heap& indices, heap& vertices, const import_options& options)
   {
     Assimp::Importer importer;
     auto assimp_scene = importer.ReadFile(file_name, aiProcessPreset_TargetRealtime_MaxQuality);
@@ -31,24 +31,18 @@ namespace ludo
       return {};
     }
 
+    auto results = import_results();
+    auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
+
     auto mesh_objects = std::vector<import_object>();
     auto rigid_body_objects = std::vector<import_object>();
     find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity, false);
     validate(*assimp_scene, mesh_objects);
 
-    for (auto& rigid_body_object : rigid_body_objects)
-    {
-      import_body_shape(instance, *assimp_scene, rigid_body_object, partition);
-    }
+    import_body_shapes(results, *assimp_scene, rigid_body_objects);
+    import_meshes(results, indices, vertices, folder, *assimp_scene, mesh_objects, options);
 
-    if (!mesh_objects.empty())
-    {
-      auto folder = file_name.substr(0, file_name.find_last_of('/') + 1);
-      auto textures = import_textures(instance, folder, *assimp_scene, mesh_objects, partition);
-      return import_meshes(instance, *assimp_scene, mesh_objects, textures, options, partition);
-    }
-
-    return {};
+    return results;
   }
 
   std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name)

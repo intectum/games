@@ -12,15 +12,23 @@ namespace astrum
   {
     auto& always_render_grid = ludo::data<ludo::grid3>(inst, "default")[1];
 
+    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
     auto path_count = static_cast<uint32_t>(colors.size());
 
-    auto vertex_source = std::ifstream("assets/shaders/path.vert");
-    auto vertex_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::VERTEX, vertex_source);
-    auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, {});
-    auto render_program = ludo::add(inst, ludo::render_program { .vertex_shader_id = vertex_shader->id, .fragment_shader_id = fragment_shader->id });
-    render_program->primitive = ludo::mesh_primitive::LINE_STRIP;
-    render_program->format = ludo::vertex_format_p;
-    render_program->shader_buffer = ludo::allocate_dual(16 + path_count * sizeof(ludo::vec4));
+    auto vertex_shader_code = std::ifstream(ludo::asset_folder + "/shaders/path.vert");
+    auto fragment_shader_code = ludo::default_fragment_shader_code(ludo::vertex_format_p);
+    auto render_program = ludo::add(
+      inst,
+      ludo::render_program
+      {
+        .primitive = ludo::mesh_primitive::LINE_STRIP,
+        .format = ludo::vertex_format_p,
+        .shader_buffer = ludo::allocate_dual(16 + path_count * sizeof(ludo::vec4))
+      }
+    );
+    ludo::init(*render_program, vertex_shader_code, fragment_shader_code);
 
     auto render_program_stream = ludo::stream(render_program->shader_buffer.back);
     ludo::write(render_program_stream, path_steps);
@@ -32,14 +40,8 @@ namespace astrum
 
     for (auto path_index = 0; path_index < path_count; path_index++)
     {
-      auto mesh = ludo::add(
-        inst,
-        ludo::mesh(),
-        path_steps,
-        path_steps,
-        ludo::vertex_format_p.size,
-        "prediction-paths"
-      );
+      auto mesh = ludo::add(inst, ludo::mesh(), "prediction-paths");
+      ludo::init(*mesh, indices, vertices, path_steps, path_steps, ludo::vertex_format_p.size);
 
       auto index_stream = ludo::stream(mesh->index_buffer);
       for (auto step_index = uint32_t(0); step_index < path_steps; step_index++)
@@ -47,14 +49,13 @@ namespace astrum
         ludo::write(index_stream, step_index);
       }
 
-      auto mesh_instance = ludo::add(
-        inst,
-        ludo::mesh_instance { .render_program_id = render_program->id },
-        *mesh,
-        1,
-        "prediction-paths"
-      );
-      ludo::add(always_render_grid, *mesh_instance, ludo::vec3_zero);
+      auto render_mesh = ludo::add(inst, ludo::render_mesh(), "prediction-paths");
+      ludo::init(*render_mesh);
+      ludo::connect(*render_mesh, *render_program, 1);
+      ludo::connect(*render_mesh, *mesh, indices, vertices);
+
+      // TODO this grid is not a thing anymore...
+      ludo::add(always_render_grid, *render_mesh, ludo::vec3_zero);
     }
   }
 
@@ -92,8 +93,10 @@ namespace astrum
 
     ludo::add<ludo::script>(prediction_inst, [](ludo::instance& prediction_inst)
     {
+      auto physics_context = ludo::first<ludo::physics_context>(prediction_inst);
+
       simulate_gravity(prediction_inst);
-      ludo::simulate_physics(prediction_inst, path_delta_time, game_speed);
+      ludo::simulate(*physics_context, prediction_inst.delta_time);
       simulate_point_mass_physics(prediction_inst, {});
     });
 

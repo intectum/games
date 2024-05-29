@@ -4,27 +4,25 @@
 
 #include <iostream>
 
-#include "frame_buffers.h"
+#include <ludo/rendering.h>
+
 #include "util.h"
 
 namespace ludo
 {
-  template<>
-  frame_buffer* add(instance& instance, const frame_buffer& init, const std::string& partition)
+  void init(frame_buffer& frame_buffer)
   {
-    auto frame_buffer = add(data<ludo::frame_buffer>(instance), init, partition);
-
     auto name = GLuint();
     glGenFramebuffers(1, &name); check_opengl_error();
-    frame_buffer->id = name;
+    frame_buffer.id = name;
 
-    bind(*frame_buffer);
+    use(frame_buffer);
 
     // Bind the color textures.
     auto draw_buffers = std::vector<GLenum>();
-    for (auto index = 0ul; index < frame_buffer->color_texture_ids.size(); index++)
+    for (auto index = 0ul; index < frame_buffer.color_texture_ids.size(); index++)
     {
-      glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, frame_buffer->color_texture_ids[index], 0); check_opengl_error();
+      glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, frame_buffer.color_texture_ids[index], 0); check_opengl_error();
 
       draw_buffers.push_back(GL_COLOR_ATTACHMENT0 + index);
     }
@@ -33,15 +31,15 @@ namespace ludo
     glDrawBuffers(static_cast<GLsizei>(draw_buffers.size()), draw_buffers.data()); check_opengl_error();
 
     // Bind the depth texture.
-    if (frame_buffer->depth_texture_id)
+    if (frame_buffer.depth_texture_id)
     {
-      glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, frame_buffer->depth_texture_id, 0); check_opengl_error();
+      glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, frame_buffer.depth_texture_id, 0); check_opengl_error();
     }
 
     // Bind the stencil texture.
-    if (frame_buffer->stencil_texture_id)
+    if (frame_buffer.stencil_texture_id)
     {
-      glFramebufferTexture(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, frame_buffer->stencil_texture_id, 0); check_opengl_error();
+      glFramebufferTexture(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, frame_buffer.stencil_texture_id, 0); check_opengl_error();
     }
 
     auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -55,18 +53,27 @@ namespace ludo
       std::cout << "failed to create frame buffer, status: " << status << std::endl;
       assert(false && "failed to create frame buffer");
     }
-
-    return frame_buffer;
   }
 
-  template<>
-  void remove<frame_buffer>(instance& instance, frame_buffer* element, const std::string& partition)
+  void de_init(frame_buffer& frame_buffer)
   {
-    auto name = static_cast<GLuint>(element->id);
-
+    auto name = static_cast<GLuint>(frame_buffer.id);
     glDeleteFramebuffers(1, &name); check_opengl_error();
+    frame_buffer.id = 0;
+  }
 
-    remove(data<frame_buffer>(instance), element, partition);
+  void use(const frame_buffer& frame_buffer)
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer.id); check_opengl_error();
+    glViewport(0, 0, static_cast<GLsizei>(frame_buffer.width), static_cast<GLsizei>(frame_buffer.height)); check_opengl_error();
+  }
+
+  void use_and_clear(const frame_buffer& frame_buffer, const vec4& color)
+  {
+    use(frame_buffer);
+
+    glClearColor(color[0], color[1], color[2], color[3]); check_opengl_error();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); check_opengl_error();
   }
 
   void blit(const frame_buffer& source, const frame_buffer& dest)
@@ -97,11 +104,5 @@ namespace ludo
       mask,
       GL_NEAREST
     ); check_opengl_error();
-  }
-
-  void bind(const frame_buffer& frame_buffer)
-  {
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer.id); check_opengl_error();
-    glViewport(0, 0, static_cast<GLsizei>(frame_buffer.width), static_cast<GLsizei>(frame_buffer.height)); check_opengl_error();
   }
 }

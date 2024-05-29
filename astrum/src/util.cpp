@@ -31,31 +31,29 @@ namespace astrum
 
     "astrum::control_game",
 
-    "astrum::sync_mesh_instances_with_point_masses",
+    "astrum::sync_render_meshes_with_point_masses",
 
-    //"astrum::update_prediction_paths",
-
-    "ludo::prepare_render",
-    "ludo::update_windows",
-    "ludo::render/geometry",
+    "ludo::receive_input",
+    "ludo::start_render_transaction",
+    "ludo::add_render_commands/geometry",
+    "ludo::commit_render_commands/geometry",
     "ludo::blit",
-    "astrum::update_atmosphere",
-    "ludo::render/atmosphere",
-    "ludo::render/bloom/brightness",
-    "ludo::render/bloom/horizontal0",
-    "ludo::render/bloom/vertical0",
-    "ludo::render/bloom/horizontal1",
-    "ludo::render/bloom/vertical1",
-    "ludo::render/bloom/horizontal2",
-    "ludo::render/bloom/vertical2",
-    "ludo::render/bloom/horizontal3",
-    "ludo::render/bloom/vertical3",
-    "ludo::render/bloom/horizontal4",
-    "ludo::render/bloom/vertical4",
-    "ludo::render/bloom/additive",
-    "ludo::render/hdr_resolve",
+    "ludo::commit_render_commands/atmosphere",
+    "ludo::commit_render_commands/bloom/brightness",
+    "ludo::commit_render_commands/bloom/horizontal0",
+    "ludo::commit_render_commands/bloom/vertical0",
+    "ludo::commit_render_commands/bloom/horizontal1",
+    "ludo::commit_render_commands/bloom/vertical1",
+    "ludo::commit_render_commands/bloom/horizontal2",
+    "ludo::commit_render_commands/bloom/vertical2",
+    "ludo::commit_render_commands/bloom/horizontal3",
+    "ludo::commit_render_commands/bloom/vertical3",
+    "ludo::commit_render_commands/bloom/horizontal4",
+    "ludo::commit_render_commands/bloom/vertical4",
+    "ludo::commit_render_commands/bloom/additive",
+    "ludo::commit_render_commands/tone_mapping",
     "ludo::blit",
-    "ludo::finalize_render",
+    "ludo::commit_render_transaction",
 
     "astrum::print_timings"
   };
@@ -69,7 +67,7 @@ namespace astrum
       auto final_script_names = script_names;
       if (visualize_physics)
       {
-        final_script_names.insert(final_script_names.begin() + 16, "ludo::render/physics");
+        final_script_names.insert(final_script_names.begin() + 16, "ludo::add_render_commands/geometry/physics");
       }
       if (show_paths)
       {

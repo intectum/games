@@ -10,32 +10,35 @@
 
 namespace ludo
 {
-  void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options)
+  void circle(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options)
   {
     assert(options.divisions >= 3 && "must have at-least 3 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
+
+    auto index_index = start_index;
+    auto vertex_index = start_vertex;
 
     auto radius = options.dimensions[0] / 2.0f;
 
     if (options.outward_faces)
     {
-      circle(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, false);
+      circle(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.color, false);
     }
 
     if (options.inward_faces)
     {
-      circle(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, true);
+      circle(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.color, true);
     }
   }
 
-  std::pair<uint32_t, uint32_t> circle_counts(const shape_options& options)
+  std::pair<uint32_t, uint32_t> circle_counts(const vertex_format& format, const shape_options& options)
   {
     assert(options.divisions >= 3 && "must have at-least 3 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
 
     auto total =  options.divisions * 3;
     auto unique =  options.divisions + 2;
-    if (options.outward_faces && options.inward_faces)
+    if (options.outward_faces && options.inward_faces) // TODO revise based on presence of normals, texture coordinates etc.
     {
       total *= 2;
       unique *= 2;
@@ -44,7 +47,7 @@ namespace ludo
     return { total, unique };
   }
 
-  void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool invert)
+  void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, const vec4& color, bool invert)
   {
     auto normal = vec3 { 0.0f, 0.0f, 1.0f };
     if (invert)
@@ -57,17 +60,17 @@ namespace ludo
       auto angle_0 = -two_pi * static_cast<float>(division) / static_cast<float>(divisions);
       auto angle_1 = -two_pi * static_cast<float>(division + 1) / static_cast<float>(divisions);
 
-      write_vertex(mesh, format, index_index, vertex_index, center, normal, { 0.0f, 0.0f });
+      write_vertex(mesh, format, index_index, vertex_index, center, normal, color, { 0.0f, 0.0f });
 
       if (invert)
       {
-        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, color, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, color, { 0.0f, 0.0f });
       }
       else
       {
-        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_0), std::cos(angle_0), 0.0f } * radius, normal, color, { 0.0f, 0.0f });
+        write_vertex(mesh, format, index_index, vertex_index, center + vec3 { std::sin(angle_1), std::cos(angle_1), 0.0f } * radius, normal, color, { 0.0f, 0.0f });
       }
     }
   }

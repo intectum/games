@@ -13,7 +13,7 @@ namespace ludo
 {
   struct debug_drawer : public btIDebugDraw
   {
-    explicit debug_drawer(int32_t debugMode = DBG_DrawWireframe);
+    debug_drawer();
 
     void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
 

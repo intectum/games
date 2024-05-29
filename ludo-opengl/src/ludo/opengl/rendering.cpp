@@ -2,28 +2,27 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <GL/glew.h>
+#include <ludo/rendering.h>
 
-#include <ludo/spatial/grid3.h>
-#include <ludo/timer.h>
-#include <ludo/windowing.h>
-
-#include "frame_buffers.h"
-#include "rendering_contexts.h"
 #include "util.h"
 
 namespace ludo
 {
-  void write_commands(instance& instance, const render_options& options);
-  std::array<vec4, 6> frustum_planes(const camera& camera);
-
-  void prepare_render(instance& instance)
+  auto draw_modes = std::unordered_map<mesh_primitive, GLenum>
   {
-    auto& render_programs = data<render_program>(instance);
-    auto rendering_context = first<ludo::rendering_context>(instance);
-    assert(rendering_context && "rendering context not found");
+    { mesh_primitive::POINT_LIST, GL_POINTS },
+    { mesh_primitive::LINE_LIST, GL_LINES },
+    { mesh_primitive::LINE_STRIP, GL_LINE_STRIP },
+    { mesh_primitive::TRIANGLE_LIST, GL_TRIANGLES },
+    { mesh_primitive::TRIANGLE_STRIP, GL_TRIANGLE_STRIP }
+  };
 
-    wait_for_fence(rendering_context->fence);
+  void start_render_transaction(rendering_context& rendering_context, array<render_program>& render_programs)
+  {
+    if (rendering_context.fence.id)
+    {
+      wait(rendering_context.fence);
+    }
 
     for (auto& render_program : render_programs)
     {
@@ -31,120 +30,42 @@ namespace ludo
     }
   }
 
-  void render(instance& instance, const render_options& options)
+  void commit_render_commands(rendering_context& rendering_context, array<render_program>& render_programs, const heap& render_commands, const heap& indices, const heap& vertices)
   {
-    auto& render_programs = data<render_program>(instance);
-    auto rendering_context = first<ludo::rendering_context>(instance);
-    assert(rendering_context && "rendering context not found");
-
-    auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
-    auto& indices = data_heap(instance, "ludo::vram_indices");
-    auto& vertices = data_heap(instance, "ludo::vram_vertices");
-
-    write_commands(instance, options);
-
-    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_commands.id); check_opengl_error();
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, render_commands.id); check_opengl_error();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices.id); check_opengl_error();
     glBindBuffer(GL_ARRAY_BUFFER, vertices.id); check_opengl_error();
 
-    bind(*rendering_context);
-
-    push(options.shader_buffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, options.shader_buffer.front.id); check_opengl_error();
-
-    if (options.frame_buffer_id)
-    {
-      auto frame_buffer = get<ludo::frame_buffer>(instance, options.frame_buffer_id);
-      assert(frame_buffer && "frame buffer not found");
-
-      bind(*frame_buffer);
-    }
-    else
-    {
-      auto window = first<ludo::window>(instance);
-
-      bind(frame_buffer { .width = window->width, .height = window->height });
-    }
-
-    if (options.clear_frame_buffer)
-    {
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); check_opengl_error();
-    }
+    commit(rendering_context.shader_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.shader_buffer.front.id); check_opengl_error();
 
     for (auto& render_program : render_programs)
     {
-      commit_draw_commands(draw_commands, render_program);
+      if (!render_program.active_commands.count)
+      {
+        continue;
+      }
+
+      use(render_program);
+
+      glMultiDrawElementsIndirect(
+        draw_modes[render_program.primitive],
+        GL_UNSIGNED_INT,
+        reinterpret_cast<void*>((render_program.command_buffer.data - render_commands.data) + render_program.active_commands.start * sizeof(render_command)),
+        static_cast<GLsizei>(render_program.active_commands.count),
+        sizeof(render_command)
+      ); check_opengl_error();
+
+      render_program.active_commands.start += render_program.active_commands.count;
+      render_program.active_commands.count = 0;
     }
   }
 
-  void finalize_render(instance& instance)
+  void commit_render_transaction(rendering_context& rendering_context)
   {
-    auto rendering_context = first<ludo::rendering_context>(instance);
-    assert(rendering_context && "rendering context not found");
-
-    rendering_context->fence = create_fence();
+    init(rendering_context.fence);
   }
 
-  void write_commands(instance& instance, const render_options& options)
-  {
-    if (!options.grid_ids.empty())
-    {
-      auto& render_programs = data<render_program>(instance);
-      auto rendering_context = first<ludo::rendering_context>(instance);
-
-      auto& draw_commands = data_heap(instance, "ludo::vram_draw_commands");
-
-      auto planes = frustum_planes(get_camera(*rendering_context));
-
-      // TODO take allocation out of frame?
-      auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.length * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
-
-      auto stream = ludo::stream(context_buffer);
-      write(stream, planes[0]);
-      write(stream, planes[1]);
-      write(stream, planes[2]);
-      write(stream, planes[3]);
-      write(stream, planes[4]);
-      write(stream, planes[5]);
-      write(stream, static_cast<uint32_t>(render_programs.length));
-      stream.position += 4; // align 8
-      for (auto& render_program : render_programs)
-      {
-        write(stream, render_program.id);
-        write(stream, static_cast<uint32_t>((render_program.command_buffer.data - draw_commands.data) / sizeof(draw_command) + render_program.active_commands.start));
-        write(stream, render_program.active_commands.count);
-      }
-
-      for (auto grid_id : options.grid_ids)
-      {
-        auto grid = get<ludo::grid3>(instance, grid_id);
-        assert(grid && "grid not found");
-
-        auto grid_compute_program = get<ludo::compute_program>(instance, grid->compute_program_id);
-        assert(grid_compute_program && "compute program not found");
-
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, context_buffer.id); check_opengl_error();
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, grid->buffer.front.id); check_opengl_error();
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, draw_commands.id); check_opengl_error();
-
-        ludo::execute(*grid_compute_program, grid->cell_count_1d / 8, grid->cell_count_1d / 4, grid->cell_count_1d); check_opengl_error();
-      }
-
-      auto fence = create_fence();
-      wait_for_fence(fence);
-
-      for (auto index = 0; index < render_programs.length; index++)
-      {
-        auto offset = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
-        render_programs[index].active_commands.count = cast<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
-      }
-
-      deallocate_vram(context_buffer);
-    }
-  }
-
-  // Generate the planes of the view frustum.
-  // Planes have their normals pointing into the view frustum.
   // Based on: http://www.cs.otago.ac.nz/postgrads/alexis/planeExtraction.pdf
   std::array<vec4, 6> frustum_planes(const camera& camera)
   {

@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include <ludo/opengl/util.h>
 
 #include "bloom.h"
@@ -7,65 +5,39 @@
 
 namespace astrum
 {
-  void add_bloom(ludo::instance& inst, uint64_t vertex_shader_id, const ludo::mesh_instance& mesh_instance, uint32_t iterations, float final_texture_size)
+  void add_bloom(ludo::instance& inst, const ludo::render_mesh& render_mesh, uint32_t iterations, float final_texture_size)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto original_frame_buffer = &frame_buffers[frame_buffers.length - 1];
 
-    auto& draw_commands = data_heap(inst, "ludo::vram_draw_commands");
+    auto& render_commands = data_heap(inst, "ludo::vram_render_commands");
 
-    auto brightness_fragment_stream = std::ifstream("assets/shaders/brightness.frag");
-    auto brightness_fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, brightness_fragment_stream);
-    auto brightness_render_program = ludo::add(
-      inst,
-      ludo::render_program
-      {
-        .vertex_shader_id = vertex_shader_id,
-        .fragment_shader_id = brightness_fragment_shader->id,
-        .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command))
-      }
-    );
+    auto brightness_render_program = ludo::add(inst, ludo::render_program { .format = ludo::vertex_format_pt });
+    ludo::init(*brightness_render_program, ludo::asset_folder + "/shaders/post.vert", ludo::asset_folder + "/shaders/brightness.frag", render_commands, 1);
 
-    auto gaussian_fragment_stream = std::ifstream("assets/shaders/gaussian.frag");
-    auto gaussian_fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, gaussian_fragment_stream);
-    auto gaussian_render_program = ludo::add(
-      inst,
-      ludo::render_program
-      {
-        .vertex_shader_id = vertex_shader_id,
-        .fragment_shader_id = gaussian_fragment_shader->id,
-        .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(draw_commands, 2 * iterations * sizeof(ludo::draw_command))
-      }
-    );
+    auto gaussian_render_program = ludo::add(inst, ludo::render_program { .format = ludo::vertex_format_pt });
+    ludo::init(*gaussian_render_program, ludo::asset_folder + "/shaders/post.vert", ludo::asset_folder + "/shaders/gaussian.frag", render_commands, 2 * iterations);
 
-    auto additive_fragment_stream = std::ifstream("assets/shaders/additive.frag");
-    auto additive_fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, additive_fragment_stream);
-    auto additive_render_program = ludo::add(
-      inst,
-      ludo::render_program
-      {
-        .vertex_shader_id = vertex_shader_id,
-        .fragment_shader_id = additive_fragment_shader->id,
-        .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command))
-      }
-    );
+    auto additive_render_program = ludo::add(inst, ludo::render_program { .format = ludo::vertex_format_pt });
+    ludo::init(*additive_render_program, ludo::asset_folder + "/shaders/post.vert", ludo::asset_folder + "/shaders/additive.frag", render_commands, 1);
 
     auto previous_frame_buffer = original_frame_buffer;
     auto current_frame_buffer = add_post_processing_frame_buffer(inst);
 
-    auto brightness_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
+    brightness_render_program->shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
 
     ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      ludo::add_draw_command(*brightness_render_program, mesh_instance);
-      ludo::render(inst,
-      {
-        .frame_buffer_id = current_frame_buffer->id,
-        .shader_buffer = brightness_shader_buffer
-      });
+      auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+      auto& render_programs = ludo::data<ludo::render_program>(inst);
+
+      auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+      auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+      auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+      ludo::use_and_clear(*current_frame_buffer);
+      ludo::add_render_command(*brightness_render_program, render_mesh);
+      ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
     });
 
     for (auto iteration = 0; iteration < iterations; iteration++)
@@ -75,49 +47,63 @@ namespace astrum
       previous_frame_buffer = current_frame_buffer;
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
-      auto horizontal_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::cast<bool>(horizontal_shader_buffer.back, 8) = true;
+      // TODO: This will get overridden!
+      gaussian_render_program->shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
+      ludo::cast<bool>(gaussian_render_program->shader_buffer.back, 8) = true;
 
       ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
       {
-        ludo::add_draw_command(*gaussian_render_program, mesh_instance);
-        ludo::render(inst,
-        {
-          .frame_buffer_id = current_frame_buffer->id,
-          .shader_buffer = horizontal_shader_buffer
-        });
+        auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+        auto& render_programs = ludo::data<ludo::render_program>(inst);
+
+        auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+        auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+        auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+        ludo::use_and_clear(*current_frame_buffer);
+        ludo::add_render_command(*gaussian_render_program, render_mesh);
+        ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
       });
 
       previous_frame_buffer = current_frame_buffer;
       current_frame_buffer = add_post_processing_frame_buffer(inst, false, texture_size);
 
-      auto vertical_shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
-      ludo::cast<bool>(vertical_shader_buffer.back, 8) = false;
+      // TODO: This will get overridden!
+      gaussian_render_program->shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer->color_texture_ids[0], 0);
+      ludo::cast<bool>(gaussian_render_program->shader_buffer.back, 8) = false;
 
       ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
       {
-        ludo::add_draw_command(*gaussian_render_program, mesh_instance);
-        ludo::render(inst,
-        {
-          .frame_buffer_id = current_frame_buffer->id,
-          .shader_buffer = vertical_shader_buffer
-        });
+        auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+        auto& render_programs = ludo::data<ludo::render_program>(inst);
+
+        auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+        auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+        auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+        ludo::use_and_clear(*current_frame_buffer);
+        ludo::add_render_command(*gaussian_render_program, render_mesh);
+        ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
       });
     }
 
     previous_frame_buffer = current_frame_buffer;
     current_frame_buffer = add_post_processing_frame_buffer(inst);
 
-    auto additive_shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0]);
+    additive_render_program->shader_buffer = create_post_processing_shader_buffer(original_frame_buffer->color_texture_ids[0], previous_frame_buffer->color_texture_ids[0]);
 
     ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      ludo::add_draw_command(*additive_render_program, mesh_instance);
-      ludo::render(inst,
-      {
-        .frame_buffer_id = current_frame_buffer->id,
-        .shader_buffer = additive_shader_buffer
-      });
+      auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+      auto& render_programs = ludo::data<ludo::render_program>(inst);
+
+      auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+      auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+      auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+      ludo::use_and_clear(*current_frame_buffer);
+      ludo::add_render_command(*additive_render_program, render_mesh);
+      ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
     });
   }
 }

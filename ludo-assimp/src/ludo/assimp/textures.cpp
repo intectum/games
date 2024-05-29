@@ -8,34 +8,18 @@
 
 namespace ludo
 {
-  texture* import_texture(instance& instance, const std::string& file_name, const std::string& partition);
-
-  std::vector<ludo::texture*> import_textures(instance& instance, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::string& partition)
+  texture import_texture(const std::string& folder, const aiScene& assimp_scene, const import_object& mesh_object)
   {
-    auto textures = std::vector<ludo::texture*>();
-
-    for (auto& mesh_object : mesh_objects)
+    auto assimp_material = assimp_scene.mMaterials[assimp_scene.mMeshes[mesh_object.mesh_index]->mMaterialIndex];
+    auto texture_path = aiString();
+    assimp_material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
+    if (!texture_path.length)
     {
-      auto assimp_material = assimp_scene.mMaterials[assimp_scene.mMeshes[mesh_object.mesh_index]->mMaterialIndex];
-      auto texture_path = aiString();
-      assimp_material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
-      if (texture_path.length)
-      {
-        textures.push_back(import_texture(instance, folder + texture_path.C_Str(), partition));
-      }
-      else
-      {
-        textures.push_back(nullptr);
-      }
+      return {};
     }
 
-    return textures;
-  }
-
-  texture* import_texture(instance& instance, const std::string& file_name, const std::string& partition)
-  {
     auto image = fipImage();
-    image.load(file_name.c_str());
+    image.load((folder + texture_path.C_Str()).c_str());
 
     auto bits_per_pixel = image.getBitsPerPixel();
     if (bits_per_pixel != 24 && bits_per_pixel != 32)
@@ -54,18 +38,15 @@ namespace ludo
       assert(false && "unsupported platform (need to implement solution for this)");
     }
 
-    auto texture = add(
-      instance,
-      ludo::texture
-      {
-        .components = bits_per_pixel == 32 ? pixel_components::BGRA : pixel_components::BGR,
-        .width = image.getWidth(),
-        .height = image.getHeight()
-      },
-      partition
-    );
+    auto texture = ludo::texture
+    {
+      .components = bits_per_pixel == 32 ? pixel_components::BGRA : pixel_components::BGR,
+      .width = image.getWidth(),
+      .height = image.getHeight()
+    };
+    init(texture);
 
-    write(*texture, reinterpret_cast<std::byte*>(image.accessPixels()));
+    write(texture, reinterpret_cast<std::byte*>(image.accessPixels()));
 
     return texture;
   }

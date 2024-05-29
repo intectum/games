@@ -9,8 +9,8 @@
 
 namespace ludo
 {
-  extern std::string asset_dir; ///< Read-only files packaged with the application
-  extern std::string user_dir; ///< Read-write files specific to the current user
+  extern std::string asset_folder; ///< Read-only files packaged with the application
+  extern std::string user_folder; ///< Read-write files specific to the current user
 }
 
 #endif // LUDO_FILES_H

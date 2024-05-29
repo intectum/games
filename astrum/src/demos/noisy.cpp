@@ -5,84 +5,54 @@
 
 int main()
 {
-  auto inst = ludo::instance();
-
   // SETUP
 
-  auto max_instance_count = uint32_t(1920 * 1080);
-  auto circle_counts = ludo::circle_counts({ .divisions = 20 });
+  auto inst = ludo::instance();
+  ludo::allocate<ludo::script>(inst, 3);
 
-  ludo::allocate<ludo::rendering_context>(inst, 1);
-  ludo::allocate<ludo::windowing_context>(inst, 1);
+  auto window = ludo::window { .title = "noisy!", .width = 1920, .height = 1080, .v_sync = false };
+  ludo::init(window);
 
-  ludo::allocate<ludo::mesh>(inst, 2);
-  ludo::allocate<ludo::mesh_instance>(inst, 2);
-  ludo::allocate<ludo::render_program>(inst, 1);
-  ludo::allocate<ludo::script>(inst, 6);
-  ludo::allocate<ludo::shader>(inst, 2);
-  ludo::allocate<ludo::window>(inst, 1);
-
-  ludo::add(inst, ludo::windowing_context());
-  auto window = ludo::add(inst, ludo::window { .title = "noisy!", .width = 1920, .height = 1080, .v_sync = false });
-
-  auto rendering_context = ludo::add(inst, ludo::rendering_context(), 0);
-  set_camera(*rendering_context, ludo::camera
+  auto rendering_context = ludo::rendering_context();
+  ludo::init(rendering_context, 0);
+  set_camera(rendering_context, ludo::camera
   {
     .view = ludo::mat4(ludo::vec3(0.0, 0.0, 300.0f), ludo::mat3_identity),
     .projection = ludo::perspective(60.0f, 16.0f / 9.0f, 0.1f, 1000.0f)
   });
 
-  ludo::allocate_heap_vram(inst, "ludo::vram_draw_commands", max_instance_count * 2 * sizeof(ludo::draw_command));
-  ludo::allocate_heap_vram(inst, "ludo::vram_indices", circle_counts.first * 2 * sizeof(uint32_t));
-  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", circle_counts.second * 2 * ludo::vertex_format_pc.size);
+  auto max_instance_count = uint32_t(1920 * 1080);
+  auto circle_counts = ludo::circle_counts({ .divisions = 20 });
+
+  auto render_commands = ludo::allocate_heap_vram(2 * max_instance_count * sizeof(ludo::render_command));
+  auto indices = ludo::allocate_heap_vram(2 * circle_counts.first * sizeof(uint32_t));
+  auto vertices = ludo::allocate_heap_vram(2 * circle_counts.second * ludo::vertex_format_pc.size);
 
   // RENDER PROGRAMS
 
-  auto render_program = ludo::add(inst, ludo::render_program(), ludo::vertex_format_pc, max_instance_count * 2);
+  auto render_programs = ludo::allocate_array<ludo::render_program>(1);
+  auto render_program = ludo::add(render_programs, {});
+  ludo::init(*render_program, ludo::vertex_format_pc, render_commands, 2 * max_instance_count);
 
   // MESHES
 
-  auto exclusion_zone_mesh = ludo::add(
-    inst,
-    ludo::mesh(),
-    circle_counts.first,
-    circle_counts.second,
-    render_program->format.size
-  );
+  auto exclusion_zone_mesh = ludo::mesh();
+  ludo::init(exclusion_zone_mesh, indices, vertices, circle_counts.first, circle_counts.second, render_program->format.size);
+  ludo::colorize(exclusion_zone_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 0.5f, 1.0f });
 
-  ludo::colorize(*exclusion_zone_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 0.5f, 1.0f });
+  auto exclusion_zone_render_mesh = ludo::render_mesh { .instances = { 0, 0 } };
+  ludo::init(exclusion_zone_render_mesh);
+  ludo::connect(exclusion_zone_render_mesh, *render_program, max_instance_count);
+  ludo::connect(exclusion_zone_render_mesh, exclusion_zone_mesh, indices, vertices);
 
-  auto exclusion_zone_mesh_instances = ludo::add(
-    inst,
-    ludo::mesh_instance
-      {
-        .render_program_id = render_program->id,
-        .instances = { 0, 0 }
-      },
-    *exclusion_zone_mesh,
-    max_instance_count
-  );
+  auto sample_mesh = ludo::mesh();
+  ludo::init(sample_mesh, indices, vertices, circle_counts.first, circle_counts.second, render_program->format.size);
+  ludo::colorize(sample_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 1.0f, 1.0f });
 
-  auto sample_mesh = ludo::add(
-    inst,
-    ludo::mesh(),
-    circle_counts.first,
-    circle_counts.second,
-    render_program->format.size
-  );
-
-  ludo::colorize(*sample_mesh, render_program->format, 0, circle_counts.second, { 0.0f, 0.0f, 1.0f, 1.0f });
-
-  auto sample_mesh_instances = ludo::add(
-    inst,
-    ludo::mesh_instance
-      {
-        .render_program_id = render_program->id,
-        .instances = { max_instance_count, 0 }
-      },
-    *sample_mesh,
-    max_instance_count
-  );
+  auto sample_render_mesh = ludo::render_mesh { .instances = { max_instance_count, 0 } };
+  ludo::init(sample_render_mesh);
+  ludo::connect(sample_render_mesh, *render_program, max_instance_count);
+  ludo::connect(sample_render_mesh, sample_mesh, indices, vertices);
 
   // POISSON DISC
   // Based on https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
@@ -94,11 +64,11 @@ int main()
 
   auto index_index = uint32_t(0);
   auto vertex_index = uint32_t(0);
-  ludo::circle(*sample_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance * 0.1f, 0.0f, 0.0f }, .divisions = 20 });
+  ludo::circle(sample_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance * 0.1f, 0.0f, 0.0f }, .divisions = 20 });
 
   index_index = uint32_t(0);
   vertex_index = uint32_t(0);
-  ludo::circle(*exclusion_zone_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance, 0.0f, 0.0f }, .divisions = 20 });
+  ludo::circle(exclusion_zone_mesh, render_program->format, index_index, vertex_index, { .dimensions = { minimum_distance, 0.0f, 0.0f }, .divisions = 20 });
 
   auto samples = std::vector<ludo::vec3> { { 0.0f, 1.0f, 0.0f } };
   auto active_samples = std::vector<ludo::vec3> { { 0.0f, 1.0f, 0.0f } }; // TODO make this a random point
@@ -149,35 +119,50 @@ int main()
   {
     auto rotation = ludo::mat3(ludo::quat(ludo::vec3_unit_z, sample));
 
-    ludo::instance_transform(*exclusion_zone_mesh_instances, exclusion_zone_mesh_instances->instances.count++) = ludo::mat4(sample, rotation);
-    ludo::instance_transform(*sample_mesh_instances, sample_mesh_instances->instances.count++) = ludo::mat4(sample * 1.0001f, rotation);
+    ludo::instance_transform(exclusion_zone_render_mesh, exclusion_zone_render_mesh.instances.count++) = ludo::mat4(sample, rotation);
+    ludo::instance_transform(sample_render_mesh, sample_render_mesh.instances.count++) = ludo::mat4(sample * 1.0001f, rotation);
   }
 
   // SCRIPTS
 
+  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  {
+    ludo::receive_input(window, inst);
+
+    if (window.active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
+    {
+      ludo::stop(inst);
+    }
+  });
+
   auto mouse_movement_accumulator = new std::array<int32_t, 2>();
   ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
   {
-    (*mouse_movement_accumulator)[0] += window->mouse_movement[0];
-    (*mouse_movement_accumulator)[1] += window->mouse_movement[1];
+    if (window.active_mouse_button_states[ludo::mouse_button::LEFT] == ludo::button_state::HOLD)
+    {
+      (*mouse_movement_accumulator)[0] += window.mouse_movement[0];
+      (*mouse_movement_accumulator)[1] += window.mouse_movement[1];
+    }
 
-    auto camera = ludo::get_camera(*rendering_context);
+    auto camera = ludo::get_camera(rendering_context);
     camera.view = ludo::mat4(ludo::vec3_zero, ludo::mat3(ludo::quat(float((*mouse_movement_accumulator)[0]) / 500.0f, float((*mouse_movement_accumulator)[1]) / 500.0f, 0.0f)));
     ludo::translate(camera.view, { 0.0f, 0.0f, 3.0f });
-    ludo::set_camera(*rendering_context, camera);
+    ludo::set_camera(rendering_context, camera);
   });
 
-  ludo::add<ludo::script>(inst, ludo::prepare_render);
-  ludo::add<ludo::script>(inst, ludo::update_windows);
   ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
   {
-    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+    ludo::start_render_transaction(rendering_context, render_programs);
+    ludo::swap_buffers(window);
 
-    ludo::add_draw_command(*render_program, mesh_instances[0]);
-    ludo::add_draw_command(*render_program, mesh_instances[1]);
+    ludo::use_and_clear(ludo::frame_buffer { .width = 1920, .height = 1080 });
+
+    ludo::add_render_command(*render_program, exclusion_zone_render_mesh);
+    ludo::add_render_command(*render_program, sample_render_mesh);
+
+    ludo::commit_render_commands(rendering_context, render_programs, render_commands, indices, vertices);
+    ludo::commit_render_transaction(rendering_context);
   });
-  ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
-  ludo::add<ludo::script>(inst, ludo::finalize_render);
 
   // PLAY
 

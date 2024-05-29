@@ -31,13 +31,13 @@ namespace astrum
       static_cast<float>(window.mouse_movement[1]),
       static_cast<float>(-window.mouse_movement[0])
     };
-    rotation_delta_angles *= camera_rotate_speed * inst.delta_time * game_speed;
+    rotation_delta_angles *= camera_rotate_speed * inst.delta_time;
 
     map_controls.camera_rotation += rotation_delta_angles;
     map_controls.camera_rotation[0] = ludo::shortest_angle(map_controls.camera_rotation[0]);
     map_controls.camera_rotation[1] = ludo::shortest_angle(map_controls.camera_rotation[1]);
 
-    map_controls.camera_zoom -= window.scroll[1];
+    map_controls.camera_zoom -= window.mouse_scroll[1];
 
     ludo::set_camera(
       rendering_context,

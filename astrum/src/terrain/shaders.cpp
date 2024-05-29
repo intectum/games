@@ -2,9 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <sstream>
-
-#include <ludo/opengl/standardized_shaders.h>
+#include <ludo/opengl/default_shaders.h>
 
 #include "shaders.h"
 
@@ -16,7 +14,7 @@ namespace astrum
   void write_terrain_vertex_main(std::ostream& stream, const ludo::vertex_format& format);
   void write_terrain_fragment_main(std::ostream& stream, const ludo::vertex_format& format);
 
-  ludo::shader* add_terrain_vertex_shader(ludo::instance& inst, const ludo::vertex_format& format, const std::string& partition)
+  std::stringstream terrain_vertex_shader_code(const ludo::vertex_format& format)
   {
     auto code = std::stringstream();
     write_header(code, format);
@@ -30,10 +28,10 @@ namespace astrum
     code << "out sampler2D sampler;" << std::endl;
     write_terrain_vertex_main(code, format);
 
-    return add(inst, ludo::shader(), ludo::shader_type::VERTEX, code, partition);
+    return code;
   }
 
-  ludo::shader* add_terrain_fragment_shader(ludo::instance& inst, const ludo::vertex_format& format, const std::string& partition)
+  std::stringstream terrain_fragment_shader_code(const ludo::vertex_format& format)
   {
     auto code = std::stringstream();
     write_header(code, format);
@@ -51,7 +49,7 @@ namespace astrum
     write_lighting_functions(code, format);
     write_terrain_fragment_main(code, format);
 
-    return add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, code, partition);
+    return code;
   }
 
   void write_terrain_types(std::ostream& stream, const ludo::vertex_format& format) {
@@ -126,14 +124,12 @@ layout(std430, binding = 0) buffer rendering_context_layout
   light_t lights[];
 };
 
-// binding = 1 is reserved for the render_layout
-
-layout(std430, binding = 2) buffer render_program_layout
+layout(std430, binding = 1) buffer render_program_layout
 {
   mat4 transform;
 };
 
-layout(std430, binding = 3) buffer instance_layout
+layout(std430, binding = 2) buffer instance_layout
 {
   instance_t instances[];
 };

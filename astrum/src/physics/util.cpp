@@ -12,7 +12,7 @@ namespace astrum
     {
       auto deepest_contact_iter = std::find_if(deepest_contacts.begin(), deepest_contacts.end(), [&contact](const ludo::contact& deepest_contact)
       {
-        return deepest_contact.body_b == contact.body_b;
+        return deepest_contact.body_b_id == contact.body_b_id;
       });
 
       if (deepest_contact_iter == deepest_contacts.end())

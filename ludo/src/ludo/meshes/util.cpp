@@ -6,7 +6,7 @@
 
 namespace ludo
 {
-  void write_vertex(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position, const vec3& normal, const vec2& tex_coord, bool unique_only, bool no_normal_check)
+  void write_vertex(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position, const vec3& normal, const vec4& color, const vec2& tex_coord, bool unique_only, bool no_normal_check)
   {
     if (unique_only)
     {
@@ -15,6 +15,7 @@ namespace ludo
       {
         if (near(cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset), position) &&
             (no_normal_check || !format.has_normal || near(cast<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset), normal)) &&
+            (!format.has_color || near(cast<vec4>(mesh.vertex_buffer, byte_index + format.color_offset), color)) &&
             (!format.has_texture_coordinate || near(cast<vec2>(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset), tex_coord)))
         {
           cast<uint32_t>(mesh.index_buffer, index_index * sizeof(uint32_t)) = existing_vertex_index;
@@ -31,6 +32,7 @@ namespace ludo
     auto byte_index = vertex_index * format.size;
     cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset) = position;
     if (format.has_normal) cast<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset) = normal;
+    if (format.has_color) cast<vec4>(mesh.vertex_buffer, byte_index + format.color_offset) = color;
     if (format.has_texture_coordinate) cast<vec2>(mesh.vertex_buffer, byte_index + format.texture_coordinate_offset) = tex_coord;
 
     cast<uint32_t>(mesh.index_buffer, index_index * sizeof(uint32_t)) = vertex_index;

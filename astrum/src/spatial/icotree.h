@@ -16,7 +16,7 @@ namespace astrum
     uint64_t id = 0; ///< The ID of the icotree.
 
     uint32_t divisions = 1; ///< The number of divisions (layers) in the icotree.
-    uint32_t cell_capacity = 16; ///< The maximum number of mesh instances that can be added to a cell.
+    uint32_t cell_capacity = 16; ///< The maximum number of render meshes that can be added to a cell.
     uint32_t max_populated_cells = 1;
 
     ludo::buffer buffer;

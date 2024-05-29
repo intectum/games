@@ -7,13 +7,14 @@
 
 #include <assimp/scene.h>
 
-#include <ludo/core.h>
+#include <ludo/importing.h>
+#include <ludo/physics.h>
 
 #include "util.h"
 
 namespace ludo
 {
-  void import_body_shape(instance& instance, const aiScene& assimp_scene, const import_object& rigid_body_object, const std::string& partition);
+  void import_body_shapes(import_results& results, const aiScene& assimp_scene, const std::vector<import_object>& rigid_body_objects);
 }
 
 #endif // LUDO_ASSIMP_PHYSICS_H

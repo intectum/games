@@ -14,20 +14,24 @@ namespace ludo
   /// A linear octree.
   struct LUDO_API octree
   {
-    uint64_t id = 0; ///< The ID of the octree.
+    uint64_t id = 0; ///< A unique identifier.
 
     aabb3 bounds; ///< The outer bounds.
-    uint32_t divisions = 1; ///< The number of divisions (layers) in the octree.
+    uint32_t divisions = 1; ///< The number of divisions (layers).
     uint32_t cell_capacity = 16; ///< The maximum number of elements that can be added to a cell.
 
-    ludo::buffer buffer;
+    ludo::buffer buffer; ///< The cell data.
   };
 
-  template<>
-  LUDO_API octree* add(instance& instance, const octree& init, const std::string& partition);
+  ///
+  /// Initializes an octree.
+  /// \param octree The octree.
+  LUDO_API void init(octree& octree);
 
-  template<>
-  LUDO_API void remove<octree>(instance& instance, octree* element, const std::string& partition);
+  ///
+  /// De-initializes an octree.
+  /// \param octree The octree.
+  LUDO_API void de_init(octree& octree);
 
   ///
   /// Adds an element to an octree.

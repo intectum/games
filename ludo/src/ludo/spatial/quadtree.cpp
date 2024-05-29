@@ -17,34 +17,27 @@ namespace ludo
   uint32_t to_index(const quadtree& quadtree, const std::array<uint32_t, 2>& cell_coordinates);
   std::array<uint32_t, 2> to_cell_coordinates(const quadtree& quadtree, const vec2& position);
 
-  template<>
-  quadtree* add(instance& instance, const quadtree& init, const std::string& partition)
+  void init(quadtree& quadtree)
   {
-    auto quadtree = add(data<ludo::quadtree>(instance), init, partition);
-    quadtree->id = next_id++;
+    quadtree.id = next_id++;
 
-    auto cell_count = static_cast<uint32_t>(std::pow(4, quadtree->divisions));
-    auto cell_size = sizeof(uint32_t) + quadtree->cell_capacity * sizeof(uint32_t);
+    auto cell_count = static_cast<uint32_t>(std::pow(4, quadtree.divisions));
+    auto cell_size = sizeof(uint32_t) + quadtree.cell_capacity * sizeof(uint32_t);
 
     auto data_size = cell_count * cell_size;
-    quadtree->buffer = allocate(data_size);
+    quadtree.buffer = allocate(data_size);
 
     auto offset = uint32_t(0);
     for (auto cell_index = uint32_t(0); cell_index < cell_count; cell_index++)
     {
-      cast<uint32_t>(quadtree->buffer, offset) = 0;
+      cast<uint32_t>(quadtree.buffer, offset) = 0;
       offset += cell_size;
     }
-
-    return quadtree;
   }
 
-  template<>
-  void remove<quadtree>(instance& instance, quadtree* element, const std::string& partition)
+  void de_init(quadtree& quadtree)
   {
-    deallocate(element->buffer);
-
-    remove(data<quadtree>(instance), element, partition);
+    deallocate(quadtree.buffer);
   }
 
   void add(quadtree& quadtree, uint32_t element, const ludo::vec2& position)

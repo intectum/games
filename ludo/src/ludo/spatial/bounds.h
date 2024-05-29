@@ -13,22 +13,22 @@ namespace ludo
   /// A 2D axis-aligned bounding box.
   struct LUDO_API aabb2
   {
-    vec2 min = vec2_zero;
-    vec2 max = vec2_zero;
+    vec2 min = vec2_zero; ///< The corner with the minimum values in all dimensions.
+    vec2 max = vec2_zero; ///< The corner with the maximum values in all dimensions.
   };
 
   ///
   /// A 3D axis-aligned bounding box.
   struct LUDO_API aabb3
   {
-    vec3 min = vec3_zero;
-    vec3 max = vec3_zero;
+    vec3 min = vec3_zero; ///< The corner with the minimum values in all dimensions.
+    vec3 max = vec3_zero; ///< The corner with the maximum values in all dimensions.
   };
 
   ///
   /// Calculates the bounds of the given mesh.
   /// \param mesh The mesh.
-  /// \param format The vertex format of the mesh.
+  /// \param format The vertex format.
   /// \return The bounds of the given mesh.
   LUDO_API aabb3 bounds(const mesh& mesh, const vertex_format& format);
 

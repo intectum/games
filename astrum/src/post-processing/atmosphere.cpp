@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include <FreeImagePlus.h>
 
 #include <ludo/opengl/textures.h>
@@ -17,46 +15,42 @@ namespace astrum
   float atmospheric_density(float scale_height, float altitude);
   float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position);
 
-  void add_atmosphere(ludo::instance& inst, uint64_t vertex_shader_id, const ludo::mesh_instance& mesh_instance, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
+  const auto shader_buffer_size = 4 * sizeof(uint64_t) + sizeof(ludo::vec3) + 2 * sizeof(float);
+
+  void add_atmosphere(ludo::instance& inst, const ludo::render_mesh& render_mesh, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
   {
     auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
     auto& previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
 
-    auto& draw_commands = data_heap(inst, "ludo::vram_draw_commands");
+    auto& render_commands = data_heap(inst, "ludo::vram_render_commands");
 
-    auto fragment_stream = std::ifstream("assets/shaders/atmosphere.frag");
-    auto fragment_shader = ludo::add(inst, ludo::shader(), ludo::shader_type::FRAGMENT, fragment_stream);
-    auto render_program = ludo::add(
-      inst,
-      ludo::render_program
-      {
-        .vertex_shader_id = vertex_shader_id,
-        .fragment_shader_id = fragment_shader->id,
-        .format = ludo::vertex_format_pt,
-        .command_buffer = ludo::allocate(draw_commands, sizeof(ludo::draw_command)),
-        .shader_buffer = ludo::allocate_dual(16 * 3)
-      },
-      "atmosphere"
-    );
+    auto render_program = ludo::add(inst, ludo::render_program { .format = ludo::vertex_format_pt }, "atmosphere");
+    ludo::init(*render_program, ludo::asset_folder + "/shaders/post.vert", ludo::asset_folder + "/shaders/atmosphere.frag", render_commands, 1);
+    render_program->shader_buffer = ludo::allocate_dual(shader_buffer_size);
 
     auto frame_buffer = add_post_processing_frame_buffer(inst);
-    auto shader_buffer = create_post_processing_shader_buffer(previous_frame_buffer.color_texture_ids[0], previous_frame_buffer.depth_texture_id);
 
     auto stream = ludo::stream(render_program->shader_buffer.back);
 
+    auto source_color_texture = ludo::get<ludo::texture>(inst, previous_frame_buffer.color_texture_ids[0]);
+    ludo::write(stream, ludo::handle(*source_color_texture));
+
+    auto source_depth_texture = ludo::get<ludo::texture>(inst, previous_frame_buffer.depth_texture_id);
+    ludo::write(stream, ludo::handle(*source_depth_texture));
+
     auto atmosphere_image = fipImage();
-    atmosphere_image.load("assets/effects/atmosphere.tiff");
+    atmosphere_image.load((ludo::asset_folder + "/effects/atmosphere.tiff").c_str());
 
-    auto atmosphere_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT32, .width = atmosphere_image.getWidth(), .height = atmosphere_image.getHeight() }, { .clamp = true });
-
+    auto atmosphere_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT32, .width = atmosphere_image.getWidth(), .height = atmosphere_image.getHeight() });
+    ludo::init(*atmosphere_texture, { .clamp = true });
     ludo::write(*atmosphere_texture, reinterpret_cast<std::byte*>(atmosphere_image.accessPixels()));
     ludo::write(stream, ludo::handle(*atmosphere_texture));
 
     auto blue_noise_image = fipImage();
-    blue_noise_image.load("assets/effects/blue-noise.png");
+    blue_noise_image.load((ludo::asset_folder + "/effects/blue-noise.png").c_str());
 
     auto blue_noise_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::RGBA, .width = blue_noise_image.getWidth(), .height = blue_noise_image.getHeight() });
-
+    ludo::init(*blue_noise_texture);
     ludo::write(*blue_noise_texture, reinterpret_cast<std::byte*>(blue_noise_image.accessPixels()));
     ludo::write(stream, ludo::handle(*blue_noise_texture));
 
@@ -65,22 +59,23 @@ namespace astrum
     ludo::write(stream, planet_radius);
     ludo::write(stream, atmosphere_radius);
 
-    ludo::add<ludo::script>(inst, [celestial_body_index](ludo::instance& inst)
-    {
-      auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
-      auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
-
-      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 16) = celestial_body_point_masses[celestial_body_index].transform.position;
-    });
-
     ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
     {
-      ludo::add_draw_command(*render_program, mesh_instance);
-      ludo::render(inst,
-      {
-        .frame_buffer_id = frame_buffer->id,
-        .shader_buffer = shader_buffer
-      });
+      auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+      auto& render_programs = ludo::data<ludo::render_program>(inst);
+      auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
+
+      auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+      auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+      auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+      auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
+
+      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 4 * sizeof(uint64_t)) = celestial_body_point_masses[celestial_body_index].transform.position;
+
+      ludo::use_and_clear(*frame_buffer);
+      ludo::add_render_command(*render_program, render_mesh);
+      ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
     });
   }
 

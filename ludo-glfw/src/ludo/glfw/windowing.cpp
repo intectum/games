@@ -10,106 +10,34 @@
 
 #include "input.h"
 
+// TODO maintains a user pointer which can easily be invalidated!
+
 namespace ludo
 {
-  void shift_user_pointers(const window* begin, const window* end, int32_t amount);
-
-  void update_windows(instance& instance)
+  void init(window& window)
   {
-    auto& windows = data<window>(instance);
-
-    for (auto& window : windows)
+    // This first part only really needs to happen once, but it is idempotent.
     {
-      for (auto& active_keyboard_button_state : window.active_keyboard_button_states)
+      glfwSetErrorCallback([](int error, const char* description)
       {
-        if (active_keyboard_button_state.second == button_state::DOWN)
-        {
-          active_keyboard_button_state.second = button_state::HOLD;
-        }
-        else if (active_keyboard_button_state.second == button_state::UP)
-        {
-          active_keyboard_button_state.second = button_state::NONE;
-        }
-      }
+        std::cout << "GLFW error " << error << ": " << description << std::endl;
+        assert(false && "GLFW error");
+      });
 
-      for (auto& active_mouse_button_state : window.active_mouse_button_states)
+      if (!glfwInit())
       {
-        if (active_mouse_button_state.second == button_state::DOWN)
-        {
-          active_mouse_button_state.second = button_state::HOLD;
-        }
-        else if (active_mouse_button_state.second == button_state::UP)
-        {
-          active_mouse_button_state.second = button_state::NONE;
-        }
+        std::cout << "failed to initialize GLFW" << std::endl;
+        assert(false && "failed to initialize GLFW");
       }
-
-      for (auto& active_window_frame_button_states : window.active_window_frame_button_states)
-      {
-        if (active_window_frame_button_states.second == button_state::UP)
-        {
-          active_window_frame_button_states.second = button_state::NONE;
-
-          if (window.stop_on_close)
-          {
-            stop(instance);
-          }
-        }
-      }
-
-      window.mouse_movement = { 0, 0 };
-
-      window.scroll = { 0.0f, 0.0f };
-
-      glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(window.id));
     }
 
-    glfwPollEvents();
-  }
-
-  template<>
-  windowing_context* add(instance& instance, const windowing_context& init, const std::string& partition)
-  {
-    auto windowing_context = add(data<ludo::windowing_context>(instance), init, partition);
-    windowing_context->id = next_id++;
-
-    glfwSetErrorCallback([](int error, const char* description)
-    {
-      std::cout << "GLFW error " << error << ": " << description << std::endl;
-      assert(false && "GLFW error");
-    });
-
-    if (!glfwInit())
-    {
-      std::cout << "failed to initialize GLFW" << std::endl;
-      assert(false && "failed to initialize GLFW");
-    }
-
-    return windowing_context;
-  }
-
-  template<>
-  void remove<windowing_context>(instance& instance, windowing_context* element, const std::string& partition)
-  {
-    glfwTerminate();
-
-    remove(data<windowing_context>(instance), element, partition);
-  }
-
-  template<>
-  window* add(instance& instance, const window& init, const std::string& partition)
-  {
-    auto& windows = data<ludo::window>(instance);
-    auto window = add(windows, init, partition);
-    shift_user_pointers(window + 1, windows.end(), 1);
-
-    auto glfw_window = glfwCreateWindow(static_cast<int32_t>(window->width), static_cast<int32_t>(window->height), window->title.c_str(), nullptr, nullptr);
-    window->id = reinterpret_cast<uint64_t>(glfw_window);
-    glfwSetWindowUserPointer(glfw_window, window);
+    auto glfw_window = glfwCreateWindow(static_cast<int32_t>(window.width), static_cast<int32_t>(window.height), window.title.c_str(), nullptr, nullptr);
+    window.id = reinterpret_cast<uint64_t>(glfw_window);
+    glfwSetWindowUserPointer(glfw_window, &window);
 
     glfwMakeContextCurrent(glfw_window);
 
-    if (!window->v_sync)
+    if (!window.v_sync)
     {
       glfwSwapInterval(0);
     }
@@ -182,7 +110,7 @@ namespace ludo
     {
       auto& window = *static_cast<ludo::window*>(glfwGetWindowUserPointer(glfw_window));
 
-      window.scroll = { static_cast<float>(xoffset), static_cast<float>(yoffset) };
+      window.mouse_scroll = { static_cast<float>(xoffset), static_cast<float>(yoffset) };
     });
 
     glfwSetWindowCloseCallback(glfw_window, [](GLFWwindow* glfw_window)
@@ -191,19 +119,59 @@ namespace ludo
 
       window.active_window_frame_button_states[window_frame_button::CLOSE] = button_state::UP;
     });
-
-    return window;
   }
 
-  template<>
-  void remove<window>(instance& instance, window* element, const std::string& partition)
+  void de_init(window& window)
   {
-    auto& windows = data<window>(instance, partition);
+    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.id));
+    window.id = 0;
+  }
 
-    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(element->id));
 
-    shift_user_pointers(element, windows.end(), -1);
-    remove(data<window>(instance), element, partition);
+  void swap_buffers(window& window)
+  {
+    glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(window.id));
+  }
+
+  void receive_input(window& window, instance& instance)
+  {
+    for (auto& active_keyboard_button_state : window.active_keyboard_button_states)
+    {
+      if (active_keyboard_button_state.second == button_state::DOWN)
+      {
+        active_keyboard_button_state.second = button_state::HOLD;
+      }
+      else if (active_keyboard_button_state.second == button_state::UP)
+      {
+        active_keyboard_button_state.second = button_state::NONE;
+      }
+    }
+
+    for (auto& active_mouse_button_state : window.active_mouse_button_states)
+    {
+      if (active_mouse_button_state.second == button_state::DOWN)
+      {
+        active_mouse_button_state.second = button_state::HOLD;
+      }
+      else if (active_mouse_button_state.second == button_state::UP)
+      {
+        active_mouse_button_state.second = button_state::NONE;
+      }
+    }
+
+    for (auto& active_window_frame_button_states : window.active_window_frame_button_states)
+    {
+      if (active_window_frame_button_states.second == button_state::UP)
+      {
+        active_window_frame_button_states.second = button_state::NONE;
+      }
+    }
+
+    window.mouse_movement = { 0, 0 };
+
+    window.mouse_scroll = { 0.0f, 0.0f };
+
+    glfwPollEvents();
   }
 
   void capture_mouse(window& window)
@@ -226,14 +194,5 @@ namespace ludo
 
     window.mouse_captured = false;
     glfwSetInputMode(reinterpret_cast<GLFWwindow*>(window.id), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  }
-
-  void shift_user_pointers(const window* begin, const window* end, int32_t amount)
-  {
-    for (auto current = begin; current < end; current++)
-    {
-      auto glfw_window = reinterpret_cast<GLFWwindow*>(current->id);
-      glfwSetWindowUserPointer(glfw_window, static_cast<window*>(glfwGetWindowUserPointer(glfw_window)) + amount);
-    }
   }
 }

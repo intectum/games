@@ -14,7 +14,7 @@ namespace ludo
   animation_node to_animation_node(const aiNodeAnim& original, int32_t bone_index);
   armature to_armature(const aiNode& assimp_node, const aiMesh& assimp_mesh, std::unordered_map<const aiNode*, bool>& bone_path, const mat4& root_matrix = mat4_identity, bool root_found = false);
 
-  uint64_t import_armature(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
+  armature import_armature(const aiScene& assimp_scene, const aiMesh& assimp_mesh)
   {
     auto bone_path = std::unordered_map<const aiNode*, bool>();
     find_bone_path(*assimp_scene.mRootNode, assimp_mesh, bone_path);
@@ -26,15 +26,15 @@ namespace ludo
 
     if (bone_path_iter == bone_path.end())
     {
-      return 0;
+      return {};
     }
 
-    return add(instance, to_armature(*assimp_scene.mRootNode, assimp_mesh, bone_path), partition)->id;
+    return to_armature(*assimp_scene.mRootNode, assimp_mesh, bone_path);
   }
 
-  std::vector<uint64_t> import_animations(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition)
+  std::vector<animation> import_animations(const aiScene& assimp_scene, const aiMesh& assimp_mesh)
   {
-    auto animations = std::vector<uint64_t>();
+    auto animations = std::vector<animation>();
 
     for (auto index = 0; index < assimp_scene.mNumAnimations; index++)
     {
@@ -49,20 +49,17 @@ namespace ludo
         nodes.emplace_back(to_animation_node(*assimp_node_anim, find_bone_index(assimp_mesh, std::string(assimp_node_anim->mNodeName.C_Str()))));
       }
 
-      auto animation = add(
-        instance,
-        ludo::animation
-        {
-          .name = assimp_animation->mName.C_Str(),
-          .ticks = static_cast<float>(assimp_animation->mDuration),
-          // Sometimes Assimp cannot determine the ticks per second, we default to 24 in this case (the default from Blender)
-          .ticks_per_second = static_cast<float>(assimp_animation->mTicksPerSecond == 0.0 ? 24.0 : assimp_animation->mTicksPerSecond),
-          .nodes = nodes
-        },
-        partition
-      );
+      auto animation = ludo::animation
+      {
+        .name = assimp_animation->mName.C_Str(),
+        .ticks = static_cast<float>(assimp_animation->mDuration),
+        // Sometimes Assimp cannot determine the ticks per second, we default to 24 in this case (the default from Blender)
+        .ticks_per_second = static_cast<float>(assimp_animation->mTicksPerSecond == 0.0 ? 24.0 : assimp_animation->mTicksPerSecond),
+        .nodes = nodes
+      };
+      init(animation);
 
-      animations.push_back(animation->id);
+      animations.push_back(animation);
     }
 
     return animations;
@@ -123,6 +120,8 @@ namespace ludo
     }
 
     auto node = armature { .transform = to_mat4(assimp_node.mTransformation) };
+    init(node);
+
     if (!root_found)
     {
       // We need to apply the combined ancestor matrices as well to get the root of the armature in global space.

@@ -14,20 +14,24 @@ namespace ludo
   /// A linear quadtree.
   struct LUDO_API quadtree
   {
-    uint64_t id = 0; ///< The ID of the quadtree.
+    uint64_t id = 0; ///< A unique identifier.
 
     aabb2 bounds; ///< The outer bounds.
-    uint32_t divisions = 1; ///< The number of divisions (layers) in the quadtree.
+    uint32_t divisions = 1; ///< The number of divisions (layers).
     uint32_t cell_capacity = 16; ///< The maximum number of elements that can be added to a cell.
 
-    ludo::buffer buffer;
+    ludo::buffer buffer; ///< The cell data.
   };
 
-  template<>
-  LUDO_API quadtree* add(instance& instance, const quadtree& init, const std::string& partition);
+  ///
+  /// Initializes an quadtree.
+  /// \param quadtree The quadtree.
+  LUDO_API void init(quadtree& quadtree);
 
-  template<>
-  LUDO_API void remove<quadtree>(instance& instance, quadtree* element, const std::string& partition);
+  ///
+  /// De-initializes an quadtree.
+  /// \param quadtree The quadtree.
+  LUDO_API void de_init(quadtree& quadtree);
 
   ///
   /// Adds an element to an quadtree.

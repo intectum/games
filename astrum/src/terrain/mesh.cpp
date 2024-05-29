@@ -68,8 +68,7 @@ namespace astrum
 
         auto color = terrain.color_func(positions[0][1], { height_0, height_1, height_2 }, ludo::dot(normal, positions[0]));
 
-        auto end_vertex_index = low_detail_face(terrain, mesh, low_detail_format, vertex_index, high_detail_divisions, { position_0, position_1, position_2 }, normal, color);
-        ludo::colorize(mesh, low_detail_format, vertex_index, end_vertex_index - vertex_index, color);
+        low_detail_face(terrain, mesh, low_detail_format, vertex_index, high_detail_divisions, { position_0, position_1, position_2 }, normal, color);
       }
 
       return high_detail_face(terrain, radius, mesh, high_detail_format, vertex_index, high_detail_divisions, positions);
@@ -96,9 +95,9 @@ namespace astrum
     {
       auto i = vertex_index;
       auto v = vertex_index;
-      ludo::write_vertex(mesh, format, i, v, positions[0], normal, { 0.0f, 0.0f }, false);
-      ludo::write_vertex(mesh, format, i, v, positions[1], normal, { 0.0f, 0.0f }, false);
-      ludo::write_vertex(mesh, format, i, v, positions[2], normal, { 0.0f, 0.0f }, false);
+      ludo::write_vertex(mesh, format, i, v, positions[0], normal, color, { 0.0f, 0.0f }, false);
+      ludo::write_vertex(mesh, format, i, v, positions[1], normal, color, { 0.0f, 0.0f }, false);
+      ludo::write_vertex(mesh, format, i, v, positions[2], normal, color, { 0.0f, 0.0f }, false);
 
       return vertex_index + 3;
     }
@@ -134,10 +133,9 @@ namespace astrum
 
       auto i = vertex_index;
       auto v = vertex_index;
-      ludo::write_vertex(mesh, format, i, v, position_0, normal, { 0.0f, 0.0f }, false);
-      ludo::write_vertex(mesh, format, i, v, position_1, normal, { 0.0f, 0.0f }, false);
-      ludo::write_vertex(mesh, format, i, v, position_2, normal, { 0.0f, 0.0f }, false);
-      ludo::colorize(mesh, format, vertex_index, 3, color);
+      ludo::write_vertex(mesh, format, i, v, position_0, normal, color, { 0.0f, 0.0f }, false);
+      ludo::write_vertex(mesh, format, i, v, position_1, normal, color, { 0.0f, 0.0f }, false);
+      ludo::write_vertex(mesh, format, i, v, position_2, normal, color, { 0.0f, 0.0f }, false);
 
       return vertex_index + 3;
     }

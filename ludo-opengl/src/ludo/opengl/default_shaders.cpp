@@ -4,10 +4,48 @@
 
 #include <ludo/animation.h>
 
-#include "standardized_shaders.h"
+#include "default_shaders.h"
 
 namespace ludo
 {
+  std::stringstream default_vertex_shader_code(const vertex_format& format)
+  {
+    auto code = std::stringstream();
+    write_header(code, format);
+    write_types(code, format);
+    write_inputs(code, format);
+    write_buffers(code, format);
+    code << std::endl;
+    code << "// Output" << std::endl;
+    code << std::endl;
+    code << "out point_t point;" << std::endl;
+    code << "out sampler2D sampler;" << std::endl;
+    write_vertex_main(code, format);
+
+    return code;
+  }
+
+  std::stringstream default_fragment_shader_code(const vertex_format& format)
+  {
+    auto code = std::stringstream();
+    write_header(code, format);
+    write_types(code, format);
+    code << std::endl;
+    code << "// Input" << std::endl;
+    code << std::endl;
+    code << "in point_t point;" << std::endl;
+    code << "in flat sampler2D sampler;" << std::endl;
+    write_buffers(code, format);
+    code << std::endl;
+    code << "// Output" << std::endl;
+    code << std::endl;
+    code << "out vec4 color;" << std::endl;
+    write_lighting_functions(code, format);
+    write_fragment_main(code, format);
+
+    return code;
+  }
+
   void write_header(std::ostream& stream, const vertex_format& format)
   {
     stream <<
@@ -98,11 +136,9 @@ layout(std430, binding = 0) buffer rendering_context_layout
   light_t lights[];
 };
 
-// binding = 1 is reserved for the render_layout
+// binding = 1 is reserved for the render_program_layout
 
-// binding = 2 is reserved for the render_program_layout
-
-layout(std430, binding = 3) buffer instance_layout
+layout(std430, binding = 2) buffer instance_layout
 {
   instance_t instances[];
 };

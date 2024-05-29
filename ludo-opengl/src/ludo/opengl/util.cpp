@@ -2,9 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <cassert>
 #include <iostream>
-
-#include <GL/glew.h>
 
 #include "util.h"
 

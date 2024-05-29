@@ -2,6 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include "textures.h"
 #include "util.h"
 
 namespace ludo
@@ -26,56 +27,51 @@ namespace ludo
     { pixel_datatype::FLOAT32, GL_FLOAT }
   };
 
-  template<>
-  texture* add(instance& instance, const texture& init, const std::string& partition)
+  void init(texture& texture, const texture_options& options)
   {
-    return add(instance, init, {}, partition);
-  }
-
-  texture* add(instance& instance, const texture& init, const texture_options& options, const std::string& partition)
-  {
-    auto texture = add(data<ludo::texture>(instance), init, partition);
-
     auto name = GLuint();
     glGenTextures(1, &name); check_opengl_error();
-    texture->id = name;
+    texture.id = name;
 
     if (options.samples > 1)
     {
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture->id); check_opengl_error();
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture.id); check_opengl_error();
       glTextureStorage2DMultisample(
-        texture->id,
+        texture.id,
         options.samples,
-        internal_pixel_format(*texture),
-        static_cast<GLsizei>(texture->width),
-        static_cast<GLsizei>(texture->height),
+        internal_pixel_format(texture),
+        static_cast<GLsizei>(texture.width),
+        static_cast<GLsizei>(texture.height),
         false
       ); check_opengl_error();
     }
     else
     {
-      glBindTexture(GL_TEXTURE_2D, texture->id); check_opengl_error();
-      glTextureParameteri(texture->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR); check_opengl_error();
-      glTextureParameteri(texture->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR); check_opengl_error();
+      glBindTexture(GL_TEXTURE_2D, texture.id); check_opengl_error();
+      glTextureStorage2D(
+        texture.id,
+        1,
+        internal_pixel_format(texture),
+        static_cast<GLsizei>(texture.width),
+        static_cast<GLsizei>(texture.height)
+      ); check_opengl_error();
+
+      glTextureParameteri(texture.id, GL_TEXTURE_MIN_FILTER, GL_LINEAR); check_opengl_error();
+      glTextureParameteri(texture.id, GL_TEXTURE_MAG_FILTER, GL_LINEAR); check_opengl_error();
 
       if (options.clamp)
       {
-        glTextureParameteri(texture->id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); check_opengl_error();
-        glTextureParameteri(texture->id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); check_opengl_error();
+        glTextureParameteri(texture.id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); check_opengl_error();
+        glTextureParameteri(texture.id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); check_opengl_error();
       }
     }
-
-    return texture;
   }
 
-  template<>
-  void remove<texture>(instance& instance, texture* element, const std::string& partition)
+  void de_init(texture& texture)
   {
-    auto name = static_cast<GLuint>(element->id);
-
+    auto name = static_cast<GLuint>(texture.id);
     glDeleteTextures(1, &name); check_opengl_error();
-
-    remove(data<texture>(instance), element, partition);
+    texture.id = 0;
   }
 
   std::vector<std::byte> read(const texture& texture)
@@ -96,14 +92,13 @@ namespace ludo
 
   void write(texture& texture, const std::byte* data)
   {
-    glTextureImage2DEXT(
+    glTextureSubImage2D(
       texture.id,
-      GL_TEXTURE_2D,
       0,
-      internal_pixel_format(texture),
+      0,
+      0,
       static_cast<GLsizei>(texture.width),
       static_cast<GLsizei>(texture.height),
-      0,
       pixel_formats[texture.components],
       pixel_types[texture.datatype],
       data

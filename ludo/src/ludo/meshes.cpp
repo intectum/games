@@ -4,7 +4,6 @@
 
 #include "animation.h"
 #include "meshes.h"
-#include "rendering.h"
 
 namespace ludo
 {
@@ -54,98 +53,27 @@ namespace ludo
     return format;
   }
 
-  mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition)
+  void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size)
   {
-    auto mesh = add(instance, init, partition);
+    mesh.id = next_id++;
 
-    auto& indices = data_heap(instance, "ludo::vram_indices");
-    mesh->index_buffer = allocate(indices, index_count * sizeof(uint32_t));
-
-    auto& vertices = data_heap(instance, "ludo::vram_vertices");
-    mesh->vertex_buffer = allocate(vertices, vertex_count * vertex_size, vertex_size);
-
-    mesh->vertex_size = vertex_size;
-
-    return mesh;
+    mesh.index_buffer = allocate(indices, index_count * sizeof(uint32_t));
+    mesh.vertex_buffer = allocate(vertices, vertex_count * vertex_size, vertex_size);
+    mesh.vertex_size = vertex_size;
   }
 
-  template<>
-  void remove<mesh>(instance& instance, mesh* element, const std::string& partition)
+  void de_init(mesh& mesh, heap& indices, heap& vertices)
   {
-    if (element->index_buffer.data)
+    mesh.id = 0;
+
+    if (mesh.index_buffer.data)
     {
-      auto& indices = data_heap(instance, "ludo::vram_indices");
-      deallocate(indices, element->index_buffer);
+      deallocate(indices, mesh.index_buffer);
     }
 
-    if (element->vertex_buffer.data)
+    if (mesh.vertex_buffer.data)
     {
-      auto& vertices = data_heap(instance, "ludo::vram_vertices");
-      deallocate(vertices, element->vertex_buffer);
+      deallocate(vertices, mesh.vertex_buffer);
     }
-
-    remove(data<mesh>(instance), element, partition);
-  }
-
-  mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, uint32_t capacity, const std::string& partition)
-  {
-    auto mesh_instance = add(instance, init, partition);
-
-    auto& indices = data_heap(instance, "ludo::vram_indices");
-    mesh_instance->indices.start = (mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
-    mesh_instance->indices.count = mesh.index_buffer.size / sizeof(uint32_t);
-
-    auto& vertices = data_heap(instance, "ludo::vram_vertices");
-    mesh_instance->vertices.start = (mesh.vertex_buffer.data - vertices.data) / mesh.vertex_size;
-    mesh_instance->vertices.count = mesh.vertex_buffer.size / mesh.vertex_size;
-
-    if (mesh_instance->render_program_id)
-    {
-      auto render_program = get<ludo::render_program>(instance, mesh_instance->render_program_id);
-      mesh_instance->instance_buffer = allocate(render_program->instance_buffer_back, render_program->instance_size * capacity);
-      mesh_instance->instance_size = render_program->instance_size;
-
-      for (auto instance_index = uint32_t(0); instance_index < capacity; instance_index++)
-      {
-        instance_transform(*mesh_instance, instance_index) = mat4_identity;
-
-        if (mesh.texture_id)
-        {
-          set_texture(*mesh_instance, texture { .id = mesh.texture_id }, instance_index);
-        }
-
-        if (mesh.armature_id)
-        {
-          std::array<mat4, max_bones_per_armature> bone_transforms;
-          bone_transforms.fill(mat4_identity);
-
-          set_bone_transforms(*mesh_instance, bone_transforms, instance_index);
-        }
-      }
-    }
-
-    return mesh_instance;
-  }
-
-  template<>
-  void remove<mesh_instance>(instance& instance, mesh_instance* element, const std::string& partition)
-  {
-    if (element->render_program_id && element->instance_buffer.data)
-    {
-      auto render_program = get<ludo::render_program>(instance, element->render_program_id);
-      deallocate(render_program->instance_buffer_back, element->instance_buffer);
-    }
-
-    remove(data<mesh_instance>(instance), element, partition);
-  }
-
-  mat4& instance_transform(mesh_instance& mesh_instance, uint32_t instance_index)
-  {
-    return cast<mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size);
-  }
-
-  const mat4& instance_transform(const mesh_instance& mesh_instance, uint32_t instance_index)
-  {
-    return cast<const mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size);
   }
 }

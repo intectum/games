@@ -11,6 +11,7 @@ namespace astrum
 
     auto& point_masses = ludo::data<point_mass>(inst);
 
+    auto physics_context = ludo::first<ludo::physics_context>(inst);
     auto& celestial_body_static_bodies = ludo::data<ludo::static_body>(inst, "celestial-bodies");
 
     for (auto& point_mass_partition : point_masses.partitions)
@@ -29,14 +30,14 @@ namespace astrum
             auto& kinematic_body = (*kinematic_body_partition)[index];
 
             // Temporarily update the kinematic body to predict contacts.
-            kinematic_body.transform.position += point_mass.linear_velocity * inst.delta_time * game_speed;
-            ludo::push(kinematic_body);
+            kinematic_body.transform.position += point_mass.linear_velocity * inst.delta_time;
+            ludo::commit(kinematic_body);
 
-            auto contacts = ludo::contacts(inst, kinematic_body);
+            auto contacts = ludo::contacts(*physics_context, kinematic_body.id);
             auto deepest_contacts = astrum::deepest_contacts(contacts);
             for (auto& deepest_contact : deepest_contacts)
             {
-              auto static_body = ludo::find_by_id(static_bodies.begin(), static_bodies.end(), deepest_contact.body_b->id);
+              auto static_body = ludo::find_by_id(static_bodies.begin(), static_bodies.end(), deepest_contact.body_b_id);
               if (static_body == static_bodies.end())
               {
                 continue;
@@ -49,7 +50,7 @@ namespace astrum
                 point_mass.linear_velocity -= velocity_toward_contact;
 
                 // Since we ar no longer moving toward the contact, we need to advance to the contact
-                point_mass.transform.position += velocity_toward_contact * inst.delta_time * game_speed;
+                point_mass.transform.position += velocity_toward_contact * inst.delta_time;
                 point_mass.transform.position += deepest_contact.normal_b * -deepest_contact.distance;
 
                 if (static_body >= &celestial_body_static_bodies[0] && static_body <= &celestial_body_static_bodies[celestial_body_static_bodies.length - 1])
@@ -60,12 +61,13 @@ namespace astrum
               }
             }
 
-            point_mass.transform.position += point_mass.linear_velocity * inst.delta_time * game_speed;
+            point_mass.transform.position += point_mass.linear_velocity * inst.delta_time;
             kinematic_body.transform = point_mass.transform;
+            ludo::commit(kinematic_body);
           }
           else
           {
-            point_mass.transform.position += point_mass.linear_velocity * inst.delta_time * game_speed;
+            point_mass.transform.position += point_mass.linear_velocity * inst.delta_time;
           }
         }
 
@@ -77,27 +79,27 @@ namespace astrum
     }
   }
 
-  void sync_mesh_instances_with_point_masses(ludo::instance& inst, const std::vector<std::string>& partitions)
+  void sync_render_meshes_with_point_masses(ludo::instance& inst, const std::vector<std::string>& partitions)
   {
     auto& grid = *ludo::first<ludo::grid3>(inst, "default");
-    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+    auto& render_meshes = ludo::data<ludo::render_mesh>(inst);
 
     auto& point_masses = ludo::data<point_mass>(inst);
 
     for (auto& partition : partitions)
     {
       auto& partition_point_masses = ludo::find(point_masses, partition)->second;
-      auto& partition_mesh_instances = ludo::find(mesh_instances, partition)->second;
+      auto& partition_render_meshes = ludo::find(render_meshes, partition)->second;
 
       for (auto index = 0; index < partition_point_masses.length; index++)
       {
-        auto& mesh_instance = partition_mesh_instances[index];
+        auto& render_mesh = partition_render_meshes[index];
         auto& point_mass = partition_point_masses[index];
 
-        auto old_transform = ludo::instance_transform(mesh_instance);
+        auto old_transform = ludo::instance_transform(render_mesh);
         auto new_transform = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
-        ludo::instance_transform(mesh_instance) = new_transform;
+        ludo::instance_transform(render_mesh) = new_transform;
 
         auto old_position = ludo::position(old_transform);
         auto new_position = ludo::position(new_transform);
@@ -105,8 +107,8 @@ namespace astrum
         auto movement = new_position - old_position;
         if (ludo::length2(movement) > 0.0f)
         {
-          ludo::remove(grid, mesh_instance, old_position, true);
-          ludo::add(grid, mesh_instance, new_position, true);
+          ludo::remove(grid, render_mesh, old_position);
+          ludo::add(grid, render_mesh, new_position);
         }
       }
     }

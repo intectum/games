@@ -63,12 +63,13 @@ namespace astrum
   {
     auto& person_kinematic_body = ludo::data<ludo::kinematic_body>(inst, "people")[game_controls.person_index];
     auto& spaceship_ghost_bodies = ludo::data<ludo::ghost_body>(inst, "spaceships");
+    auto physics_context = ludo::first<ludo::physics_context>(inst);
 
     for (auto spaceship_index = uint32_t(0); spaceship_index < spaceship_ghost_bodies.length; spaceship_index++)
     {
-      for (auto& contact : ludo::contacts(inst, spaceship_ghost_bodies[spaceship_index]))
+      for (auto& contact : ludo::contacts(*physics_context, spaceship_ghost_bodies[spaceship_index].id))
       {
-        if (contact.body_b == &person_kinematic_body)
+        if (contact.body_b_id == person_kinematic_body.id)
         {
           enter_spaceship(inst, game_controls.person_index, spaceship_index);
 

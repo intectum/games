@@ -23,10 +23,21 @@ namespace astrum
 {
   void add_solar_system(ludo::instance& inst)
   {
-    ludo::import(inst, "assets/models/fruit-tree-1.dae", { .merge_meshes = true }, "trees");
-    ludo::import(inst, "assets/models/fruit-tree-2.dae", { .merge_meshes = true }, "trees");
-    ludo::import(inst, "assets/models/minifig.dae", {}, "people");
-    ludo::import(inst, "assets/models/spaceship.obj", {}, "spaceships");
+    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+
+    auto fruit_tree_1 = ludo::import(ludo::asset_folder + "/models/fruit-tree-1.dae", indices, vertices, { .merge_meshes = true });
+    ludo::add(inst, fruit_tree_1.meshes[0], "trees");
+    auto fruit_tree_2 = ludo::import(ludo::asset_folder + "/models/fruit-tree-2.dae", indices, vertices, { .merge_meshes = true });
+    ludo::add(inst, fruit_tree_2.meshes[0], "trees");
+    auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
+    ludo::add(inst, minifig.animations[0], "people");
+    ludo::add(inst, minifig.armatures[0], "people");
+    ludo::add(inst, minifig.dynamic_body_shapes[0], "people");
+    ludo::add(inst, minifig.meshes[0], "people");
+    ludo::add(inst, minifig.textures[0], "people");
+    auto spaceship = ludo::import(ludo::asset_folder + "/models/spaceship.obj", indices, vertices);
+    ludo::add(inst, spaceship.meshes[0], "spaceships");
 
     ludo::add(inst, solar_system());
 
@@ -92,7 +103,12 @@ namespace astrum
     ludo::add<ludo::script>(inst, relativize_universe);
 
     ludo::add<ludo::script>(inst, simulate_gravity);
-    ludo::add<ludo::script, float, float>(inst, ludo::simulate_physics, 1.0f / 60.0f, game_speed);
+    ludo::add<ludo::script>(inst, [](ludo::instance& inst)
+    {
+      auto physics_context = ludo::first<ludo::physics_context>(inst);
+
+      ludo::simulate(*physics_context, inst.delta_time);
+    });
     ludo::add<ludo::script, std::vector<std::string>>(inst, simulate_point_mass_physics, { "people", "spaceships" });
 
     ludo::add<ludo::script>(inst, stream_terrain);
@@ -105,7 +121,7 @@ namespace astrum
 
     ludo::add<ludo::script>(inst, control_game);
 
-    ludo::add<ludo::script, std::vector<std::string>>(inst, sync_mesh_instances_with_point_masses, { "people", "spaceships" });
+    ludo::add<ludo::script, std::vector<std::string>>(inst, sync_render_meshes_with_point_masses, { "people", "spaceships" });
 
     if (show_paths)
     {

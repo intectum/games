@@ -14,14 +14,7 @@
 namespace ludo
 {
   ///
-  /// A windowing context.
-  struct LUDO_API windowing_context
-  {
-    uint64_t id = 0; ///< The ID of the windowing context.
-  };
-
-  ///
-  /// The buttons on a window frame
+  /// The buttons on a window frame.
   enum class window_frame_button
   {
     CLOSE
@@ -29,48 +22,56 @@ namespace ludo
 
   struct LUDO_API window
   {
-    uint64_t id = 0; ///< The ID of the window.
+    uint64_t id = 0; ///< A unique identifier.
 
-    std::string title;
+    std::string title; ///< The title.
 
-    uint32_t width = 1280;
-    uint32_t height = 720;
+    uint32_t width = 1280; ///< The width.
+    uint32_t height = 720; ///< The height.
 
-    bool fullscreen = false;
-    bool v_sync = true;
-    bool stop_on_close = true;
+    bool fullscreen = false; ///< Determines if the window is fullscreen.
+    bool v_sync = true; ///< Determines if the window is vertically synchronized.
 
-    std::unordered_map<window_frame_button, button_state> active_window_frame_button_states;
+    std::unordered_map<window_frame_button, button_state> active_window_frame_button_states; ///< The currently active window frame buttons.
 
-    std::unordered_map<keyboard_button, button_state> active_keyboard_button_states;
+    std::unordered_map<keyboard_button, button_state> active_keyboard_button_states; ///< The currently active keyboard buttons.
 
-    bool mouse_captured = false;
-    std::array<int32_t, 2> mouse_position;
-    std::array<int32_t, 2> mouse_movement;
-    std::unordered_map<mouse_button, button_state> active_mouse_button_states;
-
-    std::array<float, 2> scroll;
+    bool mouse_captured = false; ///< Determines if the mouse is captured.
+    std::array<int32_t, 2> mouse_position; ///< The current position of the mouse.
+    std::array<int32_t, 2> mouse_movement; ///< The current movement of the mouse.
+    std::array<float, 2> mouse_scroll; ///< The current mouse scroll.
+    std::unordered_map<mouse_button, button_state> active_mouse_button_states; ///< The currently active mouse buttons.
   };
 
   ///
-  /// Updates the windows within the given context.
-  /// \param instance The instance to update windows for.
-  void update_windows(instance& instance);
+  /// Initializes a window.
+  /// \param window The window.
+  LUDO_API void init(window& window);
 
-  template<>
-  windowing_context* add(instance& instance, const windowing_context& init, const std::string& partition);
+  ///
+  /// De-initializes a window.
+  /// \param window The window.
+  LUDO_API void de_init(window& window);
 
-  template<>
-  void remove<windowing_context>(instance& instance, windowing_context* element, const std::string& partition);
+  ///
+  /// Swaps the frame buffers in a window.
+  /// \param window The window.
+  LUDO_API void swap_buffers(window& window);
 
-  template<>
-  window* add(instance& instance, const window& init, const std::string& partition);
+  ///
+  /// Receives input from a window.
+  /// \param window The window.
+  /// \param instance The instance.
+  LUDO_API void receive_input(window& window, instance& instance);
 
-  template<>
-  void remove<window>(instance& instance, window* element, const std::string& partition);
-
+  ///
+  /// Captures the mouse to a window.
+  /// \param window The window.
   LUDO_API void capture_mouse(window& window);
 
+  ///
+  /// Releases a mouse from a window.
+  /// \param window The window.
   LUDO_API void release_mouse(window& window);
 }
 

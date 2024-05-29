@@ -17,34 +17,27 @@ namespace ludo
   uint32_t to_index(const octree& octree, const std::array<uint32_t, 3>& cell_coordinates);
   std::array<uint32_t, 3> to_cell_coordinates(const octree& octree, const vec3& position);
 
-  template<>
-  octree* add(instance& instance, const octree& init, const std::string& partition)
+  void init(octree& octree)
   {
-    auto octree = add(data<ludo::octree>(instance), init, partition);
-    octree->id = next_id++;
+    octree.id = next_id++;
 
-    auto cell_count = static_cast<uint32_t>(std::pow(8, octree->divisions));
-    auto cell_size = sizeof(uint32_t) + octree->cell_capacity * sizeof(uint32_t);
+    auto cell_count = static_cast<uint32_t>(std::pow(8, octree.divisions));
+    auto cell_size = sizeof(uint32_t) + octree.cell_capacity * sizeof(uint32_t);
 
     auto data_size = cell_count * cell_size;
-    octree->buffer = allocate(data_size);
+    octree.buffer = allocate(data_size);
 
     auto offset = uint32_t(0);
     for (auto cell_index = uint32_t(0); cell_index < cell_count; cell_index++)
     {
-      cast<uint32_t>(octree->buffer, offset) = 0;
+      cast<uint32_t>(octree.buffer, offset) = 0;
       offset += cell_size;
     }
-
-    return octree;
   }
 
-  template<>
-  void remove<octree>(instance& instance, octree* element, const std::string& partition)
+  void de_init(octree& octree)
   {
-    deallocate(element->buffer);
-
-    remove(data<octree>(instance), element, partition);
+    deallocate(octree.buffer);
   }
 
   void add(octree& octree, uint32_t element, const ludo::vec3& position)

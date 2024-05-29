@@ -55,26 +55,32 @@ namespace ludo
   };
 
   ///
+  /// Initializes an armature.
+  /// \param armature The armature.
+  LUDO_API void init(armature& armature);
+
+  ///
+  /// De-initializes an armature.
+  /// \param armature The armature.
+  LUDO_API void de_init(armature& armature);
+
+  ///
+  /// Initializes an animation.
+  /// \param animation The animation.
+  LUDO_API void init(animation& animation);
+
+  ///
+  /// De-initializes an animation.
+  /// \param animation The animation.
+  LUDO_API void de_init(animation& animation);
+
+  ///
   /// Interpolates an animation.
   /// \param animation The animation to interpolate.
   /// \param armature The armature to interpolate the animation on.
   /// \param time The time within the animation to interpolate to.
-  /// \param final_transforms THe result of the interpolation.
+  /// \param final_transforms The result of the interpolation.
   LUDO_API void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms);
-
-  ///
-  /// Retrieves the bone transforms from a mesh instance.
-  /// \param mesh_instance The bone transforms to retrieve from the mesh instance.
-  /// \param instance_index The index of the instance to retrieve the bone transforms for.
-  /// \return The bone transforms.
-  LUDO_API std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance, uint32_t instance_index = 0);
-
-  ///
-  /// Sets the bone transforms of a mesh instance.
-  /// \param mesh_instance The mesh instance to set the bone transforms of.
-  /// \param bone_transforms The bone transforms.
-  /// \param instance_index The index of the instance to set the bone transforms for.
-  LUDO_API void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms, uint32_t instance_index = 0);
 }
 
 #endif // LUDO_ANIMATION_H

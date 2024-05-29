@@ -7,28 +7,25 @@ namespace astrum
 
   void add_person(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
+    auto dynamic_body_shape = ludo::first<ludo::dynamic_body_shape>(inst, "people");
     auto grid = ludo::first<ludo::grid3>(inst, "default");
     auto mesh = ludo::first<ludo::mesh>(inst, "people");
-    auto body_shape = ludo::first<ludo::body_shape>(inst, "people");
+    auto physics_context = ludo::first<ludo::physics_context>(inst);
 
-    auto render_program = ludo::add(
-      inst,
-      ludo::render_program(),
-      ludo::format(true, true, true, true),
-      1,
-      "people"
-    );
+    auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
-    auto mesh_instance = ludo::add(
-      inst,
-      ludo::mesh_instance { .render_program_id = render_program->id },
-      *mesh,
-      1,
-      "people"
-    );
+    auto render_program = ludo::add(inst, ludo::render_program(), "people");
+    ludo::init(*render_program, ludo::format(true, true, true, true), render_commands, 1);
 
-    ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
-    ludo::add(*grid, *mesh_instance, initial_transform.position);
+    auto render_mesh = ludo::add(inst, ludo::render_mesh(), "people");
+    ludo::init(*render_mesh);
+    ludo::connect(*render_mesh, *render_program, 1);
+    ludo::connect(*render_mesh, *mesh, indices, vertices);
+
+    ludo::instance_transform(*render_mesh) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
+    ludo::add(*grid, *render_mesh, initial_transform.position);
 
     ludo::add(
       inst,
@@ -41,15 +38,13 @@ namespace astrum
       "people"
     );
 
-    ludo::add(
+    auto kinematic_body = ludo::add(
       inst,
-      ludo::kinematic_body
-      {
-        { .transform = initial_transform },
-        { body_shape->id }
-      },
+      ludo::kinematic_body { .transform = initial_transform },
       "people"
     );
+    ludo::init(*kinematic_body, *physics_context);
+    ludo::connect(*kinematic_body, *physics_context, { *dynamic_body_shape });
 
     ludo::add(inst, person(), "people");
     ludo::add(inst, person_controls(), "people");
@@ -57,21 +52,20 @@ namespace astrum
 
   void simulate_people(ludo::instance& inst)
   {
-    auto& solar_system = *ludo::first<astrum::solar_system>(inst);
-
     auto& animation = *ludo::first<ludo::animation>(inst, "people");
     auto& armature = *ludo::first<ludo::armature>(inst, "people");
-    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst, "people");
+    auto& render_meshes = ludo::data<ludo::render_mesh>(inst, "people");
 
     auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
+    auto solar_system = ludo::first<astrum::solar_system>(inst);
     auto& person_controls_list = ludo::data<astrum::person_controls>(inst, "people");
     auto& people = ludo::data<astrum::person>(inst, "people");
     auto& point_masses = ludo::data<astrum::point_mass>(inst, "people");
 
     for (auto index = 0; index < people.length; index++)
     {
-      auto& mesh_instance = mesh_instances[index];
+      auto& render_mesh = render_meshes[index];
 
       auto& person_controls = person_controls_list[index];
       auto& person = people[index];
@@ -90,20 +84,20 @@ namespace astrum
       }
 
       // Align to 'stand' on the celestial body
-      if (solar_system.relative_celestial_body_index != -1)
+      if (solar_system->relative_celestial_body_index != -1)
       {
-        auto relative_celestial_body_up = point_mass.transform.position - celestial_body_point_masses[solar_system.relative_celestial_body_index].transform.position;
+        auto relative_celestial_body_up = point_mass.transform.position - celestial_body_point_masses[solar_system->relative_celestial_body_index].transform.position;
         ludo::normalize(relative_celestial_body_up);
         point_mass.transform.rotation = ludo::quat(ludo::vec3_unit_y, relative_celestial_body_up);
       }
 
       // Turn
-      person.turn_angle += person.turn_speed * inst.delta_time * game_speed;
+      person.turn_angle += person.turn_speed * inst.delta_time;
       point_mass.transform.rotation *= ludo::quat(0.0f, person.turn_angle, 0.0f);
 
       // Run
       auto transform_matrix = ludo::mat3(point_mass.transform.rotation);
-      point_mass.transform.position += ludo::out(transform_matrix) * person.run_speed * inst.delta_time * game_speed;
+      point_mass.transform.position += ludo::out(transform_matrix) * person.run_speed * inst.delta_time;
 
       // Animate
       if (person.run_speed != 0.0f)
@@ -115,9 +109,7 @@ namespace astrum
         person.walk_animation_time = 0.25f;
       }
 
-      auto bone_transforms = ludo::get_bone_transforms(mesh_instance);
-      ludo::interpolate(animation, armature, person.walk_animation_time, bone_transforms.data());
-      ludo::set_bone_transforms(mesh_instance, bone_transforms);
+      ludo::interpolate(animation, armature, person.walk_animation_time, ludo::instance_bone_transforms(render_mesh));
     }
   }
 
@@ -166,16 +158,16 @@ namespace astrum
 
     if (person_controls.forward || person_controls.back || person_controls.left || person_controls.right)
     {
-      person.run_speed += person_run_acceleration * inst.delta_time * game_speed;
-      person.turn_speed += person_turn_acceleration * ludo::sign(angle_to_desired_heading) * inst.delta_time * game_speed;
+      person.run_speed += person_run_acceleration * inst.delta_time;
+      person.turn_speed += person_turn_acceleration * ludo::sign(angle_to_desired_heading) * inst.delta_time;
       point_mass.resting = false;
     }
     else
     {
       if (person.run_speed != 0)
       {
-        person.run_speed -= person_run_deceleration * ludo::sign(person.run_speed) * inst.delta_time * game_speed;
-        if (std::abs(person.run_speed) < person_run_deceleration * inst.delta_time * game_speed)
+        person.run_speed -= person_run_deceleration * ludo::sign(person.run_speed) * inst.delta_time;
+        if (std::abs(person.run_speed) < person_run_deceleration * inst.delta_time)
         {
           person.run_speed = 0.0f;
         }
@@ -183,8 +175,8 @@ namespace astrum
 
       if (person.turn_speed != 0)
       {
-        person.turn_speed -= person_turn_deceleration * ludo::sign(angle_to_desired_heading) * inst.delta_time * game_speed;
-        if (std::abs(person.turn_speed) < person_turn_deceleration * inst.delta_time * game_speed)
+        person.turn_speed -= person_turn_deceleration * ludo::sign(angle_to_desired_heading) * inst.delta_time;
+        if (std::abs(person.turn_speed) < person_turn_deceleration * inst.delta_time)
         {
           person.turn_speed = 0.0f;
         }

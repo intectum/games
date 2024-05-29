@@ -6,9 +6,11 @@
 
 #include <ludo/spatial/grid3.h>
 
+#include "../util.h"
+
 namespace ludo
 {
-  compute_program* add_grid_compute_program(instance& instance, const grid3& grid)
+  compute_program build_compute_program(const grid3& grid)
   {
     auto code = std::stringstream();
 
@@ -28,7 +30,7 @@ struct render_program_t
   uint active_command_count;
 };
 
-struct draw_command_t
+struct render_command_t
 {
   uint index_count;
   uint instance_count;
@@ -37,7 +39,7 @@ struct draw_command_t
   uint instance_start;
 };
 
-struct mesh_instance_t
+struct render_mesh_t
 {
   uint64_t id;
   uint64_t render_program_id;
@@ -54,7 +56,7 @@ struct cell_t
   uint count;
 )--";
 
-    code << "  mesh_instance_t mesh_instances[" << grid.cell_capacity << "];" << std::endl;
+    code << "  render_mesh_t render_meshes[" << grid.cell_capacity << "];" << std::endl;
 
     code <<
 R"--(
@@ -84,7 +86,7 @@ layout(std430, binding = 2) buffer grid_layout
 
 layout(std430, binding = 3) buffer command_layout
 {
-  draw_command_t commands[];
+  render_command_t commands[];
 };
 
 int get_render_program_index(uint64_t id)
@@ -153,15 +155,15 @@ void main()
 
   vec3 cell_min = bounds.min + gl_GlobalInvocationID * cell_dimensions;
 
-  // Include neighbouring cells to ensure the mesh instances that overlap from them into this cell are included.
+  // Include neighbouring cells to ensure the render meshes that overlap from them into this cell are included.
   aabb_t test_bounds = aabb_t(cell_min - cell_dimensions, cell_min + cell_dimensions * 2);
   if (frustum_test(test_bounds)  != -1)
   {
-    for (uint mesh_instance_index = 0; mesh_instance_index < cells[cell_index].count; mesh_instance_index++)
+    for (uint render_mesh_index = 0; render_mesh_index < cells[cell_index].count; render_mesh_index++)
     {
-      mesh_instance_t mesh_instance = cells[cell_index].mesh_instances[mesh_instance_index];
+      render_mesh_t render_mesh = cells[cell_index].render_meshes[render_mesh_index];
 
-      int render_program_index = get_render_program_index(mesh_instance.render_program_id);
+      int render_program_index = get_render_program_index(render_mesh.render_program_id);
       if (render_program_index == -1)
       {
         continue;
@@ -169,16 +171,67 @@ void main()
 
       uint command_index = render_programs[render_program_index].active_command_start + atomicAdd(render_programs[render_program_index].active_command_count, 1);
 
-      commands[command_index].index_count = mesh_instance.index_count;
-      commands[command_index].instance_count = mesh_instance.instance_count;
-      commands[command_index].index_start = mesh_instance.index_start;
-      commands[command_index].vertex_start = mesh_instance.vertex_start;
-      commands[command_index].instance_start = mesh_instance.instance_start;
+      commands[command_index].index_count = render_mesh.index_count;
+      commands[command_index].instance_count = render_mesh.instance_count;
+      commands[command_index].index_start = render_mesh.index_start;
+      commands[command_index].vertex_start = render_mesh.vertex_start;
+      commands[command_index].instance_start = render_mesh.instance_start;
     }
   }
 }
 )--";
 
-    return add(instance, ludo::compute_program(), code);
+    auto program = compute_program();
+    init(program, code);
+
+    return program;
+  }
+
+  void add_render_commands(array<grid3>& grids, array<compute_program>& compute_programs, array<render_program>& render_programs, const heap& render_commands, const camera& camera)
+  {
+    auto planes = frustum_planes(camera);
+
+    // TODO take this allocation out of here?
+    auto context_buffer = allocate_vram(6 * 16 + 8 + render_programs.length * (sizeof(uint64_t) + 2 * sizeof(uint32_t)));
+
+    auto stream = ludo::stream(context_buffer);
+    write(stream, planes[0]);
+    write(stream, planes[1]);
+    write(stream, planes[2]);
+    write(stream, planes[3]);
+    write(stream, planes[4]);
+    write(stream, planes[5]);
+    write(stream, static_cast<uint32_t>(render_programs.length));
+    stream.position += 4; // align 8
+    for (auto& render_program : render_programs)
+    {
+      write(stream, render_program.id);
+      write(stream, static_cast<uint32_t>((render_program.command_buffer.data - render_commands.data) / sizeof(render_command) + render_program.active_commands.start));
+      write(stream, render_program.active_commands.count);
+    }
+
+    for (auto& grid : grids)
+    {
+      auto compute_program = find_by_id(compute_programs.begin(), compute_programs.end(), grid.compute_program_id);
+      assert(compute_program != compute_programs.end() && "compute program not found");
+
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, context_buffer.id); check_opengl_error();
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, grid.buffer.front.id); check_opengl_error();
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, render_commands.id); check_opengl_error();
+
+      ludo::execute(*compute_program, grid.cell_count_1d / 8, grid.cell_count_1d / 4, grid.cell_count_1d); check_opengl_error();
+    }
+
+    auto fence = ludo::fence();
+    init(fence);
+    wait(fence);
+
+    for (auto index = 0; index < render_programs.length; index++)
+    {
+      auto offset = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
+      render_programs[index].active_commands.count = cast<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
+    }
+
+    deallocate_vram(context_buffer);
   }
 }

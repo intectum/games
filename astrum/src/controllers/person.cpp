@@ -23,7 +23,7 @@ namespace astrum
       static_cast<float>(window.mouse_movement[1]),
       static_cast<float>(-window.mouse_movement[0])
     };
-    rotation_delta_angles *= camera_rotate_speed * inst.delta_time * game_speed;
+    rotation_delta_angles *= camera_rotate_speed * inst.delta_time;
 
     person_controls.camera_rotation += rotation_delta_angles;
     person_controls.camera_rotation[0] = ludo::shortest_angle(person_controls.camera_rotation[0]);

@@ -5,38 +5,26 @@
 
 int main()
 {
-  auto inst = ludo::instance();
-
   // SETUP
 
-  auto minifig_counts = ludo::import_counts("assets/models/minifig.dae");
+  auto inst = ludo::instance();
+  ludo::allocate<ludo::script>(inst, 3);
 
-  ludo::allocate<ludo::rendering_context>(inst, 1);
-  ludo::allocate<ludo::windowing_context>(inst, 1);
+  auto window = ludo::window { .title = "importy!", .width = 1920, .height = 1080, .v_sync = false };
+  ludo::init(window);
 
-  ludo::allocate<ludo::animation>(inst, 1);
-  ludo::allocate<ludo::armature>(inst, 1);
-  ludo::allocate<ludo::body_shape>(inst, 1);
-  ludo::allocate<ludo::mesh>(inst, 1);
-  ludo::allocate<ludo::mesh_instance>(inst, 1);
-  ludo::allocate<ludo::render_program>(inst, 1);
-  ludo::allocate<ludo::script>(inst, 6);
-  ludo::allocate<ludo::shader>(inst, 2);
-  ludo::allocate<ludo::texture>(inst, 1);
-  ludo::allocate<ludo::window>(inst, 1);
+  auto rendering_context = ludo::rendering_context();
+  ludo::init(rendering_context, 1);
 
-  ludo::add(inst, ludo::windowing_context());
-  ludo::add(inst, ludo::window { .title = "importy!", .width = 1920, .height = 1080, .v_sync = false });
+  auto minifig_counts = ludo::import_counts(ludo::asset_folder + "/models/minifig.dae");
 
-  auto rendering_context = ludo::add(inst, ludo::rendering_context(), 1);
-
-  ludo::allocate_heap_vram(inst, "ludo::vram_draw_commands", sizeof(ludo::draw_command));
-  ludo::allocate_heap_vram(inst, "ludo::vram_indices", minifig_counts.first * sizeof(uint32_t));
-  ludo::allocate_heap_vram(inst, "ludo::vram_vertices", minifig_counts.second * 80); // 80 is a rough guess to cover everything
+  auto render_commands = ludo::allocate_heap_vram(sizeof(ludo::render_command));
+  auto indices = ludo::allocate_heap_vram( minifig_counts.first * sizeof(uint32_t));
+  auto vertices = ludo::allocate_heap_vram(minifig_counts.second * 80); // 80 is a rough guess
 
   // LIGHTS
 
-  ludo::set_light(*rendering_context, ludo::light
+  ludo::set_light(rendering_context, ludo::light
   {
     .ambient = { 0.01f, 0.01f, 0.01f, 1.0f },
     .diffuse = { 0.7f, 0.7f, 0.7f, 1.0f },
@@ -49,39 +37,49 @@ int main()
 
   // RENDER PROGRAMS
 
-  auto render_program = ludo::add(inst, ludo::render_program(), ludo::format(true, true, true, true), 1);
+  auto render_programs = ludo::allocate_array<ludo::render_program>(1);
+  auto render_program = ludo::add(render_programs, {});
+  ludo::init(*render_program, ludo::format(true, true, true, true), render_commands, 1);
 
   // MINIFIG
 
-  auto minifig_meshes = ludo::import(inst, "assets/models/minifig.dae");
+  auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
 
-  ludo::add(inst, ludo::mesh_instance { .render_program_id = render_program->id }, minifig_meshes[0]);
+  auto render_mesh = ludo::render_mesh();
+  ludo::init(render_mesh);
+  ludo::connect(render_mesh, *render_program, 1);
+  ludo::connect(render_mesh, minifig.meshes[0], indices, vertices);
 
   // SCRIPTS
 
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto animation = ludo::first<ludo::animation>(inst);
-    auto armature = ludo::first<ludo::armature>(inst);
-    auto mesh_instance = ludo::first<ludo::mesh_instance>(inst);
-
-    ludo::instance_transform(*mesh_instance) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
-
-    auto bone_transforms = ludo::get_bone_transforms(*mesh_instance);
-    ludo::interpolate(*animation, *armature, inst.total_time, bone_transforms.data());
-    ludo::set_bone_transforms(*mesh_instance, bone_transforms);
-  });
-
-  ludo::add<ludo::script>(inst, ludo::prepare_render);
-  ludo::add<ludo::script>(inst, ludo::update_windows);
   ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
   {
-    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+    ludo::receive_input(window, inst);
 
-    ludo::add_draw_command(*render_program, mesh_instances[0]);
+    if (window.active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
+    {
+      ludo::stop(inst);
+    }
   });
-  ludo::add<ludo::script, ludo::render_options>(inst, ludo::render, {});
-  ludo::add<ludo::script>(inst, ludo::finalize_render);
+
+  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  {
+    ludo::instance_transform(render_mesh) = ludo::mat4(ludo::vec3(0.0f, 0.0f, -3.0f), ludo::mat3(ludo::vec3_unit_y, inst.total_time));
+    ludo::interpolate(minifig.animations[0], minifig.armatures[0], inst.total_time, ludo::instance_bone_transforms(render_mesh));
+  });
+
+  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  {
+    ludo::start_render_transaction(rendering_context, render_programs);
+    ludo::swap_buffers(window);
+
+    ludo::use_and_clear(ludo::frame_buffer { .width = 1920, .height = 1080 });
+
+    ludo::add_render_command(*render_program, render_mesh);
+
+    ludo::commit_render_commands(rendering_context, render_programs, render_commands, indices, vertices);
+    ludo::commit_render_transaction(rendering_context);
+  });
 
   // PLAY
 

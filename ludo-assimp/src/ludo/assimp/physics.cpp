@@ -2,14 +2,22 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <ludo/physics.h>
-
 #include "math.h"
 #include "physics.h"
 
 namespace ludo
 {
-  void import_body_shape(instance& instance, const aiScene& assimp_scene, const import_object& rigid_body_object, const std::string& partition)
+  dynamic_body_shape import_body_shape(const aiScene& assimp_scene, const import_object& rigid_body_object);
+
+  void import_body_shapes(import_results& results, const aiScene& assimp_scene, const std::vector<import_object>& rigid_body_objects)
+  {
+    for (auto& rigid_body_object : rigid_body_objects)
+    {
+      results.dynamic_body_shapes.push_back(import_body_shape(assimp_scene, rigid_body_object));
+    }
+  }
+
+  dynamic_body_shape import_body_shape(const aiScene& assimp_scene, const import_object& rigid_body_object)
   {
     auto& assimp_mesh = *assimp_scene.mMeshes[rigid_body_object.mesh_index];
 
@@ -37,6 +45,9 @@ namespace ludo
       positions.emplace_back(position);
     }
 
-    add(instance, ludo::body_shape { .positions = positions }, partition);
+    auto dynamic_body_shape = ludo::dynamic_body_shape { .convex_hulls = { positions } };
+    ludo::init(dynamic_body_shape);
+
+    return dynamic_body_shape;
   }
 }

@@ -9,6 +9,7 @@
 #include "animation.h"
 #include "math.h"
 #include "meshes.h"
+#include "textures.h"
 
 namespace ludo
 {
@@ -17,26 +18,18 @@ namespace ludo
 
   const auto bone_data_size = max_bone_weights_per_vertex * sizeof(uint32_t) + max_bone_weights_per_vertex * sizeof(float);
 
-  std::vector<mesh> import_meshes(instance& instance, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::vector<ludo::texture*>& textures, const import_options& options, const std::string& partition)
+  void import_meshes(import_results& results, heap& indices, heap& vertices, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
   {
-    auto meshes = std::vector<mesh>();
-
-    if (options.merge_meshes)
+    if (options.merge_meshes && !mesh_objects.empty())
     {
       auto mesh_counts = import_counts(assimp_scene, mesh_objects);
       // TODO could maybe combine from all meshes? Not really sure what the best thing to do here is...
       auto format = ludo::format(assimp_scene, *assimp_scene.mMeshes[0]);
 
-      auto mesh = add(
-        instance,
-        ludo::mesh(),
-        mesh_counts.first,
-        mesh_counts.second,
-        format.size,
-        partition
-      );
+      auto mesh = ludo::mesh();
+      init(mesh, indices, vertices, mesh_counts.first, mesh_counts.second, format.size);
 
-      meshes.push_back(*mesh);
+      results.meshes.push_back(mesh);
     }
 
     auto index_start = uint32_t(0);
@@ -52,35 +45,47 @@ namespace ludo
 
       if (options.merge_meshes)
       {
-        write_mesh_data(meshes[0], assimp_mesh, format, mesh_object.transform, index_start, vertex_start);
+        write_mesh_data(results.meshes[0], assimp_mesh, format, mesh_object.transform, index_start, vertex_start);
 
         index_start += index_count;
         vertex_start += vertex_count;
       }
       else
       {
-        auto mesh = add(
-          instance,
-          ludo::mesh { .texture_id = textures[index] ? textures[index]->id : 0 },
-          index_count,
-          vertex_count,
-          format.size,
-          partition
-        );
+        auto mesh = ludo::mesh();
+        init(mesh, indices, vertices, index_count, vertex_count, format.size);
+        write_mesh_data(mesh, assimp_mesh, format, mesh_object.transform, 0, 0);
 
-        write_mesh_data(*mesh, assimp_mesh, format, mesh_object.transform, 0, 0);
+        auto texture = import_texture(folder, assimp_scene, mesh_object);
+        if (texture.id)
+        {
+          results.textures.push_back(texture);
+          mesh.texture_id = texture.id;
+        }
 
         if (assimp_mesh.mNumBones)
         {
-          mesh->armature_id = import_armature(instance, assimp_scene, assimp_mesh, partition);
-          mesh->animation_ids = import_animations(instance, assimp_scene, assimp_mesh, partition);
+          auto armature = import_armature(assimp_scene, assimp_mesh);
+          if (armature.id)
+          {
+            results.armatures.push_back(armature);
+            mesh.armature_id = armature.id;
+          }
+
+          auto animations = import_animations(assimp_scene, assimp_mesh);
+          if (!animations.empty())
+          {
+            results.animations.insert(results.animations.end(), animations.begin(), animations.end());
+            for (auto& animation : animations)
+            {
+              mesh.animation_ids.push_back(animation.id);
+            }
+          }
         }
 
-        meshes.push_back(*mesh);
+        results.meshes.push_back(mesh);
       }
     }
-
-    return meshes;
   }
 
   vertex_format format(const aiScene& assimp_scene, const aiMesh& assimp_mesh)
@@ -90,7 +95,7 @@ namespace ludo
     auto texture_path = aiString();
     assimp_scene.mMaterials[assimp_mesh.mMaterialIndex]->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), texture_path);
 
-    return ludo::format(
+    return format(
       true,
       assimp_mesh.GetNumColorChannels() > 0,
       texture_path.length > 0,
@@ -100,7 +105,7 @@ namespace ludo
 
   void write_mesh_data(mesh& mesh, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform, uint32_t index_start, uint32_t vertex_start)
   {
-    auto index_stream = ludo::stream(mesh.index_buffer, index_start * sizeof(uint32_t));
+    auto index_stream = stream(mesh.index_buffer, index_start * sizeof(uint32_t));
     for (auto face_index = 0; face_index < assimp_mesh.mNumFaces; face_index++)
     {
       auto& assimp_face = assimp_mesh.mFaces[face_index];
@@ -110,7 +115,7 @@ namespace ludo
       }
     }
 
-    auto vertex_stream = ludo::stream(mesh.vertex_buffer, vertex_start * format.size);
+    auto vertex_stream = stream(mesh.vertex_buffer, vertex_start * format.size);
     for (auto vertex_index = 0; vertex_index < assimp_mesh.mNumVertices; vertex_index++)
     {
       auto position = vec3(transform * vec4(to_vec3(assimp_mesh.mVertices[vertex_index])));

@@ -23,7 +23,7 @@ in point_t point;
 
 // Buffers
 
-layout(std430, binding = 1) buffer render_layout
+layout(std430, binding = 1) buffer render_program_layout
 {
   sampler2D color_sampler;
 };

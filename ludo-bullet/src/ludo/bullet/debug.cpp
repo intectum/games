@@ -9,9 +9,9 @@
 
 namespace ludo
 {
-  debug_drawer::debug_drawer(int32_t debug_mode) :
+  debug_drawer::debug_drawer() :
     mesh(nullptr),
-    debug_mode(debug_mode),
+    debug_mode(btIDebugDraw::DBG_DrawWireframe),
     next_index(0)
   {
   }

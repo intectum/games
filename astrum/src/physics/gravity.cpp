@@ -106,7 +106,7 @@ namespace astrum
         continue;
       }
 
-      point_mass.linear_velocity += point_mass_accelerations[index] * inst.delta_time * game_speed;
+      point_mass.linear_velocity += point_mass_accelerations[index] * inst.delta_time;
     }
   }
 

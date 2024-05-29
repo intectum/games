@@ -7,25 +7,22 @@ namespace astrum
   {
     auto grid = ludo::first<ludo::grid3>(inst, "default");
     auto mesh = ludo::first<ludo::mesh>(inst, "spaceships");
+    auto physics_context = ludo::first<ludo::physics_context>(inst);
 
-    auto render_program = ludo::add(
-      inst,
-      ludo::render_program(),
-      ludo::vertex_format_pn,
-      1,
-      "spaceships"
-    );
+    auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
-    auto mesh_instance = ludo::add(
-      inst,
-      ludo::mesh_instance { .render_program_id = render_program->id },
-      *mesh,
-      1,
-      "spaceships"
-    );
+    auto render_program = ludo::add(inst, ludo::render_program(), "spaceships");
+    ludo::init(*render_program, ludo::vertex_format_pn, render_commands, 1);
 
-    ludo::instance_transform(*mesh_instance) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
-    ludo::add(*grid, *mesh_instance, initial_transform.position);
+    auto render_mesh = ludo::add(inst, ludo::render_mesh(), "spaceships");
+    ludo::init(*render_mesh);
+    ludo::connect(*render_mesh, *render_program, 1);
+    ludo::connect(*render_mesh, *mesh, indices, vertices);
+
+    ludo::instance_transform(*render_mesh) = ludo::mat4(initial_transform.position, ludo::mat3(initial_transform.rotation));
+    ludo::add(*grid, *render_mesh, initial_transform.position);
 
     ludo::add(
       inst,
@@ -40,10 +37,10 @@ namespace astrum
 
     auto kinematic_shape = ludo::add(
       inst,
-      ludo::body_shape
+      ludo::dynamic_body_shape
       {
-        .positions =
-        {
+        .convex_hulls =
+        {{
           { 0.8f, 0.5f, 4.25f },
           { 0.8f, -0.5f, 4.25f },
           { -0.8f, 0.5f, 4.25f },
@@ -52,28 +49,31 @@ namespace astrum
           { 0.8f, -0.5f, -1.25f },
           { -0.8f, 0.5f, -1.25f },
           { -0.8f, -0.5f, -1.25f }
-        }
-      }
-    );
-
-    ludo::add(
-      inst,
-      ludo::kinematic_body
-      {
-        { .transform = initial_transform },
-        { kinematic_shape->id },
-        initial_velocity,
-        ludo::vec3_zero
+        }}
       },
       "spaceships"
     );
+    ludo::init(*kinematic_shape);
+
+    auto kinematic_body = ludo::add(
+      inst,
+      ludo::kinematic_body
+      {
+        .transform = initial_transform,
+        .linear_velocity = initial_velocity,
+        .angular_velocity = ludo::vec3_zero
+      },
+      "spaceships"
+    );
+    ludo::init(*kinematic_body, *physics_context);
+    ludo::connect(*kinematic_body, *physics_context, { *kinematic_shape });
 
     auto ghost_shape = ludo::add(
       inst,
-      ludo::body_shape
+      ludo::dynamic_body_shape
       {
-        .positions =
-        {
+        .convex_hulls =
+        {{
           { 1.8f, 1.5f, 5.25f },
           { 1.8f, -1.5f, 5.25f },
           { -1.8f, 1.5f, 5.25f },
@@ -82,19 +82,18 @@ namespace astrum
           { 1.8f, -1.5f, -2.25f },
           { -1.8f, 1.5f, -2.25f },
           { -1.8f, -1.5f, -2.25f }
-        }
+        }}
       }
     );
+    ludo::init(*ghost_shape);
 
-    ludo::add(
+    auto ghost_body = ludo::add(
       inst,
-      ludo::ghost_body
-      {
-        { .transform = initial_transform },
-        { ghost_shape->id }
-      },
+      ludo::ghost_body { .transform = initial_transform },
       "spaceships"
     );
+    ludo::init(*ghost_body, *physics_context);
+    ludo::connect(*ghost_body, *physics_context, { *ghost_shape });
 
     ludo::add(inst, spaceship_controls(), "spaceships");
   }
@@ -139,14 +138,16 @@ namespace astrum
 
   void simulate_spaceships(ludo::instance& inst)
   {
-    auto& spaceship_controls_list = ludo::data<astrum::spaceship_controls>(inst, "spaceships");
     auto& ghost_bodies = ludo::data<ludo::ghost_body>(inst, "spaceships");
+
+    auto& spaceship_controls_list = ludo::data<astrum::spaceship_controls>(inst, "spaceships");
     auto& point_masses = ludo::data<point_mass>(inst, "spaceships");
 
     for (auto index = 0; index < point_masses.length; index++)
     {
-      auto& spaceship_controls = spaceship_controls_list[index];
       auto& ghost_body = ghost_bodies[index];
+
+      auto& spaceship_controls = spaceship_controls_list[index];
       auto& point_mass = point_masses[index];
 
       auto heading_matrix = ludo::mat3(point_mass.transform.rotation);
@@ -170,37 +171,38 @@ namespace astrum
           forward_acceleration = spaceship_thrust_acceleration;
         }
 
-        point_mass.linear_velocity += heading_out * forward_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity += heading_out * forward_acceleration * inst.delta_time;
       }
       if (spaceship_controls.back)
       {
-        point_mass.linear_velocity -= heading_out * spaceship_rcs_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity -= heading_out * spaceship_rcs_acceleration * inst.delta_time;
       }
       if (spaceship_controls.left)
       {
-        point_mass.linear_velocity += heading_right * spaceship_rcs_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity += heading_right * spaceship_rcs_acceleration * inst.delta_time;
       }
       if (spaceship_controls.right)
       {
-        point_mass.linear_velocity -= heading_right * spaceship_rcs_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity -= heading_right * spaceship_rcs_acceleration * inst.delta_time;
       }
       if (spaceship_controls.up)
       {
-        point_mass.linear_velocity += heading_up * spaceship_rcs_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity += heading_up * spaceship_rcs_acceleration * inst.delta_time;
       }
       if (spaceship_controls.down)
       {
-        point_mass.linear_velocity -= heading_up * spaceship_rcs_acceleration * inst.delta_time * game_speed;
+        point_mass.linear_velocity -= heading_up * spaceship_rcs_acceleration * inst.delta_time;
       }
 
       point_mass.transform.rotation *= ludo::quat(
-        spaceship_controls.yaw * spaceship_turn_speed * inst.delta_time * game_speed,
-        spaceship_controls.pitch * spaceship_turn_speed * inst.delta_time * game_speed,
-        spaceship_controls.roll * spaceship_turn_speed * inst.delta_time * game_speed
+        spaceship_controls.yaw * spaceship_turn_speed * inst.delta_time,
+        spaceship_controls.pitch * spaceship_turn_speed * inst.delta_time,
+        spaceship_controls.roll * spaceship_turn_speed * inst.delta_time
       );
 
       // Drag the ghost body along for the ride
       ghost_body.transform = point_mass.transform;
+      ludo::commit(ghost_body);
     }
   }
 }

@@ -9,12 +9,15 @@
 
 namespace ludo
 {
-  void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options, bool spherified)
+  void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options, bool spherified)
   {
     assert(options.divisions >= 2 && "must have at-least 2 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
 
-    auto [ vertex_count, index_count ] = sphere_cube_counts(options);
+    auto index_index = start_index;
+    auto vertex_index = start_vertex;
+
+    auto [ vertex_count, index_count ] = sphere_cube_counts(format, options);
     auto radius = options.dimensions[0] / 2.0f;
 
     // I couldn't figure out how to adapt the 'spherifying' code to different cube sizes, so we're using the 2x2x2 cube and multiplying the result by the radius.
@@ -86,14 +89,14 @@ namespace ludo
     }
   }
 
-  std::pair<uint32_t, uint32_t> sphere_cube_counts(const shape_options& options)
+  std::pair<uint32_t, uint32_t> sphere_cube_counts(const vertex_format& format, const shape_options& options)
   {
     assert(options.divisions >= 2 && "must have at-least 2 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
 
-    auto counts = rectangle_counts(options);
+    auto counts = rectangle_counts(format, options);
     counts.first *= 6;
-    if (options.smooth)
+    if (options.smooth) // TODO revise based on presence of normals, texture coordinates etc.
     {
       counts.second = counts.second * 2 + (counts.second - (options.divisions - 1) * (options.divisions - 1)) * (options.divisions - 1);
     }

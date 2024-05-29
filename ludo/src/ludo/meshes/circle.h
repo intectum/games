@@ -9,7 +9,7 @@
 
 namespace ludo
 {
-  void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool invert);
+  void circle(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, const vec4& color, bool invert);
 }
 
 #endif // LUDO_MESHES_CIRCLE_H

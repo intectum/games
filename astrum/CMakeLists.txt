@@ -92,6 +92,8 @@ add_executable(importy src/demos/importy.cpp)
 set_target_properties(importy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(noisy src/demos/noisy.cpp)
 set_target_properties(noisy PROPERTIES INSTALL_RPATH "./lib")
+add_executable(physicy src/demos/physicy.cpp)
+set_target_properties(physicy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(spinny src/demos/spinny.cpp)
 set_target_properties(spinny PROPERTIES INSTALL_RPATH "./lib")
 
@@ -100,13 +102,19 @@ set_target_properties(spinny PROPERTIES INSTALL_RPATH "./lib")
 
 # ludo
 target_link_libraries(importy ludo-assimp)
+target_link_libraries(importy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(importy ludo-glfw)
 target_link_libraries(importy ludo-opengl)
 target_link_libraries(importy ludo)
 target_link_libraries(noisy ludo-glfw)
 target_link_libraries(noisy ludo-opengl)
 target_link_libraries(noisy ludo)
+target_link_libraries(physicy ludo-bullet)
+target_link_libraries(physicy ludo-glfw)
+target_link_libraries(physicy ludo-opengl)
+target_link_libraries(physicy ludo)
 target_link_libraries(spinny ludo-assimp) # TODO remove, only for FreeImage...
+target_link_libraries(spinny ludo-bullet) # TODO remove, only for assimp...
 target_link_libraries(spinny ludo-glfw)
 target_link_libraries(spinny ludo-opengl)
 target_link_libraries(spinny ludo)

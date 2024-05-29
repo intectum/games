@@ -29,20 +29,20 @@ in vec3 position;
 
 // Buffers
 
-layout(std430, binding = 0) buffer context_layout
+layout(std430, binding = 0) buffer rendering_context_layout
 {
   camera_t camera;
   uint light_count;
   light_t lights[];
 };
 
-layout(std430, binding = 2) buffer program_layout
+layout(std430, binding = 1) buffer render_program_layout
 {
   uint step_count;
   vec4 color[];
 };
 
-layout(std430, binding = 3) buffer instance_layout
+layout(std430, binding = 2) buffer instance_layout
 {
   mat4 transform;
 };

@@ -47,7 +47,7 @@ namespace ludo
     deallocate(buffer.back);
   }
 
-  void push(double_buffer& buffer)
+  void commit(double_buffer& buffer)
   {
     std::memcpy(buffer.front.data, buffer.back.data, buffer.front.size);
   }

@@ -7,11 +7,9 @@
 
 #include <GL/glew.h>
 
-#include <ludo/rendering.h>
-
 namespace ludo
 {
-  struct draw_command
+  struct render_command
   {
     GLuint index_count = 0;
     GLuint instance_count = 1;

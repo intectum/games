@@ -12,6 +12,8 @@ namespace astrum
   void add_terrain(ludo::instance& inst, const terrain& init, const celestial_body& celestial_body, const std::string& partition)
   {
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+
+    auto& render_commands = data_heap(inst, "ludo::vram_render_commands");
     auto& indices = data_heap(inst, "ludo::vram_indices");
     auto& vertices = data_heap(inst, "ludo::vram_vertices");
 
@@ -20,7 +22,7 @@ namespace astrum
 
     auto terrain = add(inst, init, partition);
 
-    auto metadata_file_name = std::string("assets/meshes/") + celestial_body.name + ".terrain";
+    auto metadata_file_name = ludo::asset_folder + "/meshes/" + celestial_body.name + ".terrain";
     auto read_stream = std::ifstream(metadata_file_name, std::ios::binary);
     if (read_stream.is_open())
     {
@@ -46,23 +48,20 @@ namespace astrum
       terrain->format.size += sizeof(float) * 4;
     }
 
-    auto vertex_shader = add_terrain_vertex_shader(inst, terrain->format, "terrain");
-    auto fragment_shader = add_terrain_fragment_shader(inst, terrain->format, "terrain");
-
     auto render_program = ludo::add(
       inst,
       ludo::render_program
       {
-        .vertex_shader_id = vertex_shader->id,
-        .fragment_shader_id = fragment_shader->id,
         .format = terrain->format,
         .shader_buffer = ludo::allocate_dual(sizeof(ludo::mat4)),
         .instance_size = 2 * sizeof(float)
       },
-      terrain->format,
-      terrain->chunks.size(),
       "terrain"
     );
+
+    auto vertex_shader_code = terrain_vertex_shader_code(terrain->format);
+    auto fragment_shader_code = terrain_fragment_shader_code(terrain->format);
+    ludo::init(*render_program, vertex_shader_code, fragment_shader_code, render_commands, terrain->chunks.size());
 
     ludo::cast<ludo::mat4>(render_program->shader_buffer.back, 0) = ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation));
 
@@ -80,6 +79,8 @@ namespace astrum
       },
       "terrain"
     );
+    grid->compute_program_id = ludo::add(inst, ludo::build_compute_program(*grid))->id;
+    ludo::init(*grid);
 
     auto camera = ludo::get_camera(*rendering_context);
     auto camera_position = ludo::position(camera.view);
@@ -91,18 +92,12 @@ namespace astrum
 
       auto count = 3 * static_cast<uint32_t>(std::pow(4, init.lods[chunk.lod_index].level - init.lods[0].level));
 
-      auto mesh = ludo::add(
-        inst,
-        ludo::mesh(),
-        count,
-        count,
-        render_program->format.size,
-        "terrain"
-      );
+      auto mesh = ludo::add(inst, ludo::mesh(), "terrain");
+      ludo::init(*mesh, indices, vertices, count, count, render_program->format.size);
 
-      auto mesh_instance = add(
+      auto render_mesh = add(
         inst,
-        ludo::mesh_instance
+        ludo::render_mesh
         {
           .render_program_id = render_program->id,
           .instances =
@@ -125,32 +120,23 @@ namespace astrum
         },
         "terrain"
       );
+      ludo::init(*render_mesh);
 
       chunk.mesh_id = mesh->id;
-      chunk.mesh_instance_id = mesh_instance->id;
+      chunk.render_mesh_id = render_mesh->id;
 
-      load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
-      init_terrain_chunk(*terrain, chunk_index, *mesh_instance);
-
-      ludo::add(*grid, *mesh_instance, point_mass.transform.position + chunk.center);
-    }
-
-    /* TODO ludo::divide_and_conquer(terrain->chunks.size(), [&](uint32_t start, uint32_t end)
-    {
-      for (auto chunk_index = start; chunk_index < end; chunk_index++)
+      if (chunk.mesh_id == 33844)
       {
-        auto& chunk = terrain->chunks[chunk_index];
-        auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, chunk.mesh_instance_id);
-        auto mesh = ludo::get<ludo::mesh>(inst, mesh_instance->mesh_id);
-
-        load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
-        init_terrain_chunk(*terrain, chunk_index, *mesh_instance);
+        std::cout << "33844 added" << std::endl;
       }
 
-      return [] {};
-    });*/
+      load_terrain_chunk(*terrain, celestial_body.radius, chunk_index, chunk.lod_index, *mesh);
+      init_terrain_chunk(*terrain, chunk_index, *render_mesh);
 
-    ludo::push(*grid);
+      ludo::add(*grid, *render_mesh, point_mass.transform.position + chunk.center);
+    }
+
+    ludo::commit(*grid);
 
     update_terrain_static_bodies(inst, *terrain, celestial_body.radius, point_mass.transform.position, celestial_body.radius * 1.25f);
   }
@@ -176,6 +162,9 @@ namespace astrum
     auto& grids = ludo::data<ludo::grid3>(inst, "terrain");
     auto& render_programs = ludo::data<ludo::render_program>(inst, "terrain");
 
+    auto& indices = data_heap(inst, "ludo::vram_indices");
+    auto& vertices = data_heap(inst, "ludo::vram_vertices");
+
     auto& celestial_bodies = ludo::data<celestial_body>(inst, "celestial-bodies");
     auto& point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
     auto& terrains = ludo::data<terrain>(inst, "celestial-bodies");
@@ -200,7 +189,7 @@ namespace astrum
       {
         grid.bounds.min += movement;
         grid.bounds.max += movement;
-        ludo::push(grid, true);
+        ludo::commit_header(grid);
 
         ludo::cast<ludo::mat4>(render_program.shader_buffer.back, 0) = ludo::mat4(new_position, ludo::mat3(point_mass.transform.rotation));
       }
@@ -222,51 +211,52 @@ namespace astrum
 
           auto count = 3 * static_cast<uint32_t>(std::pow(4, terrain.lods[new_lod_index].level - terrain.lods[0].level));
 
-          auto new_mesh = *ludo::add(
-            inst,
-            ludo::mesh(),
-            count,
-            count,
-            render_program.format.size,
-            "terrain"
-          );
+          auto new_mesh = ludo::add(inst, ludo::mesh(), "terrain");
+          ludo::init(*new_mesh, indices, vertices, count, count, render_program.format.size);
 
           // Purposely take a copy of the new mesh!
           // Otherwise, it may get shifted in the partitioned_buffer and cause all sorts of havoc.
-          ludo::enqueue_background_task(inst, [&inst, &celestial_body, &terrain, &grid, chunk_index, new_mesh, new_lod_index, new_position]()
+          auto new_mesh_copy = *new_mesh;
+
+          ludo::enqueue_background_task(inst, [&inst, &celestial_body, &terrain, &grid, chunk_index, new_mesh_copy, new_lod_index, new_position]()
           {
-            auto local_new_mesh = new_mesh;
+            auto local_new_mesh = new_mesh_copy;
             load_terrain_chunk(terrain, celestial_body.radius, chunk_index, new_lod_index, local_new_mesh);
 
-            return [&inst, &terrain, &grid, chunk_index, new_mesh, new_lod_index, new_position]()
+            return [&inst, &terrain, &grid, chunk_index, new_mesh_copy, new_lod_index, new_position]()
             {
+              auto& indices = data_heap(inst, "ludo::vram_indices");
+              auto& vertices = data_heap(inst, "ludo::vram_vertices");
+
               auto& chunk = terrain.chunks[chunk_index];
 
-              auto mesh_instance = ludo::get<ludo::mesh_instance>(inst, chunk.mesh_instance_id);
-              auto mesh = ludo::get<ludo::mesh>(inst, chunk.mesh_id);
+              auto render_mesh = ludo::get<ludo::render_mesh>(inst, "terrain", chunk.render_mesh_id);
+              auto mesh = ludo::get<ludo::mesh>(inst, "terrain", chunk.mesh_id);
+              ludo::de_init(*mesh, indices, vertices);
               ludo::remove(inst, mesh, "terrain");
 
-              chunk.mesh_id = new_mesh.id;
+              chunk.mesh_id = new_mesh_copy.id;
 
-              auto& indices = data_heap(inst, "ludo::vram_indices");
-              mesh_instance->indices.start = (new_mesh.index_buffer.data - indices.data) / sizeof(uint32_t);
-              mesh_instance->indices.count = new_mesh.index_buffer.size / sizeof(uint32_t);
+              render_mesh->indices.start = (new_mesh_copy.index_buffer.data - indices.data) / sizeof(uint32_t);
+              render_mesh->indices.count = new_mesh_copy.index_buffer.size / sizeof(uint32_t);
 
-              auto& vertices = data_heap(inst, "ludo::vram_vertices");
-              mesh_instance->vertices.start = (new_mesh.vertex_buffer.data - vertices.data) / new_mesh.vertex_size;
-              mesh_instance->vertices.count = new_mesh.vertex_buffer.size / new_mesh.vertex_size;
+              render_mesh->vertices.start = (new_mesh_copy.vertex_buffer.data - vertices.data) / new_mesh_copy.vertex_size;
+              render_mesh->vertices.count = new_mesh_copy.vertex_buffer.size / new_mesh_copy.vertex_size;
 
               chunk.lod_index = new_lod_index;
               chunk.locked = false;
 
-              ludo::remove(grid, *mesh_instance, new_position + chunk.center, true);
-              ludo::add(grid, *mesh_instance, new_position + chunk.center, true);
+              ludo::remove(grid, *render_mesh, new_position + chunk.center);
+              ludo::add(grid, *render_mesh, new_position + chunk.center);
 
-              init_terrain_chunk(terrain, chunk_index, *mesh_instance);
+              init_terrain_chunk(terrain, chunk_index, *render_mesh);
             };
           });
         }
       }
+
+      // TODO not while render could be happening!!!
+      ludo::commit(grid);
     }
   }
 }

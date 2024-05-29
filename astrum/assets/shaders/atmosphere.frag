@@ -70,23 +70,19 @@ in point_t point;
 
 // Buffers
 
-layout(std430, binding = 0) buffer context_layout
+layout(std430, binding = 0) buffer rendering_context_layout
 {
   camera_t camera;
   uint light_count;
   light_t lights[];
 };
 
-layout(std430, binding = 1) buffer render_layout
+layout(std430, binding = 1) buffer render_program_layout
 {
   sampler2D color_sampler;
   // TODO why is sampler2DShadow not working? AMD thing? I'm sure it was working before...
   //sampler2DShadow depth_sampler;
   sampler2D depth_sampler;
-};
-
-layout(std430, binding = 2) buffer program_layout
-{
   sampler2D atmosphere_sampler;
   sampler2D blue_noise_sampler;
   planet_t planet;

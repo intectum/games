@@ -8,8 +8,7 @@
 namespace astrum
 {
   // Game
-  const auto game_speed = 1.0f;
-  const auto visualize_physics = false;
+  const auto visualize_physics = true;
 
   // Rendering
   // TODO Handle this better, 16 here crashed on my new laptop (Zephyrus G14)

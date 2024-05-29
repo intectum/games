@@ -10,8 +10,8 @@
 namespace ludo
 {
   vec3 cell_dimensions(const grid3& grid);
-  std::vector<uint64_t> cell_mesh_instance_ids(const grid3& grid, uint32_t cell_index);
-  uint32_t cell_mesh_instance_index(const grid3& grid, uint32_t cell_index, uint64_t mesh_instance_id);
+  std::vector<uint64_t> cell_render_mesh_ids(const grid3& grid, uint32_t cell_index);
+  uint32_t cell_render_mesh_index(const grid3& grid, uint32_t cell_index, uint64_t render_mesh_id);
   uint64_t cell_offset(const grid3& grid, uint32_t cell_index);
   uint32_t to_index(const grid3& grid, const std::array<uint32_t, 3>& cell_coordinates);
   std::array<uint32_t, 3> to_cell_coordinates(const grid3& grid, const vec3& position);
@@ -19,45 +19,46 @@ namespace ludo
   // 3 * vec3, padded to 16 bytes
   const auto front_buffer_header_size = sizeof(vec3) + 4 + sizeof(vec3) + 4 + sizeof(vec3) + 4;
 
-  // The mesh instance count, padded to 8 bytes
+  // The render mesh count, padded to 8 bytes
   const auto cell_header_size = sizeof(uint32_t) + 4;
 
   // 2 IDs and 6 start/count values
-  const auto mesh_instance_size = 2 * sizeof(uint64_t) + 6 * sizeof(uint32_t);
+  const auto render_mesh_size = 2 * sizeof(uint64_t) + 6 * sizeof(uint32_t);
 
-  template<>
-  grid3* add(instance& instance, const grid3& init, const std::string& partition)
+  void init(grid3& grid)
   {
-    auto grid = add(data<ludo::grid3>(instance), init, partition);
-    grid->id = next_id++;
-    grid->compute_program_id = add_grid_compute_program(instance, *grid)->id;
+    grid.id = next_id++;
 
-    auto cell_count = static_cast<uint32_t>(std::pow(grid->cell_count_1d, 3));
-    auto cell_size = cell_header_size + grid->cell_capacity * mesh_instance_size;
+    auto cell_count = static_cast<uint32_t>(std::pow(grid.cell_count_1d, 3));
+    auto cell_size = cell_header_size + grid.cell_capacity * render_mesh_size;
 
     auto data_size = cell_count * cell_size;
-    grid->buffer.front = allocate_vram(front_buffer_header_size + data_size);
-    grid->buffer.back = allocate(data_size);
+    grid.buffer.front = allocate_vram(front_buffer_header_size + data_size);
+    grid.buffer.back = allocate(data_size);
 
     auto offset = uint32_t(0);
     for (auto cell_index = uint32_t(0); cell_index < cell_count; cell_index++)
     {
-      cast<uint32_t>(grid->buffer.back, offset) = 0;
+      cast<uint32_t>(grid.buffer.back, offset) = 0;
       offset += cell_size;
     }
-
-    return grid;
   }
 
-  template<>
-  void remove<grid3>(instance& instance, grid3* element, const std::string& partition)
+  void de_init(grid3& grid)
   {
-    deallocate_dual(element->buffer);
+    grid.id = 0;
 
-    remove(data<grid3>(instance), element, partition);
+    deallocate_dual(grid.buffer);
   }
 
-  void push(grid3& grid, bool header_only)
+  void commit(grid3& grid)
+  {
+    commit_header(grid);
+
+    std::memcpy(grid.buffer.front.data + front_buffer_header_size, grid.buffer.back.data, grid.buffer.back.size);
+  }
+
+  void commit_header(grid3& grid)
   {
     auto stream = ludo::stream(grid.buffer.front);
     write(stream, grid.bounds.min);
@@ -65,53 +66,38 @@ namespace ludo
     write(stream, grid.bounds.max);
     stream.position += 4; // align 16
     write(stream, ludo::cell_dimensions(grid));
-    stream.position += 4; // align 8
-
-    if (!header_only)
-    {
-      std::memcpy(grid.buffer.front.data + stream.position, grid.buffer.back.data, grid.buffer.back.size);
-    }
   }
 
-  void add(grid3& grid, const mesh_instance& mesh_instance, const vec3& position, bool push_cell)
+  void add(grid3& grid, const render_mesh& render_mesh, const vec3& position)
   {
     auto index = to_index(grid, to_cell_coordinates(grid, position));
     auto offset = cell_offset(grid, index);
     auto stream = ludo::stream(grid.buffer.back, offset);
 
-    auto mesh_instance_count = peek<uint32_t>(stream);
+    auto render_mesh_count = peek<uint32_t>(stream);
 
-    assert(mesh_instance_count < grid.cell_capacity && "cell is full");
+    assert(render_mesh_count < grid.cell_capacity && "cell is full");
 
-    write(stream, mesh_instance_count + 1);
+    write(stream, render_mesh_count + 1);
     stream.position += 4; // align 8
-    stream.position += mesh_instance_count * mesh_instance_size;
-    write(stream, mesh_instance.id);
-    write(stream, mesh_instance.render_program_id);
-    write(stream, mesh_instance.instances.start);
-    write(stream, mesh_instance.instances.count);
-    write(stream, mesh_instance.indices.start);
-    write(stream, mesh_instance.indices.count);
-    write(stream, mesh_instance.vertices.start);
-    write(stream, mesh_instance.vertices.count);
-
-    if (push_cell)
-    {
-      std::memcpy(
-        grid.buffer.front.data + front_buffer_header_size + offset,
-        grid.buffer.back.data + offset,
-        cell_header_size + grid.cell_capacity * mesh_instance_size
-      );
-    }
+    stream.position += render_mesh_count * render_mesh_size;
+    write(stream, render_mesh.id);
+    write(stream, render_mesh.render_program_id);
+    write(stream, render_mesh.instances.start);
+    write(stream, render_mesh.instances.count);
+    write(stream, render_mesh.indices.start);
+    write(stream, render_mesh.indices.count);
+    write(stream, render_mesh.vertices.start);
+    write(stream, render_mesh.vertices.count);
   }
 
-  void remove(grid3& grid, const mesh_instance& mesh_instance, const vec3& position, bool push_cell)
+  void remove(grid3& grid, const render_mesh& render_mesh, const vec3& position)
   {
     auto cell_coordinates = to_cell_coordinates(grid, position);
     auto cell_index = to_index(grid, cell_coordinates);
-    auto mesh_instance_index = cell_mesh_instance_index(grid, cell_index, mesh_instance.id);
+    auto render_mesh_index = cell_render_mesh_index(grid, cell_index, render_mesh.id);
 
-    if (mesh_instance_index == grid.cell_capacity)
+    if (render_mesh_index == grid.cell_capacity)
     {
       // Search adjacent cells in case of floating point precision errors
       auto offsets = std::array<int32_t, 3> { -1, 0, 1 };
@@ -143,60 +129,51 @@ namespace ludo
             }
 
             cell_index = to_index(grid, adjacent_cell_coordinates);
-            mesh_instance_index = cell_mesh_instance_index(grid, cell_index, mesh_instance.id);
-            if (mesh_instance_index < grid.cell_capacity)
+            render_mesh_index = cell_render_mesh_index(grid, cell_index, render_mesh.id);
+            if (render_mesh_index < grid.cell_capacity)
             {
               break;
             }
           }
 
-          if (mesh_instance_index < grid.cell_capacity)
+          if (render_mesh_index < grid.cell_capacity)
           {
             break;
           }
         }
 
-        if (mesh_instance_index < grid.cell_capacity)
+        if (render_mesh_index < grid.cell_capacity)
         {
           break;
         }
       }
     }
 
-    assert(mesh_instance_index < grid.cell_capacity && "mesh instance not found");
+    assert(render_mesh_index < grid.cell_capacity && "render mesh not found");
 
     auto offset = cell_offset(grid, cell_index);
     auto stream = ludo::stream(grid.buffer.back, offset);
 
-    auto mesh_instance_count = peek<uint32_t>(stream) - 1;
-    write(stream, mesh_instance_count);
+    auto render_mesh_count = peek<uint32_t>(stream) - 1;
+    write(stream, render_mesh_count);
     stream.position += 4; // align 8
-    stream.position += mesh_instance_index * mesh_instance_size;
+    stream.position += render_mesh_index * render_mesh_size;
     std::memmove(
       grid.buffer.back.data + stream.position,
-      grid.buffer.back.data + stream.position + mesh_instance_size,
-      (mesh_instance_count - mesh_instance_index) * mesh_instance_size
+      grid.buffer.back.data + stream.position + render_mesh_size,
+      (render_mesh_count - render_mesh_index) * render_mesh_size
     );
-
-    if (push_cell)
-    {
-      std::memcpy(
-        grid.buffer.front.data + front_buffer_header_size + offset,
-        grid.buffer.back.data + offset,
-        cell_header_size + grid.cell_capacity * mesh_instance_size
-      );
-    }
   }
 
   std::vector<uint64_t> find_parallel(const grid3& grid, const std::function<int32_t(const aabb3& bounds)>& test)
   {
-    auto mesh_instance_ids = std::vector<uint64_t>();
+    auto render_mesh_ids = std::vector<uint64_t>();
     auto cell_count = static_cast<uint32_t>(std::pow(grid.cell_count_1d, 3));
     auto cell_dimensions = ludo::cell_dimensions(grid);
 
-    divide_and_conquer(cell_count, [&grid, &test, &mesh_instance_ids, cell_dimensions](uint32_t start, uint32_t end)
+    divide_and_conquer(cell_count, [&grid, &test, &render_mesh_ids, cell_dimensions](uint32_t start, uint32_t end)
     {
-      auto task_mesh_instance_ids = std::vector<uint64_t>();
+      auto task_render_mesh_ids = std::vector<uint64_t>();
 
       for (auto index = start; index < end; index++)
       {
@@ -215,18 +192,18 @@ namespace ludo
 
         if (test(bounds) != -1)
         {
-          auto ids = cell_mesh_instance_ids(grid, index);
-          task_mesh_instance_ids.insert(task_mesh_instance_ids.end(), ids.begin(), ids.end());
+          auto ids = cell_render_mesh_ids(grid, index);
+          task_render_mesh_ids.insert(task_render_mesh_ids.end(), ids.begin(), ids.end());
         }
       }
 
-      return [&mesh_instance_ids, task_mesh_instance_ids]()
+      return [&render_mesh_ids, task_render_mesh_ids]()
       {
-        mesh_instance_ids.insert(mesh_instance_ids.end(), task_mesh_instance_ids.begin(), task_mesh_instance_ids.end());
+        render_mesh_ids.insert(render_mesh_ids.end(), task_render_mesh_ids.begin(), task_render_mesh_ids.end());
       };
     });
 
-    return mesh_instance_ids;
+    return render_mesh_ids;
   }
 
   vec3 cell_dimensions(const grid3& grid)
@@ -235,40 +212,40 @@ namespace ludo
     return bounds_size / static_cast<float>(grid.cell_count_1d);
   }
 
-  std::vector<uint64_t> cell_mesh_instance_ids(const grid3& grid, uint32_t cell_index)
+  std::vector<uint64_t> cell_render_mesh_ids(const grid3& grid, uint32_t cell_index)
   {
-    auto cell_mesh_instance_ids = std::vector<uint64_t>();
+    auto cell_render_mesh_ids = std::vector<uint64_t>();
     auto offset = cell_offset(grid, cell_index);
 
-    auto mesh_instance_count = cast<uint32_t>(grid.buffer.back, offset);
+    auto render_mesh_count = cast<uint32_t>(grid.buffer.back, offset);
     offset += 4;
     offset += 4; // align 8
 
-    for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
+    for (auto render_mesh_index = uint32_t(0); render_mesh_index < render_mesh_count; render_mesh_index++)
     {
-      cell_mesh_instance_ids.push_back(cast<uint64_t>(grid.buffer.back, offset));
-      offset += mesh_instance_size;
+      cell_render_mesh_ids.push_back(cast<uint64_t>(grid.buffer.back, offset));
+      offset += render_mesh_size;
     }
 
-    return cell_mesh_instance_ids;
+    return cell_render_mesh_ids;
   }
 
-  uint32_t cell_mesh_instance_index(const grid3& grid, uint32_t cell_index, uint64_t mesh_instance_id)
+  uint32_t cell_render_mesh_index(const grid3& grid, uint32_t cell_index, uint64_t render_mesh_id)
   {
     auto offset = cell_offset(grid, cell_index);
 
-    auto mesh_instance_count = cast<uint32_t>(grid.buffer.back, offset);
+    auto render_mesh_count = cast<uint32_t>(grid.buffer.back, offset);
     offset += 4;
     offset += 4; // align 8
 
-    for (auto mesh_instance_index = uint32_t(0); mesh_instance_index < mesh_instance_count; mesh_instance_index++)
+    for (auto render_mesh_index = uint32_t(0); render_mesh_index < render_mesh_count; render_mesh_index++)
     {
-      if (cast<uint64_t>(grid.buffer.back, offset) == mesh_instance_id)
+      if (cast<uint64_t>(grid.buffer.back, offset) == render_mesh_id)
       {
-        return mesh_instance_index;
+        return render_mesh_index;
       }
 
-      offset += mesh_instance_size;
+      offset += render_mesh_size;
     }
 
     return grid.cell_capacity;
@@ -276,7 +253,7 @@ namespace ludo
 
   uint64_t cell_offset(const grid3& grid, uint32_t cell_index)
   {
-    return cell_index * (cell_header_size + grid.cell_capacity * mesh_instance_size);
+    return cell_index * (cell_header_size + grid.cell_capacity * render_mesh_size);
   }
 
   uint32_t to_index(const grid3& grid, const std::array<uint32_t, 3>& cell_coordinates)

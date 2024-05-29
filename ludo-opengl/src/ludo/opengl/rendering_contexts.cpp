@@ -2,16 +2,15 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include "rendering_contexts.h"
+#include <ludo/rendering.h>
+
 #include "util.h"
 
 namespace ludo
 {
-  template<>
-  rendering_context* add(instance& instance, const rendering_context& init, const std::string& partition)
+  void init(rendering_context& rendering_context, uint32_t light_count)
   {
-    auto rendering_context = add(data<ludo::rendering_context>(instance), init, partition);
-    rendering_context->id = next_id++;
+    rendering_context.id = next_id++;
 
     glewInit();
 
@@ -34,32 +33,25 @@ namespace ludo
     // Enable multisampling for anti-aliasing
     glEnable(GL_MULTISAMPLE); check_opengl_error();
 
-    return rendering_context;
-  }
-
-  rendering_context* add(instance& instance, const rendering_context& init, uint32_t light_count, const std::string& partition)
-  {
-    auto rendering_context = add(instance, init, partition);
-
     auto camera_size = 224;
     auto light_size = 112;
     auto data_size = camera_size + 16 + light_count * light_size;
 
-    rendering_context->shader_buffer = allocate_dual(data_size);
+    rendering_context.shader_buffer = allocate_dual(data_size);
 
     // Default camera.
-    set_camera(*rendering_context, camera
+    set_camera(rendering_context, camera
     {
       .view = mat4_identity,
       .projection = perspective(60.0f, 16.0f / 9.0f, 0.1f, 1000.0f)
     });
 
-    cast<uint32_t>(rendering_context->shader_buffer.back, camera_size) = light_count;
+    cast<uint32_t>(rendering_context.shader_buffer.back, camera_size) = light_count;
 
     // Lights that don't do anything...
     for (auto index = 0; index < light_count; index++)
     {
-      set_light(*rendering_context, light
+      set_light(rendering_context, light
       {
         .ambient = vec4_zero,
         .diffuse = vec4_zero,
@@ -71,19 +63,16 @@ namespace ludo
         .range = 0
       }, index);
     }
-
-    return rendering_context;
   }
 
-  template<>
-  void remove<rendering_context>(instance& instance, rendering_context* element, const std::string& partition)
+  void de_init(rendering_context& rendering_context)
   {
-    if (element->shader_buffer.back.size)
-    {
-      deallocate_dual(element->shader_buffer);
-    }
+    rendering_context.id = 0;
 
-    remove(data<rendering_context>(instance), element, partition);
+    if (rendering_context.shader_buffer.back.size)
+    {
+      deallocate_dual(rendering_context.shader_buffer);
+    }
   }
 
   camera get_camera(const rendering_context& rendering_context)
@@ -117,7 +106,7 @@ namespace ludo
     write(stream, view_projection);
   }
 
-  light get_light(const rendering_context& rendering_context, uint8_t index)
+  light get_light(const rendering_context& rendering_context, uint32_t index)
   {
     auto light = ludo::light();
 
@@ -141,7 +130,7 @@ namespace ludo
     return light;
   }
 
-  void set_light(rendering_context& rendering_context, const light& light, uint8_t index)
+  void set_light(rendering_context& rendering_context, const light& light, uint32_t index)
   {
     auto camera_size = 224;
     auto light_size = 112;
@@ -159,11 +148,5 @@ namespace ludo
     write(stream, light.attenuation);
     write(stream, light.strength);
     write(stream, light.range);
-  }
-
-  void bind(rendering_context& rendering_context)
-  {
-    push(rendering_context.shader_buffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, rendering_context.shader_buffer.front.id); check_opengl_error();
   }
 }

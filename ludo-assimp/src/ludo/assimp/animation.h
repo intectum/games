@@ -7,11 +7,13 @@
 
 #include <assimp/scene.h>
 
+#include <ludo/animation.h>
+
 namespace ludo
 {
-  uint64_t import_armature(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition);
+  armature import_armature(const aiScene& assimp_scene, const aiMesh& assimp_mesh);
 
-  std::vector<uint64_t> import_animations(instance& instance, const aiScene& assimp_scene, const aiMesh& assimp_mesh, const std::string& partition);
+  std::vector<animation> import_animations(const aiScene& assimp_scene, const aiMesh& assimp_mesh);
 }
 
 #endif // LUDO_ASSIMP_ANIMATION_H

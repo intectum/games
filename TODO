@@ -3,8 +3,9 @@ Features
 - Occlusion culling
 - Shadow mapping
 - Phong and PBR lights
-- UI
+- Immediate-mode UI
 - Rocks and grass
+- Water sim (standalone first)
 
 Bugs
 - Create celestial body static bodies on predicted path! Currently it can create them too late and sometimes when you are part way through the surface...
@@ -15,8 +16,6 @@ Structural
 - Switch to bazel
 - Remove dynamic containers from data types stored in the instance
 - Remove unneeded IDs from data types
-- Make consistent that add() with no extra params does nothing more than add with an ID? Separate add() into add() and init()?
-- add() should not fetch other data or do crazy slow things like that!
 - Add the 'container' concept? Each container would maintain the count of data elements in each partition of each partitioned array (replaces the 'context' concept).
 - Vulkan
 - In-house physics

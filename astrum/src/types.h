@@ -21,8 +21,8 @@ namespace astrum
   struct terrain_chunk
   {
     uint64_t mesh_id = 0;
-    uint64_t mesh_instance_id = 0;
-    uint64_t tree_mesh_instance_id = 0;
+    uint64_t render_mesh_id = 0;
+    uint64_t tree_render_mesh_id = 0;
 
     ludo::vec3 center;
     ludo::vec3 normal;

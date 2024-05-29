@@ -26,9 +26,9 @@ namespace astrum
 
     for (auto& body: all_dynamic_bodies)
     {
-      ludo::pull(body);
+      ludo::fetch(body);
       body.linear_velocity -= target_linear_velocity;
-      ludo::push(body);
+      ludo::commit(body);
     }
 
     for (auto& point_mass: all_point_masses)

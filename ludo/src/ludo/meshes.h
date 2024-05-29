@@ -37,15 +37,15 @@ namespace ludo
   ///   f: float
   /// All components except for i and u represent floats. i and u represent int32_t and uint32_t respectively.
   /// Component counts represent the number of float/int32_t/uint32_t values within the component e.g. the component p3 represents a position consisting of 3 floats.
-  struct LUDO_API vertex_format
+  struct LUDO_API vertex_format // TODO split into vertex_format and vertex_options?
   {
-    std::vector<std::pair<char, uint32_t>> components; ///< The components within the vertex. Components are of the form { <type>, <count> }.
+    std::vector<std::pair<char, uint32_t>> components; ///< The components. They are of the form { <type>, <count> }.
     uint32_t size = 0; ///< The total size of the vertex in bytes.
 
-    bool has_normal = false; ///< Determines if the vertex format includes a normal.
-    bool has_color = false; ///< Determines if the vertex format includes a color.
-    bool has_texture_coordinate = false; ///< Determines if the vertex format includes a texture coordinate.
-    bool has_bone_weights = false; ///< Determines if the vertex format includes bone weights.
+    bool has_normal = false; ///< Determines if a normal is included.
+    bool has_color = false; ///< Determines if a color is included.
+    bool has_texture_coordinate = false; ///< Determines ifa texture coordinate is included.
+    bool has_bone_weights = false; ///< Determines if bone weights are included.
 
     uint32_t position_offset = 0; ///< The offset in bytes to the position.
     uint32_t normal_offset = 0; ///< The offset in bytes to the normal.
@@ -58,29 +58,14 @@ namespace ludo
   /// A mesh.
   struct LUDO_API mesh
   {
-    uint64_t id = 0; ///< The ID of the mesh.
-    uint64_t texture_id = 0; ///< The ID of the texture used to render this mesh.
-    uint64_t armature_id = 0; ///< The ID of the armature instance used to animate this mesh.
-    std::vector<uint64_t> animation_ids; ///< The ID of the armature instance used to animate this mesh.
+    uint64_t id = 0; ///< A unique identifier.
+    uint64_t texture_id = 0; ///< The texture to apply to the mesh. TODO remove some of these?
+    uint64_t armature_id = 0; ///< The armature to apply to the mesh. TODO remove some of these?
+    std::vector<uint64_t> animation_ids; ///< The animations to apply to the mesh. TODO remove some of these?
 
-    buffer index_buffer; ///< A buffer containing the indices of this mesh.
-    buffer vertex_buffer; ///< A buffer containing the vertices of this mesh.
+    buffer index_buffer; ///< A buffer containing the indices.
+    buffer vertex_buffer; ///< A buffer containing the vertices.
     uint32_t vertex_size = 0; ///< The size in bytes of a vertex within this mesh.
-  };
-
-  ///
-  /// An instance of a mesh.
-  struct LUDO_API mesh_instance // TODO naming? can now represent multiple instances...
-  {
-    uint64_t id = 0; ///< The ID of the mesh instance.
-    uint64_t render_program_id = 0; ///< The ID of the render program used to draw this mesh instance.
-
-    range instances = { 0, 1 }; ///< The instances of this mesh instance.
-    range indices; ///< The indices of this mesh instance.
-    range vertices; ///< The vertices of this mesh instance.
-
-    buffer instance_buffer; ///< A buffer containing instance data for this mesh instance.
-    uint32_t instance_size = 0; ///< The size in bytes of an instance within this mesh instance.
   };
 
   const auto vertex_format_p = vertex_format ///< A vertex format containing only position information
@@ -136,49 +121,29 @@ namespace ludo
   ///
   /// Creates a vertex format based on the options provided.
   /// It will be of the form p3[n3][c4][t2_0...t2_n][u4f4] where the optional components are only included if specified.
-  /// \param normal Determines if a normal should be included in the vertex format.
-  /// \param color Determines if a color should be included in the vertex format.
-  /// \param texture_coordinate Determines if a texture coordinate should be included in the vertex format.
-  /// \param bone_weights Determines if bone weights should be included in the vertex format.
+  /// \param normal Determines if a normal should be included.
+  /// \param color Determines if a color should be included.
+  /// \param texture_coordinate Determines if a texture coordinate should be included.
+  /// \param bone_weights Determines if bone weights should be included.
   /// \return A vertex format based on the options provided.
   LUDO_API vertex_format format(bool normal = false, bool color = false, bool texture_coordinate = false, bool bone_weights = false);
 
   ///
-  /// Adds a mesh to the data of an instance.
-  /// Allocates index and vertex buffers based on the options provided.
-  /// \param instance The instance to add the mesh to.
-  /// \param init The initial state of the new mesh.
+  /// Initializes a mesh with index and vertex buffers.
+  /// \param mesh The mesh.
+  /// \param indices The indices to allocate from.
+  /// \param vertices The vertices to allocate from.
   /// \param index_count The number of indices to allocate.
   /// \param vertex_count The number of vertices to allocate.
-  /// \param vertex_size The size in bytes of a vertex within this mesh.
-  /// \param partition The name of the partition.
-  /// \return A pointer to the new mesh. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API mesh* add(instance& instance, const mesh& init, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size, const std::string& partition = "default");
-
-  template<>
-  LUDO_API void remove<mesh>(instance& instance, mesh* element, const std::string& partition);
+  /// \param vertex_size The size (in bytes) of a vertex.
+  LUDO_API void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size);
 
   ///
-  /// Adds a mesh instance based on the given mesh.
-  /// An armature instance will also be added and attached to the mesh instance if one is not already added.
-  /// \param instance The instance to add the mesh instance to.
-  /// \param init The initial state of the new mesh instance.
-  /// \param mesh The mesh to base the mesh instance on.
-  /// \param capacity The maximum number of instances that can be contained in the mesh instance.
-  /// \param partition The name of the partition.
-  /// \return A pointer to the new mesh instance. This pointer is not guaranteed to remain valid after subsequent additions/removals.
-  LUDO_API mesh_instance* add(instance& instance, const mesh_instance& init, const mesh& mesh, uint32_t capacity = 1, const std::string& partition = "default");
-
-  template<>
-  LUDO_API void remove<mesh_instance>(instance& instance, mesh_instance* element, const std::string& partition);
-
-  ///
-  /// Retrieves the transform from a mesh instance.
-  /// \param mesh_instance The transform to retrieve.
-  /// \param instance_index The index of the instance to retrieve the transform for.
-  /// \return The transform.
-  mat4& instance_transform(mesh_instance& mesh_instance, uint32_t instance_index = 0);
-  const mat4& instance_transform(const mesh_instance& mesh_instance, uint32_t instance_index = 0);
+  /// De-initializes a mesh and reclaims the index and vertex buffers.
+  /// \param mesh The mesh.
+  /// \param indices The indices to reclaim to.
+  /// \param vertices The vertices to reclaim to.
+  LUDO_API void de_init(mesh& mesh, heap& indices, heap& vertices);
 }
 
 #endif // LUDO_GEOMETRY_H

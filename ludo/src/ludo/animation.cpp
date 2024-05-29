@@ -15,29 +15,32 @@ namespace ludo
   quat interpolate_rotation(float tick_time, const animation_node& animation_node);
   vec3 interpolate_scale(float tick_time, const animation_node& animation_node);
 
+  void init(armature& armature)
+  {
+    armature.id = next_id++;
+  }
+
+  void de_init(armature& armature)
+  {
+    armature.id = 0;
+  }
+
+  void init(animation& animation)
+  {
+    animation.id = next_id++;
+  }
+
+  void de_init(animation& animation)
+  {
+    animation.id = 0;
+  }
+
   // This function is based on this tutorial for Assimp animation: https://ogldev.org/www/tutorial38/tutorial38.html
   void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms)
   {
     auto tick_time = std::fmod(time * animation.ticks_per_second, animation.ticks);
 
     interpolate(animation, armature, tick_time, mat4_identity, final_transforms);
-  }
-
-  std::array<mat4, max_bones_per_armature> get_bone_transforms(mesh_instance& mesh_instance, uint32_t instance_index)
-  {
-    auto instance_bone_transforms = &cast<ludo::mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size + sizeof(ludo::mat4) + 16);
-
-    std::array<mat4, max_bones_per_armature> bone_transforms;
-    std::memcpy(bone_transforms.data(), instance_bone_transforms, sizeof(ludo::mat4) * max_bones_per_armature);
-
-    return bone_transforms;
-  }
-
-  void set_bone_transforms(mesh_instance& mesh_instance, const std::array<mat4, max_bones_per_armature>& bone_transforms, uint32_t instance_index)
-  {
-    auto instance_bone_transforms = &cast<ludo::mat4>(mesh_instance.instance_buffer, instance_index * mesh_instance.instance_size + sizeof(ludo::mat4) + 16);
-
-    std::memcpy(instance_bone_transforms, bone_transforms.data(), sizeof(ludo::mat4) * max_bones_per_armature);
   }
 
   void interpolate(const animation& animation, const armature& armature, float tick_time, const mat4& parent_transform, mat4* final_transforms)

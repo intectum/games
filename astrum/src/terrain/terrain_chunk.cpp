@@ -18,7 +18,7 @@ namespace astrum
     terrain_mesh(terrain, radius, mesh, low_detail_format, terrain.format, true, chunk_index, lowest_detail_lod.level, low_detail_lod.level, high_detail_lod.level);
   }
 
-  void init_terrain_chunk(const terrain& terrain, uint32_t chunk_index, ludo::mesh_instance& mesh_instance)
+  void init_terrain_chunk(const terrain& terrain, uint32_t chunk_index, ludo::render_mesh& render_mesh)
   {
     auto& chunk = terrain.chunks[chunk_index];
     auto is_highest_detail = chunk.lod_index == terrain.lods.size() - 1;
@@ -32,8 +32,8 @@ namespace astrum
     auto low_detail_distance = min_distance + distance_range * 0.66f;
     auto high_detail_distance = min_distance + distance_range * 0.33f;
 
-    ludo::cast<float>(mesh_instance.instance_buffer, 0) = low_detail_distance;
-    ludo::cast<float>(mesh_instance.instance_buffer, sizeof(float)) = high_detail_distance;
+    ludo::cast<float>(render_mesh.instance_buffer, 0) = low_detail_distance;
+    ludo::cast<float>(render_mesh.instance_buffer, sizeof(float)) = high_detail_distance;
   }
 
   uint32_t terrain_chunk_lod_index(const terrain& terrain, uint32_t chunk_index, const std::vector<lod>& lods, const ludo::vec3& camera_position, const ludo::vec3& position)

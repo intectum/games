@@ -13,7 +13,7 @@
 
 namespace ludo
 {
-  std::vector<ludo::texture*> import_textures(instance& instance, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const std::string& partition);
+  texture import_texture(const std::string& folder, const aiScene& assimp_scene, const import_object& mesh_object);
 }
 
 #endif // LUDO_ASSIMP_TEXTURES_H

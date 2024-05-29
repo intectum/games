@@ -1,5 +1,3 @@
-#include <set>
-
 #include "../types.h"
 #include "centering.h"
 
@@ -8,8 +6,10 @@ namespace astrum
   void center_universe(ludo::instance& inst)
   {
     auto& dynamic_bodies = ludo::data<ludo::dynamic_body>(inst);
+    auto& ghost_bodies = ludo::data<ludo::ghost_body>(inst);
     auto& grids = ludo::data<ludo::grid3>(inst);
-    auto& mesh_instances = ludo::data<ludo::mesh_instance>(inst);
+    auto& kinematic_bodies = ludo::data<ludo::kinematic_body>(inst);
+    auto& render_meshes = ludo::data<ludo::render_mesh>(inst);
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
     auto& static_bodies = ludo::data<ludo::static_body>(inst);
 
@@ -32,23 +32,23 @@ namespace astrum
     {
       grid.bounds.min += delta;
       grid.bounds.max += delta;
-      ludo::push(grid, true);
+      ludo::commit_header(grid);
     }
 
-    for (auto& partition_pair : mesh_instances.partitions)
+    for (auto& partition_pair : render_meshes.partitions)
     {
-      if (partition_pair.first == "terrain")
+      if (partition_pair.first == "physics" || partition_pair.first == "terrain")
       {
         continue;
       }
 
-      for (auto& mesh_instance: partition_pair.second)
+      for (auto& render_mesh: partition_pair.second)
       {
-        if (mesh_instance.instance_buffer.data)
+        if (render_mesh.instance_buffer.data)
         {
-          for (auto instance_index = uint32_t(0); instance_index < mesh_instance.instances.count; instance_index++)
+          for (auto instance_index = uint32_t(0); instance_index < render_mesh.instances.count; instance_index++)
           {
-            auto& transform = ludo::instance_transform(mesh_instance, instance_index);
+            auto& transform = ludo::instance_transform(render_mesh, instance_index);
             ludo::position(transform, ludo::position(transform) + delta);
           }
         }
@@ -61,13 +61,25 @@ namespace astrum
     for (auto& body : static_bodies)
     {
       body.transform.position += delta;
-      ludo::push(body);
+      ludo::commit(body);
     }
 
     for (auto& body : dynamic_bodies)
     {
       body.transform.position += delta;
-      ludo::push(body);
+      ludo::commit(body);
+    }
+
+    for (auto& body : ghost_bodies)
+    {
+      body.transform.position += delta;
+      ludo::commit(body);
+    }
+
+    for (auto& body : kinematic_bodies)
+    {
+      body.transform.position += delta;
+      ludo::commit(body);
     }
 
     for (auto index = uint32_t(0); index < terrains.length; index++)

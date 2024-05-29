@@ -99,7 +99,7 @@ namespace ludo
   ///
   /// Pushes data from the back buffer to the front buffer.
   /// \param buffer The double buffer to push.
-  LUDO_API void push(double_buffer& buffer);
+  LUDO_API void commit(double_buffer& buffer);
 
   ///
   /// Reads data from a stream (does not change the position).

@@ -6,6 +6,6 @@
 
 namespace ludo
 {
-  std::string asset_dir = "./assets";
-  std::string user_dir = "~/.ludo";
+  std::string asset_folder = "./assets";
+  std::string user_folder = "~/.ludo";
 }
