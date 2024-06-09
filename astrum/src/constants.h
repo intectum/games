@@ -62,7 +62,7 @@ namespace astrum
   const auto luna_lods = std::vector<lod> { { 5, luna_radius * 6.4f }, { 7, luna_radius * 1.6f }, { 9, luna_radius * 0.4f }, { 11, luna_radius * 0.1f } };
 
   // Trees
-  const auto tree_lods = std::vector<lod> { { 0, terra_radius * 1.2f }, { 1, terra_radius * 0.3f }, { 2, terra_radius * 0.075f } };
+  const auto tree_lods = std::vector<lod> { { 0, terra_radius * 1.6f }, { 1, terra_radius * 0.3f }, { 2, terra_radius * 0.2f }, { 3, terra_radius * 0.1f } };
 }
 
 #endif // ASTRUM_CONSTANTS_H

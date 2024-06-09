@@ -23,12 +23,14 @@ namespace astrum
   {
     uint64_t mesh_id = 0;
     uint64_t render_mesh_id = 0;
-    uint64_t tree_render_mesh_id = 0;
+    std::array<uint64_t, 2> tree_render_mesh_ids = { 0, 0 };
 
     ludo::vec3 center;
     ludo::vec3 normal;
     uint32_t lod_index = 0;
 
+    bool trees_loaded = false;
+    bool treeless = false;
     bool locked = false;
   };
 
@@ -40,7 +42,7 @@ namespace astrum
     std::vector<lod> lods;
     std::function<float(const ludo::vec3& position)> height_func;
     std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color_func;
-    std::function<std::vector<tree>(const terrain& terrain, float radius, uint32_t chunk_index)> tree_func;
+    std::function<std::array<std::vector<tree>, 2>(const terrain& terrain, float radius, uint32_t chunk_index)> tree_func;
 
     std::vector<terrain_chunk> chunks;
 

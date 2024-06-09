@@ -40,28 +40,13 @@ namespace astrum
       {
         .format = ludo::vertex_format_p,
         .lods = sol_lods,
-        .height_func = sol_height,
-        .color_func = sol_color,
-        .tree_func = sol_tree
+        .height_func = [](const ludo::vec3& position) { return 1.0f; },
+        .color_func = [](float longitude, const std::array<float, 3>& heights, float gradient) { return ludo::vec4_one; },
+        .tree_func = [](const terrain& terrain, float radius, uint32_t chunk_index) { return std::array<std::vector<tree>, 2>(); }
       },
       *celestial_body,
       "celestial-bodies"
     );
-  }
-
-  float sol_height(const ludo::vec3& position)
-  {
-    return 1.0f;
-  }
-
-  ludo::vec4 sol_color(float longitude, const std::array<float, 3>& heights, float gradient)
-  {
-    return ludo::vec4_one;
-  }
-
-  std::vector<tree> sol_tree(const terrain& terrain, float radius, uint32_t chunk_index)
-  {
-    return {};
   }
 
   void sync_light_with_sol(ludo::instance& inst)

@@ -188,20 +188,17 @@ namespace ludo
     auto curvature = 0.0f;
     for (auto collapse_only_face_index : collapse_only_face_indices)
     {
-      auto minimum_curvature = 1.0f;
       for (auto shared_face_index : shared_face_indices)
       {
         auto dot = ludo::dot(faces[collapse_only_face_index].normal, faces[shared_face_index].normal) * -1.0f;
-        minimum_curvature = std::min(minimum_curvature, dot * 0.5f + 0.5f);
+        curvature = std::max(curvature, dot * 0.5f + 0.5f);
       }
-
-      curvature = std::max(curvature, minimum_curvature);
     }
 
     auto collapse_position = cast<vec3>(mesh.vertex_buffer, collapse_vertex.mesh_vertex_indices[0] * format.size + format.position_offset);
     auto collapse_to_position = cast<vec3>(mesh.vertex_buffer, collapse_to_vertex.mesh_vertex_indices[0] * format.size + format.position_offset);
 
-    return length(collapse_to_position - collapse_position) * curvature;
+    return length2(collapse_to_position - collapse_position) * curvature;
   }
 
   void collapse(mesh& mesh, const vertex_format& format, std::vector<face>& faces, std::vector<collapsable_vertex>& vertices, uint32_t collapse_index, uint32_t collapse_to_index)

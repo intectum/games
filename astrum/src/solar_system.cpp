@@ -28,14 +28,22 @@ namespace astrum
     auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
     auto fruit_tree_lod_meshes = std::vector<ludo::mesh>();
+    auto pine_tree_lod_meshes = std::vector<ludo::mesh>();
     if (import_assets)
     {
       auto fruit_tree = ludo::import(ludo::asset_folder + "/models/fruit-tree.dae", indices, vertices, { .merge_meshes = true });
-      fruit_tree_lod_meshes = build_lod_meshes(fruit_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 250, 50 });
+      fruit_tree_lod_meshes = build_lod_meshes(fruit_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50, 12 });
       std::reverse(fruit_tree_lod_meshes.begin(), fruit_tree_lod_meshes.end());
       ludo::save(fruit_tree_lod_meshes[0], ludo::asset_folder + "/meshes/fruit-tree-0.lmesh");
       ludo::save(fruit_tree_lod_meshes[1], ludo::asset_folder + "/meshes/fruit-tree-1.lmesh");
-      //ludo::save(fruit_tree_lod_meshes[2], ludo::asset_folder + "/meshes/fruit-tree-2.lmesh");
+      ludo::save(fruit_tree_lod_meshes[2], ludo::asset_folder + "/meshes/fruit-tree-2.lmesh");
+
+      auto pine_tree = ludo::import(ludo::asset_folder + "/models/pine-tree.dae", indices, vertices, { .merge_meshes = true });
+      pine_tree_lod_meshes = build_lod_meshes(pine_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50, 12 });
+      std::reverse(pine_tree_lod_meshes.begin(), pine_tree_lod_meshes.end());
+      ludo::save(pine_tree_lod_meshes[0], ludo::asset_folder + "/meshes/pine-tree-0.lmesh");
+      ludo::save(pine_tree_lod_meshes[1], ludo::asset_folder + "/meshes/pine-tree-1.lmesh");
+      ludo::save(pine_tree_lod_meshes[2], ludo::asset_folder + "/meshes/pine-tree-2.lmesh");
     }
     else
     {
@@ -43,12 +51,22 @@ namespace astrum
       {
         ludo::load(ludo::asset_folder + "/meshes/fruit-tree-0.lmesh", indices, vertices),
         ludo::load(ludo::asset_folder + "/meshes/fruit-tree-1.lmesh", indices, vertices),
-        //ludo::load(ludo::asset_folder + "/meshes/fruit-tree-2.lmesh", indices, vertices)
+        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-2.lmesh", indices, vertices)
+      };
+
+      pine_tree_lod_meshes =
+      {
+        ludo::load(ludo::asset_folder + "/meshes/pine-tree-0.lmesh", indices, vertices),
+        ludo::load(ludo::asset_folder + "/meshes/pine-tree-1.lmesh", indices, vertices),
+        ludo::load(ludo::asset_folder + "/meshes/pine-tree-2.lmesh", indices, vertices)
       };
     }
-    ludo::add(inst, fruit_tree_lod_meshes[0], "trees");
-    ludo::add(inst, fruit_tree_lod_meshes[1], "trees");
-    //ludo::add(inst, fruit_tree_lod_meshes[2], "trees");
+    ludo::add(inst, fruit_tree_lod_meshes[0], "fruit-trees");
+    ludo::add(inst, fruit_tree_lod_meshes[1], "fruit-trees");
+    ludo::add(inst, fruit_tree_lod_meshes[2], "fruit-trees");
+    ludo::add(inst, pine_tree_lod_meshes[0], "pine-trees");
+    ludo::add(inst, pine_tree_lod_meshes[1], "pine-trees");
+    ludo::add(inst, pine_tree_lod_meshes[2], "pine-trees");
     auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
     ludo::add(inst, minifig.animations[0], "people");
     ludo::add(inst, minifig.armatures[0], "people");
