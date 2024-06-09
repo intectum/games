@@ -25,10 +25,11 @@ int main()
   auto sol_mesh_counts = astrum::terrain_counts(astrum::sol_lods);
   auto terra_mesh_counts = astrum::terrain_counts(astrum::terra_lods);
   auto luna_mesh_counts = astrum::terrain_counts(astrum::luna_lods);
-  auto tree_counts = std::array<std::pair<uint32_t, uint32_t>, 3>
+  auto tree_counts = std::array<std::pair<uint32_t, uint32_t>, astrum::tree_type_count>
   {
     astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/fruit-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/fruit-tree-0.lmesh"),
     astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/oak-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/oak-tree-0.lmesh"),
+    astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/palm-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/palm-tree-0.lmesh"),
     astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/pine-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/pine-tree-0.lmesh")
   };
   auto person_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/minifig.dae");
@@ -49,6 +50,7 @@ int main()
     tree_counts[0].first +
     tree_counts[1].first +
     tree_counts[2].first +
+    tree_counts[3].first +
     person_mesh_counts.first +
     spaceship_mesh_counts.first;
   auto max_vertices =
@@ -59,6 +61,7 @@ int main()
     tree_counts[0].second +
     tree_counts[1].second +
     tree_counts[2].second +
+    tree_counts[3].second +
     person_mesh_counts.second +
     spaceship_mesh_counts.second;
 

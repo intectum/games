@@ -23,6 +23,7 @@ namespace astrum
   {
     auto& fruit_tree_meshes = ludo::data<ludo::mesh>(inst, "fruit-trees");
     auto& oak_tree_meshes = ludo::data<ludo::mesh>(inst, "oak-trees");
+    auto& palm_tree_meshes = ludo::data<ludo::mesh>(inst, "palm-trees");
     auto& pine_tree_meshes = ludo::data<ludo::mesh>(inst, "pine-trees");
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
 
@@ -110,7 +111,7 @@ namespace astrum
         point_mass.transform.position,
         chunk_index,
         lod_index,
-        { fruit_tree_meshes, oak_tree_meshes, pine_tree_meshes }
+        { fruit_tree_meshes, oak_tree_meshes, palm_tree_meshes, pine_tree_meshes }
       );
 
       chunk.trees_loaded = true;
@@ -138,6 +139,7 @@ namespace astrum
     auto grid = ludo::first<ludo::grid3>(inst, "trees");
     auto& fruit_tree_meshes = ludo::data<ludo::mesh>(inst, "fruit-trees");
     auto& oak_tree_meshes = ludo::data<ludo::mesh>(inst, "oak-trees");
+    auto& palm_tree_meshes = ludo::data<ludo::mesh>(inst, "palm-trees");
     auto& pine_tree_meshes = ludo::data<ludo::mesh>(inst, "pine-trees");
     auto& render_meshes = ludo::data<ludo::render_mesh>(inst, "trees");
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
@@ -151,7 +153,7 @@ namespace astrum
     auto& terrain = ludo::data<astrum::terrain>(inst, "celestial-bodies")[celestial_body_index];
 
     auto camera_position = ludo::position(ludo::get_camera(*rendering_context).view);
-    auto meshes = std::array<ludo::array<ludo::mesh>, tree_type_count> { fruit_tree_meshes, oak_tree_meshes, pine_tree_meshes };
+    auto meshes = std::array<ludo::array<ludo::mesh>, tree_type_count> { fruit_tree_meshes, oak_tree_meshes, palm_tree_meshes, pine_tree_meshes };
 
     auto push_required = false;
     for (auto chunk_index = uint32_t(0); chunk_index < terrain.chunks.size(); chunk_index++)
