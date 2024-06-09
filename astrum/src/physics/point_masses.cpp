@@ -1,4 +1,4 @@
-#include "../constants.h"
+#include "../types.h"
 #include "point_masses.h"
 #include "util.h"
 

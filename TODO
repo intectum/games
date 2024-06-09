@@ -24,3 +24,4 @@ Structural
 - Job scheduler a la Unity DOTS
 - Split buffer and allocators instead of having separate heap type etc.
 - Add 'Based on' papers to Git
+- FreeImage -> Stb

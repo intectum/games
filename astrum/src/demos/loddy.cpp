@@ -22,11 +22,11 @@ int main()
   auto rendering_context = ludo::rendering_context();
   ludo::init(rendering_context, 1);
 
-  auto fruit_tree_counts = ludo::import_counts("assets/models/pine-tree.dae");
+  auto tree_counts = ludo::import_counts("assets/models/oak-tree.dae");
 
   auto render_commands = ludo::allocate_heap_vram(2 * sizeof(ludo::render_command));
-  auto indices = ludo::allocate_heap_vram(3 * fruit_tree_counts.first * sizeof(uint32_t));
-  auto vertices = ludo::allocate_heap_vram(3 * fruit_tree_counts.second * 80);
+  auto indices = ludo::allocate_heap_vram(3 * tree_counts.first * sizeof(uint32_t));
+  auto vertices = ludo::allocate_heap_vram(3 * tree_counts.second * 80);
 
   // LIGHTS
 
@@ -60,10 +60,10 @@ int main()
   auto fragment_shader_code = astrum::lod_fragment_shader_code(ludo::vertex_format_pnc, false);
   ludo::init(*render_program, vertex_shader_code, fragment_shader_code, render_commands, 2);
 
-  // FRUIT TREE
+  // TREE
 
-  auto fruit_tree = ludo::import("assets/models/pine-tree.dae", indices, vertices, { .merge_meshes = true });
-  auto lod_meshes = astrum::build_lod_meshes(fruit_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50 });
+  auto tree_import = ludo::import("assets/models/oak-tree.dae", indices, vertices, { .merge_meshes = true });
+  auto lod_meshes = astrum::build_lod_meshes(tree_import.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50 });
 
   auto lod_render_mesh_0 = ludo::render_mesh();
   ludo::init(lod_render_mesh_0, *render_program, lod_meshes[0], indices, vertices, 1);

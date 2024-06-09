@@ -3,8 +3,8 @@
 #include <ludo/opengl/textures.h>
 #include <ludo/opengl/util.h>
 
-#include "../constants.h"
 #include "../physics/point_masses.h"
+#include "../types.h"
 #include "atmosphere.h"
 #include "util.h"
 

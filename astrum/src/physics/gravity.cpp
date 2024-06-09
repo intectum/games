@@ -1,4 +1,4 @@
-#include "../constants.h"
+#include "../types.h"
 #include "gravity.h"
 
 namespace astrum

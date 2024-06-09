@@ -12,7 +12,7 @@ namespace astrum
 {
   float terra_height(const ludo::vec3& position);
   ludo::vec4 terra_color(float longitude, const std::array<float, 3>& heights, float gradient);
-  std::array<std::vector<tree>, 2> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index);
+  std::array<std::vector<tree>, tree_type_count> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index);
   void terra_tree_internal(uint32_t divisions, noise::module::Perlin& perlin_forest, const std::array<ludo::vec3, 3>& face, std::vector<ludo::vec3>& positions);
 
   const auto beach_max_height = 1.0001f;
@@ -139,7 +139,7 @@ namespace astrum
   // which in the case of a planet could be hundreds of thousands and memory was a problem (as well as speed).
   // Perhaps more sophisticated poisson disc sampling does not have these same limitations?
   // For now, placing them at regular intervals and applying some jitter to their positions seems adequate.
-  std::array<std::vector<tree>, 2> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index)
+  std::array<std::vector<tree>, tree_type_count> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index)
   {
     auto perlin_forest = noise::module::Perlin();
     perlin_forest.SetSeed(seed);
@@ -171,7 +171,7 @@ namespace astrum
     auto positions = std::vector<ludo::vec3>();
     terra_tree_internal(6, perlin_forest, face, positions);
 
-    auto trees = std::array<std::vector<tree>, 2>();
+    auto trees = std::array<std::vector<tree>, tree_type_count>();
     for (auto& position : positions)
     {
       auto jitter = ludo::vec3
@@ -184,8 +184,7 @@ namespace astrum
       position += jitter;
       ludo::normalize(position);
 
-      auto type = tree_distribution(tree_random) > 0.5f ? 1 : 0;
-
+      auto type = uint32_t(tree_distribution(tree_random) * tree_type_count);
       trees[type].emplace_back(tree
       {
         .position = position,

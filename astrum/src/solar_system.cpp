@@ -27,52 +27,47 @@ namespace astrum
     auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
     auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
-    auto fruit_tree_lod_meshes = std::vector<ludo::mesh>();
-    auto pine_tree_lod_meshes = std::vector<ludo::mesh>();
+    auto tree_collapse_iterations = std::vector<uint32_t> { 200, 50, 12 };
+    auto tree_lod_meshes = std::array<std::vector<ludo::mesh>, tree_type_count>();
     if (import_assets)
     {
-      auto fruit_tree = ludo::import(ludo::asset_folder + "/models/fruit-tree.dae", indices, vertices, { .merge_meshes = true });
-      fruit_tree_lod_meshes = build_lod_meshes(fruit_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50, 12 });
-      std::reverse(fruit_tree_lod_meshes.begin(), fruit_tree_lod_meshes.end());
-      ludo::save(fruit_tree_lod_meshes[0], ludo::asset_folder + "/meshes/fruit-tree-0.lmesh");
-      ludo::save(fruit_tree_lod_meshes[1], ludo::asset_folder + "/meshes/fruit-tree-1.lmesh");
-      ludo::save(fruit_tree_lod_meshes[2], ludo::asset_folder + "/meshes/fruit-tree-2.lmesh");
-
-      auto pine_tree = ludo::import(ludo::asset_folder + "/models/pine-tree.dae", indices, vertices, { .merge_meshes = true });
-      pine_tree_lod_meshes = build_lod_meshes(pine_tree.meshes[0], ludo::vertex_format_pnc, indices, vertices, { 200, 50, 12 });
-      std::reverse(pine_tree_lod_meshes.begin(), pine_tree_lod_meshes.end());
-      ludo::save(pine_tree_lod_meshes[0], ludo::asset_folder + "/meshes/pine-tree-0.lmesh");
-      ludo::save(pine_tree_lod_meshes[1], ludo::asset_folder + "/meshes/pine-tree-1.lmesh");
-      ludo::save(pine_tree_lod_meshes[2], ludo::asset_folder + "/meshes/pine-tree-2.lmesh");
+      for (auto tree_type_index = uint32_t(0); tree_type_index < tree_types.size(); tree_type_index++)
+      {
+        auto tree_import = ludo::import(ludo::asset_folder + "/models/" + tree_types[tree_type_index] + "-tree.dae", indices, vertices, { .merge_meshes = true });
+        tree_lod_meshes[tree_type_index] = build_lod_meshes(tree_import.meshes[0], ludo::vertex_format_pnc, indices, vertices, tree_collapse_iterations);
+        std::reverse(tree_lod_meshes[tree_type_index].begin(), tree_lod_meshes[tree_type_index].end());
+        for (auto lod_index = uint32_t(0); lod_index < tree_collapse_iterations.size(); lod_index++)
+        {
+          ludo::save(tree_lod_meshes[tree_type_index][lod_index], ludo::asset_folder + "/meshes/" + tree_types[tree_type_index] + "-tree-" + std::to_string(lod_index) + ".lmesh");
+        }
+      }
     }
     else
     {
-      fruit_tree_lod_meshes =
+      for (auto tree_type_index = uint32_t(0); tree_type_index < tree_types.size(); tree_type_index++)
       {
-        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-0.lmesh", indices, vertices),
-        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-1.lmesh", indices, vertices),
-        ludo::load(ludo::asset_folder + "/meshes/fruit-tree-2.lmesh", indices, vertices)
-      };
-
-      pine_tree_lod_meshes =
-      {
-        ludo::load(ludo::asset_folder + "/meshes/pine-tree-0.lmesh", indices, vertices),
-        ludo::load(ludo::asset_folder + "/meshes/pine-tree-1.lmesh", indices, vertices),
-        ludo::load(ludo::asset_folder + "/meshes/pine-tree-2.lmesh", indices, vertices)
-      };
+        for (auto lod_index = uint32_t(0); lod_index < tree_collapse_iterations.size(); lod_index++)
+        {
+          tree_lod_meshes[tree_type_index].emplace_back(ludo::load(ludo::asset_folder + "/meshes/" + tree_types[tree_type_index] + "-tree-" + std::to_string(lod_index) + ".lmesh", indices, vertices));
+        }
+      }
     }
-    ludo::add(inst, fruit_tree_lod_meshes[0], "fruit-trees");
-    ludo::add(inst, fruit_tree_lod_meshes[1], "fruit-trees");
-    ludo::add(inst, fruit_tree_lod_meshes[2], "fruit-trees");
-    ludo::add(inst, pine_tree_lod_meshes[0], "pine-trees");
-    ludo::add(inst, pine_tree_lod_meshes[1], "pine-trees");
-    ludo::add(inst, pine_tree_lod_meshes[2], "pine-trees");
+
+    for (auto tree_type_index = uint32_t(0); tree_type_index < tree_types.size(); tree_type_index++)
+    {
+      for (auto lod_index = uint32_t(0); lod_index < tree_collapse_iterations.size(); lod_index++)
+      {
+        ludo::add(inst, tree_lod_meshes[tree_type_index][lod_index], tree_types[tree_type_index] + "-trees");
+      }
+    }
+
     auto minifig = ludo::import(ludo::asset_folder + "/models/minifig.dae", indices, vertices);
     ludo::add(inst, minifig.animations[0], "people");
     ludo::add(inst, minifig.armatures[0], "people");
     ludo::add(inst, minifig.dynamic_body_shapes[0], "people");
     ludo::add(inst, minifig.meshes[0], "people");
     ludo::add(inst, minifig.textures[0], "people");
+
     auto spaceship = ludo::import(ludo::asset_folder + "/models/spaceship.obj", indices, vertices);
     ludo::add(inst, spaceship.meshes[0], "spaceships");
 

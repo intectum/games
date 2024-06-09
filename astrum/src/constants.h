@@ -3,7 +3,7 @@
 
 #include <ludo/api.h>
 
-#include "types.h"
+#include "meshes/lods.h"
 
 namespace astrum
 {
@@ -62,6 +62,8 @@ namespace astrum
   const auto luna_lods = std::vector<lod> { { 5, luna_radius * 6.4f }, { 7, luna_radius * 1.6f }, { 9, luna_radius * 0.4f }, { 11, luna_radius * 0.1f } };
 
   // Trees
+  const auto tree_type_count = uint32_t(3);
+  const auto tree_types = std::vector<std::string> { "fruit", "oak", "pine" };
   const auto tree_lods = std::vector<lod> { { 0, terra_radius * 1.6f }, { 1, terra_radius * 0.3f }, { 2, terra_radius * 0.2f }, { 3, terra_radius * 0.1f } };
 }
 

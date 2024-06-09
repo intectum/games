@@ -70,7 +70,7 @@ namespace astrum
         .lods = luna_lods,
         .height_func = luna_height,
         .color_func = [](float longitude, const std::array<float, 3>& heights, float gradient) { return ludo::vec4_one; },
-        .tree_func = [](const terrain& terrain, float radius, uint32_t chunk_index) { return std::array<std::vector<tree>, 2>(); }
+        .tree_func = [](const terrain& terrain, float radius, uint32_t chunk_index) { return std::array<std::vector<tree>, tree_type_count>(); }
       },
       *celestial_body,
     "celestial-bodies"
