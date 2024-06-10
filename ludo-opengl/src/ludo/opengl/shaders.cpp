@@ -14,9 +14,10 @@ namespace ludo
     auto shader = glCreateShader(type); check_opengl_error();
 
     code.seekg(0, std::ios_base::end);
-    auto code_string = std::string(code.tellg(), 'x');
+    auto code_size = code.tellg();
+    auto code_string = std::string(code_size, 'x');
     code.seekg(0);
-    code.read(&code_string[0], static_cast<std::streamsize>(code_string.size()));
+    code.read(&code_string[0], code_size);
 
     const char* source_ptr = code_string.data();
     const int source_length = -1;

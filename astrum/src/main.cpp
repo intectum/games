@@ -226,7 +226,7 @@ int main()
   // Post-processing
   auto post_processing_render_mesh = astrum::add_post_processing_render_mesh(inst);
   astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
-  //astrum::write_atmosphere_texture(50, 0.25f, 1.0f, astrum::terra_atmosphere_scale, ludo::asset_folder + "/effects/atmosphere.tiff", 1024);
+  //astrum::write_atmosphere_textures(astrum::terra_atmosphere_scale);
   astrum::add_atmosphere(inst, *post_processing_render_mesh, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
   astrum::add_bloom(inst, *post_processing_render_mesh, 5, 0.1f);
   astrum::add_tone_mapping(inst, *post_processing_render_mesh);

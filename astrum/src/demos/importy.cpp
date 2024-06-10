@@ -1,5 +1,3 @@
-#include <FreeImagePlus.h>
-
 #include <ludo/api.h>
 #include <ludo/opengl/util.h>
 

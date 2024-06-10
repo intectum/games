@@ -1,5 +1,3 @@
-#include <FreeImagePlus.h>
-
 #include <ludo/api.h>
 #include <ludo/opengl/util.h>
 
@@ -48,12 +46,7 @@ int main()
 
   // TEXTURES
 
-  auto image = fipImage();
-  image.load((ludo::asset_folder + "/effects/atmosphere.tiff").c_str());
-
-  auto texture = ludo::texture { .datatype = ludo::pixel_datatype::FLOAT32, .width = image.getWidth(), .height = image.getHeight() };
-  ludo::init(texture);
-  ludo::write(texture, reinterpret_cast<std::byte*>(image.accessPixels()));
+  auto texture = ludo::load(ludo::asset_folder + "/effects/blue-noise.png");
 
   // CUBY
 

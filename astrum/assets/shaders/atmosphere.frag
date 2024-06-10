@@ -82,7 +82,8 @@ layout(std430, binding = 1) buffer render_program_layout
   // TODO why is sampler2DShadow not working? AMD thing? I'm sure it was working before...
   //sampler2DShadow depth_sampler;
   sampler2D depth_sampler;
-  sampler2D atmosphere_sampler;
+  sampler2D atmospheric_density_sampler;
+  sampler2D optical_depth_sampler;
   sampler2D blue_noise_sampler;
   planet_t planet;
 };
@@ -191,7 +192,7 @@ float normalized_altitude(planet_t planet, vec3 position)
 // The atmospheric density at the (normalized) altitude given. Uses a lookup texture for better performance.
 float atmospheric_density(float altitude)
 {
-  return texture(atmosphere_sampler, vec2(0.0, altitude)).r;
+  return texture(atmospheric_density_sampler, vec2(0.0, altitude)).r;
 }
 
 // The average atmospheric density along a ray (multiplied by the ray length). Uses a lookup texture for better performance.
@@ -206,11 +207,11 @@ float optical_depth(planet_t planet, vec3 ray_origin, vec3 ray_direction, float 
     // This effectively reverses the rays so that they do not go into the planet.
     angle = target_below_origin ? 1.0 - angle : angle;
 
-    float depth = texture(atmosphere_sampler, vec2(angle, target_below_origin ? target_altitude : origin_altitude)).g * 512.0 * planet.radius;
-    return depth - texture(atmosphere_sampler, vec2(angle, target_below_origin ? origin_altitude : target_altitude)).g * 512.0 * planet.radius;
+    float depth = texture(optical_depth_sampler, vec2(angle, target_below_origin ? target_altitude : origin_altitude)).r * 512.0 * planet.radius;
+    return depth - texture(optical_depth_sampler, vec2(angle, target_below_origin ? origin_altitude : target_altitude)).r * 512.0 * planet.radius;
   }
 
-  return texture(atmosphere_sampler, vec2(angle, origin_altitude)).g * 512.0 * planet.radius;
+  return texture(optical_depth_sampler, vec2(angle, origin_altitude)).r * 512.0 * planet.radius;
 }
 
 // The amount of light scattered out (lost) along a ray.

@@ -13,6 +13,8 @@ namespace ludo
   {
     { pixel_components::BGR, GL_BGR },
     { pixel_components::BGRA, GL_BGRA },
+    { pixel_components::R, GL_RED },
+    { pixel_components::RG, GL_RG },
     { pixel_components::RGB, GL_RGB },
     { pixel_components::RGBA, GL_RGBA },
 
@@ -154,6 +156,36 @@ namespace ludo
       if (texture.datatype == pixel_datatype::FLOAT32)
       {
         return GL_DEPTH_COMPONENT32F;
+      }
+    }
+    else if (texture.components == pixel_components::R)
+    {
+      if (texture.datatype == pixel_datatype::UINT8)
+      {
+        return GL_R8;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT16)
+      {
+        return GL_R16F;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT32)
+      {
+        return GL_R32F;
+      }
+    }
+    else if (texture.components == pixel_components::RG)
+    {
+      if (texture.datatype == pixel_datatype::UINT8)
+      {
+        return GL_RG8;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT16)
+      {
+        return GL_RG16F;
+      }
+      else if (texture.datatype == pixel_datatype::FLOAT32)
+      {
+        return GL_RG32F;
       }
     }
     else

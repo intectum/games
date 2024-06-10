@@ -1,4 +1,4 @@
-#include <FreeImagePlus.h>
+#include <fstream>
 
 #include <ludo/opengl/textures.h>
 #include <ludo/opengl/util.h>
@@ -10,12 +10,18 @@
 
 namespace astrum
 {
+  void write_atmospheric_density_texture();
+  void write_optical_depth_texture(float atmosphere_radius);
   ludo::vec2 ray_sphere_intersections(const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, const ludo::vec3& sphere_center, float sphere_radius);
-  float optical_depth(uint32_t sample_count, float scale_height, float planet_radius, float atmosphere_radius, const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, float ray_length);
-  float atmospheric_density(float scale_height, float altitude);
-  float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position);
+  float optical_depth(float atmosphere_radius, const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, float ray_length);
+  float atmospheric_density(float altitude);
+  float normalized_altitude(float atmosphere_radius, const ludo::vec3& position);
 
-  const auto shader_buffer_size = 4 * sizeof(uint64_t) + sizeof(ludo::vec3) + 2 * sizeof(float);
+  const auto map_size = uint32_t(1024);
+  const auto atmospheric_density_scale_height = 0.25f;
+  const auto optical_depth_samples = uint32_t(50);
+
+  const auto shader_buffer_size = 5 * sizeof(uint64_t) + 8 /* align 16 */ + sizeof(ludo::vec3) + 2 * sizeof(float);
 
   void add_atmosphere(ludo::instance& inst, const ludo::render_mesh& render_mesh, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
   {
@@ -38,22 +44,34 @@ namespace astrum
     auto source_depth_texture = ludo::get<ludo::texture>(inst, previous_frame_buffer.depth_texture_id);
     ludo::write(stream, ludo::handle(*source_depth_texture));
 
-    auto atmosphere_image = fipImage();
-    atmosphere_image.load((ludo::asset_folder + "/effects/atmosphere.tiff").c_str());
+    auto map_data_size = uint32_t(map_size * map_size * sizeof(float));
 
-    auto atmosphere_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT32, .width = atmosphere_image.getWidth(), .height = atmosphere_image.getHeight() });
-    ludo::init(*atmosphere_texture, { .clamp = true });
-    ludo::write(*atmosphere_texture, reinterpret_cast<std::byte*>(atmosphere_image.accessPixels()));
-    ludo::write(stream, ludo::handle(*atmosphere_texture));
+    auto atmospheric_density_stream = std::ifstream(ludo::asset_folder + "/effects/atmospheric-density.map", std::ios::binary);
+    auto atmospheric_density_data = new std::byte[map_data_size];
+    atmospheric_density_stream.read(reinterpret_cast<char*>(atmospheric_density_data), map_data_size);
 
-    auto blue_noise_image = fipImage();
-    blue_noise_image.load((ludo::asset_folder + "/effects/blue-noise.png").c_str());
+    auto atmospheric_density_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size });
+    ludo::init(*atmospheric_density_texture, { .clamp = true });
+    ludo::write(*atmospheric_density_texture, atmospheric_density_data);
+    ludo::write(stream, ludo::handle(*atmospheric_density_texture));
 
-    auto blue_noise_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::RGBA, .width = blue_noise_image.getWidth(), .height = blue_noise_image.getHeight() });
-    ludo::init(*blue_noise_texture);
-    ludo::write(*blue_noise_texture, reinterpret_cast<std::byte*>(blue_noise_image.accessPixels()));
-    ludo::write(stream, ludo::handle(*blue_noise_texture));
+    delete[] atmospheric_density_data;
 
+    auto optical_depth_stream = std::ifstream(ludo::asset_folder + "/effects/optical-depth.map", std::ios::binary);
+    auto optical_depth_data = new std::byte[map_data_size];
+    optical_depth_stream.read(reinterpret_cast<char*>(optical_depth_data), map_data_size);
+
+    auto optical_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size });
+    ludo::init(*optical_depth_texture, { .clamp = true });
+    ludo::write(*optical_depth_texture, optical_depth_data);
+    ludo::write(stream, ludo::handle(*optical_depth_texture));
+
+    delete[] optical_depth_data;
+
+    auto blue_noise_texture = ludo::load(ludo::asset_folder + "/effects/blue-noise.png");
+    ludo::write(stream, ludo::handle(blue_noise_texture));
+
+    stream.position += 8; // align 16
     stream.position += 12; // skip planet_t.position
 
     ludo::write(stream, planet_radius);
@@ -71,7 +89,7 @@ namespace astrum
 
       auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 4 * sizeof(uint64_t)) = celestial_body_point_masses[celestial_body_index].transform.position;
+      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 5 * sizeof(uint64_t) + 8 /* align 16 */) = celestial_body_point_masses[celestial_body_index].transform.position;
 
       ludo::use_and_clear(*frame_buffer);
       ludo::add_render_command(*render_program, render_mesh);
@@ -79,21 +97,42 @@ namespace astrum
     });
   }
 
-  void write_atmosphere_texture(uint32_t sample_count, float scale_height, float planet_radius, float atmosphere_radius, const std::string& texture_filename, uint32_t texture_size)
+  void write_atmosphere_textures(float atmosphere_radius)
   {
-    auto image = fipImage(FIT_RGBF, texture_size, texture_size, 96);
+    write_atmospheric_density_texture();
+    write_optical_depth_texture(atmosphere_radius);
+  }
 
-    for (auto row = 0; row < texture_size; row++)
+  void write_atmospheric_density_texture()
+  {
+    auto stream = std::ofstream(ludo::asset_folder + "/effects/atmospheric-density.map", std::ios::binary);
+
+    for (auto row = 0; row < map_size; row++)
     {
-      auto image_data = reinterpret_cast<float*>(image.getScanLine(row));
-      auto altitude = 1.0f / static_cast<float>(texture_size) * static_cast<float>(row);
-      auto scaled_altitude = (atmosphere_radius - planet_radius) * altitude;
+      auto altitude = 1.0f / static_cast<float>(map_size) * static_cast<float>(row);
 
-      auto ray_origin = ludo::vec3 { 0.0f, planet_radius + scaled_altitude, 0.0f };
-
-      for (auto column = 0; column < texture_size; column++)
+      for (auto column = 0; column < map_size; column++)
       {
-        auto ray_angle = ludo::pi / static_cast<float>(texture_size) * static_cast<float>(column);
+        auto value = atmospheric_density(altitude);
+        stream.write(reinterpret_cast<const char*>(&value), sizeof(float));
+      }
+    }
+  }
+
+  void write_optical_depth_texture(float atmosphere_radius)
+  {
+    auto stream = std::ofstream(ludo::asset_folder + "/effects/optical-depth.map", std::ios::binary);
+
+    for (auto row = 0; row < map_size; row++)
+    {
+      auto altitude = 1.0f / static_cast<float>(map_size) * static_cast<float>(row);
+      auto scaled_altitude = (atmosphere_radius - 1.0f) * altitude;
+
+      auto ray_origin = ludo::vec3 { 0.0f, 1.0f + scaled_altitude, 0.0f };
+
+      for (auto column = 0; column < map_size; column++)
+      {
+        auto ray_angle = ludo::pi / static_cast<float>(map_size) * static_cast<float>(column);
 
         auto ray_direction2 = ludo::vec2(0.0f, 1.0f);
         ludo::rotate(ray_direction2, ray_angle);
@@ -102,17 +141,10 @@ namespace astrum
         auto ray_intersections = ray_sphere_intersections(ray_origin, ray_direction, ludo::vec3_zero, atmosphere_radius);
         auto ray_length = ray_intersections[1] - ray_intersections[0];
 
-        // NOTE: Red and blue are flipped when the texture is saved...
-        // A bug in FreeImage when saving to TIFF?
-        image_data[FI_RGBA_BLUE] = atmospheric_density(scale_height, altitude);
-        image_data[FI_RGBA_GREEN] = optical_depth(sample_count, scale_height, planet_radius, atmosphere_radius, ray_origin, ray_direction, ray_length) / 512.0f;
-        image_data[FI_RGBA_RED] = 0.0f;
-        image_data += 3;
+        auto value = optical_depth(atmosphere_radius, ray_origin, ray_direction, ray_length) / 512.0f;
+        stream.write(reinterpret_cast<const char*>(&value), sizeof(float));
       }
     }
-
-    image.save(texture_filename.c_str());
-    image.clear();
   }
 
   ludo::vec2 ray_sphere_intersections(const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, const ludo::vec3& sphere_center, float sphere_radius)
@@ -139,24 +171,24 @@ namespace astrum
     return { 0.0f, 0.0f };
   }
 
-  float optical_depth(uint32_t sample_count, float scale_height, float planet_radius, float atmosphere_radius, const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, float ray_length)
+  float optical_depth(float atmosphere_radius, const ludo::vec3& ray_origin, const ludo::vec3& ray_direction, float ray_length)
   {
-    auto step_size = ray_length / static_cast<float>(sample_count + 1);
+    auto step_size = ray_length / static_cast<float>(optical_depth_samples + 1);
 
     auto depth = 0.0f;
-    for (auto sample_index = 1; sample_index <= sample_count; sample_index++)
+    for (auto sample_index = 1; sample_index <= optical_depth_samples; sample_index++)
     {
       auto sample_position = ray_origin + ray_direction * static_cast<float>(sample_index) * step_size;
-      auto sample_altitude = normalized_altitude(planet_radius, atmosphere_radius, sample_position);
-      depth += atmospheric_density(scale_height, sample_altitude) * step_size;
+      auto sample_altitude = normalized_altitude(atmosphere_radius, sample_position);
+      depth += atmospheric_density(sample_altitude) * step_size;
     }
 
     return depth;
   }
 
-  float atmospheric_density(float scale_height, float altitude)
+  float atmospheric_density(float altitude)
   {
-    auto density = std::exp(-altitude / scale_height);
+    auto density = std::exp(-altitude / atmospheric_density_scale_height);
 
     // Ensure the density is 0.0 at the atmosphere radius.
     density *= 1.0f - altitude;
@@ -164,9 +196,9 @@ namespace astrum
     return density;
   }
 
-  float normalized_altitude(float planet_radius, float atmosphere_radius, const ludo::vec3& position)
+  float normalized_altitude(float atmosphere_radius, const ludo::vec3& position)
   {
-    auto altitude = length(position) - planet_radius;
-    return altitude / (atmosphere_radius - planet_radius);
+    auto altitude = length(position) - 1.0f;
+    return altitude / (atmosphere_radius - 1.0f);
   }
 }

@@ -115,6 +115,8 @@ namespace ludo
   {
     BGR, ///< [blue,green,red].
     BGRA, ///< [blue,green,red,alpha].
+    R, ///< [red].
+    RG, ///< [red,green].
     RGB, ///< [red,green,blue].
     RGBA, ///< [red,green,blue,alpha].
 
@@ -408,7 +410,22 @@ namespace ludo
   /// \param options The options used to initialize the texture.
   void init(texture& texture, const texture_options& options = {});
 
+  ///
+  /// De-initializes a texture.
+  /// \param texture The texture.
   void de_init(texture& texture);
+
+  ///
+  /// Loads a texture from an image file.
+  /// \param file_name The name of the file containing the texture data.
+  /// \return The texture.
+  texture load(const std::string& file_name);
+
+  ///
+  /// Loads a texture from a stream.
+  /// \param stream The texture data.
+  /// \return The texture.
+  texture load(std::istream& stream);
 
   ///
   /// Reads data from a texture.

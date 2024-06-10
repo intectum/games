@@ -81,7 +81,7 @@ namespace ludo
 
   mesh load(const std::string& file_name, heap& indices, heap& vertices)
   {
-    auto stream = std::ifstream(file_name);
+    auto stream = std::ifstream(file_name, std::ios::binary);
 
     return load(stream, indices, vertices);
   }
@@ -106,7 +106,7 @@ namespace ludo
 
   void save(const mesh& mesh, const std::string& file_name)
   {
-    auto stream = std::ofstream(file_name);
+    auto stream = std::ofstream(file_name, std::ios::binary);
 
     save(mesh, stream);
   }

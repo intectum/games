@@ -11,6 +11,7 @@ add_subdirectory(../ludo-assimp lib/ludo-assimp)
 add_subdirectory(../ludo-bullet lib/ludo-bullet)
 add_subdirectory(../ludo-glfw lib/ludo-glfw)
 add_subdirectory(../ludo-opengl lib/ludo-opengl)
+add_subdirectory(../ludo-stb lib/ludo-stb)
 
 # Source
 #########################
@@ -65,6 +66,7 @@ target_link_libraries(astrum ludo-assimp)
 target_link_libraries(astrum ludo-bullet)
 target_link_libraries(astrum ludo-glfw)
 target_link_libraries(astrum ludo-opengl)
+target_link_libraries(astrum ludo-stb)
 
 # noise
 target_link_libraries(astrum noise)
@@ -96,11 +98,13 @@ target_link_libraries(importy ludo-assimp)
 target_link_libraries(importy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(importy ludo-glfw)
 target_link_libraries(importy ludo-opengl)
+target_link_libraries(importy ludo-stb)
 target_link_libraries(loddy ludo)
 target_link_libraries(loddy ludo-assimp)
 target_link_libraries(loddy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(loddy ludo-glfw)
 target_link_libraries(loddy ludo-opengl)
+target_link_libraries(loddy ludo-stb)
 target_link_libraries(noisy ludo)
 target_link_libraries(noisy ludo-glfw)
 target_link_libraries(noisy ludo-opengl)
@@ -109,7 +113,6 @@ target_link_libraries(physicy ludo-bullet)
 target_link_libraries(physicy ludo-glfw)
 target_link_libraries(physicy ludo-opengl)
 target_link_libraries(spinny ludo)
-target_link_libraries(spinny ludo-assimp) # TODO remove, only for FreeImage...
-target_link_libraries(spinny ludo-bullet) # TODO remove, only for assimp...
 target_link_libraries(spinny ludo-glfw)
 target_link_libraries(spinny ludo-opengl)
+target_link_libraries(spinny ludo-stb)

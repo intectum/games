@@ -1,9 +1,6 @@
 [submodule "ludo-assimp/lib/assimp"]
 	path = ludo-assimp/lib/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "ludo-assimp/lib/freeimage"]
-	path = ludo-assimp/lib/freeimage
-	url = https://github.com/WinMerge/freeimage.git
 [submodule "ludo-bullet/lib/bullet3"]
 	path = ludo-bullet/lib/bullet3
 	url = https://github.com/bulletphysics/bullet3.git
@@ -13,3 +10,6 @@
 [submodule "ludo-opengl/lib/glew"]
 	path = ludo-opengl/lib/glew
 	url = https://github.com/nigels-com/glew.git
+[submodule "ludo-stb/lib/stb"]
+	path = ludo-stb/lib/stb
+	url = https://github.com/nothings/stb.git
