@@ -11,6 +11,7 @@
 #include "post-processing/pass.h"
 #include "post-processing/util.h"
 #include "solar_system.h"
+#include "spatial/ico_tree.h"
 #include "terrain/terrain.h"
 #include "util.h"
 
@@ -101,6 +102,7 @@ int main()
 
   ludo::allocate<astrum::celestial_body>(inst, 3);
   ludo::allocate<astrum::game_controls>(inst, 1);
+  ludo::allocate<astrum::ico_tree>(inst, 1);
   ludo::allocate<astrum::map_controls>(inst, 1);
   ludo::allocate<astrum::person>(inst, 1);
   ludo::allocate<astrum::person_controls>(inst, 1);
@@ -183,7 +185,10 @@ int main()
 
     auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
 
+    auto& ico_trees = ludo::data<astrum::ico_tree>(inst);
+
     ludo::add_render_commands(grids, compute_programs, render_programs, render_commands, ludo::get_camera(*rendering_context));
+    astrum::add_render_commands(ico_trees, render_programs, render_commands, ludo::get_camera(*rendering_context));
   });
 
   if (astrum::visualize_physics)

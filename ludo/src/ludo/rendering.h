@@ -12,6 +12,7 @@
 #include "math/mat.h"
 #include "math/vec.h"
 #include "meshes.h"
+#include "spatial/bounds.h"
 #include "util.h"
 
 namespace ludo
@@ -232,6 +233,8 @@ namespace ludo
   /// \param camera The camera.
   /// \return The planes.
   LUDO_API std::array<vec4, 6> frustum_planes(const camera& camera);
+
+  LUDO_API int frustum_test(const std::array<vec4, 6>& planes, const aabb3& bounds);
 
   ///
   /// Initializes a render program.

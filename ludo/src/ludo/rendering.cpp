@@ -7,44 +7,47 @@
 
 namespace ludo
 {
-  uint8_t pixel_depth(const texture& texture)
+  // Based on https://old.cescg.org/CESCG-2002/DSykoraJJelinek/index.html
+  int frustum_test(const std::array<vec4, 6>& planes, const aabb3& bounds)
   {
-    auto component_count = uint8_t(0);
-    if (texture.components == pixel_components::BGR || texture.components == pixel_components::RGB)
+    for (auto index = uint32_t(0); index < 6; index++)
     {
-      component_count = 3;
-    }
-    else if (texture.components == pixel_components::BGRA || texture.components == pixel_components::RGBA)
-    {
-      component_count = 4;
-    }
-    else if (texture.components == pixel_components::DEPTH)
-    {
-      component_count = 1;
-    }
-    else
-    {
-      assert(false && "unsupported components");
+      auto& plane = planes[index];
+
+      // This is the vertex that would be closest to the plane if the AABB is fully within the negative halfspace (the p-vertex).
+      // If this vertex is indeed in the negative halfspace, all other vertices of the AABB must also be in the negative halfspace.
+      auto closest_negative =
+        vec4(
+          plane[0] > 0.0f ? bounds.max[0] : bounds.min[0],
+          plane[1] > 0.0f ? bounds.max[1] : bounds.min[1],
+          plane[2] > 0.0f ? bounds.max[2] : bounds.min[2],
+          1.0f
+        );
+
+      // Check if the p-vertex is within the negative halfspace.
+      if (dot(plane, closest_negative) < 0.0f)
+      {
+        return -1;
+      }
+
+      // This is the vertex that would be closest to the plane if the AABB is fully within the positive halfspace (the n-vertex).
+      // If this vertex is actually in the negative halfspace, the AABB intersects the plane (since we already showed that at-least one vertex is in the positive halfspace).
+      auto closest_positive =
+        vec4(
+          plane[0] > 0.0f ? bounds.min[0] : bounds.max[0],
+          plane[1] > 0.0f ? bounds.min[1] : bounds.max[1],
+          plane[2] > 0.0f ? bounds.min[2] : bounds.max[2],
+          1.0f
+        );
+
+      // Check if the n-vertex is within the negative halfspace.
+      if (dot(plane, closest_positive) < 0.0f)
+      {
+        return 0;
+      }
     }
 
-    if (texture.datatype == pixel_datatype::UINT8)
-    {
-      return component_count;
-    }
-    else if (texture.datatype == pixel_datatype::FLOAT16)
-    {
-      return component_count * 2;
-    }
-    else if (texture.datatype == pixel_datatype::FLOAT32)
-    {
-      return component_count * 4;
-    }
-    else
-    {
-      assert(false && "unsupported datatype");
-    }
-
-    return 3;
+    return 1;
   }
 
   void init(render_mesh& render_mesh)
@@ -131,5 +134,45 @@ namespace ludo
   const ludo::mat4* instance_bone_transforms(const render_mesh& render_mesh, uint32_t instance_index)
   {
     return &cast<const ludo::mat4>(render_mesh.instance_buffer, instance_index * render_mesh.instance_size + sizeof(ludo::mat4) + 16);
+  }
+
+  uint8_t pixel_depth(const texture& texture)
+  {
+    auto component_count = uint8_t(0);
+    if (texture.components == pixel_components::BGR || texture.components == pixel_components::RGB)
+    {
+      component_count = 3;
+    }
+    else if (texture.components == pixel_components::BGRA || texture.components == pixel_components::RGBA)
+    {
+      component_count = 4;
+    }
+    else if (texture.components == pixel_components::DEPTH)
+    {
+      component_count = 1;
+    }
+    else
+    {
+      assert(false && "unsupported components");
+    }
+
+    if (texture.datatype == pixel_datatype::UINT8)
+    {
+      return component_count;
+    }
+    else if (texture.datatype == pixel_datatype::FLOAT16)
+    {
+      return component_count * 2;
+    }
+    else if (texture.datatype == pixel_datatype::FLOAT32)
+    {
+      return component_count * 4;
+    }
+    else
+    {
+      assert(false && "unsupported datatype");
+    }
+
+    return 3;
   }
 }

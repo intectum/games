@@ -62,7 +62,7 @@ struct cell_t
 R"--(
 };
 
-struct aabb_t
+struct aabb3_t
 {
   vec3 min;
   vec3 max;
@@ -79,7 +79,7 @@ layout(std430, binding = 1) buffer context_layout
 
 layout(std430, binding = 2) buffer grid_layout
 {
-  aabb_t bounds;
+  aabb3_t bounds;
   vec3 cell_dimensions;
   cell_t cells[];
 };
@@ -103,7 +103,7 @@ int get_render_program_index(uint64_t id)
 }
 
 // Based on https://old.cescg.org/CESCG-2002/DSykoraJJelinek/index.html
-int frustum_test(aabb_t bounds)
+int frustum_test(aabb3_t bounds)
 {
   for (uint index = 0; index < 6; index++)
   {
@@ -156,7 +156,7 @@ void main()
   vec3 cell_min = bounds.min + gl_GlobalInvocationID * cell_dimensions;
 
   // Include neighbouring cells to ensure the render meshes that overlap from them into this cell are included.
-  aabb_t test_bounds = aabb_t(cell_min - cell_dimensions, cell_min + cell_dimensions * 2);
+  aabb3_t test_bounds = aabb3_t(cell_min - cell_dimensions, cell_min + cell_dimensions * 2);
   if (frustum_test(test_bounds)  != -1)
   {
     for (uint render_mesh_index = 0; render_mesh_index < cells[cell_index].count; render_mesh_index++)

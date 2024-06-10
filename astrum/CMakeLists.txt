@@ -49,7 +49,7 @@ set(SRC_FILES
     src/post-processing/tone_mapping.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
-    src/spatial/icotree.cpp
+    src/spatial/ico_tree.cpp
     src/terrain/mesh.cpp
     src/terrain/metadata.cpp
     src/terrain/static_bodies.cpp

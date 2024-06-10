@@ -75,7 +75,7 @@ namespace ludo
 
   ///
   /// Adds render commands to the render programs' command buffers and updates the active command count.
-  /// \param grids The render program.
+  /// \param grids The grids.
   /// \param compute_programs The compute programs to execute.
   /// \param render_programs The render programs that can have render commands added.
   /// \param render_commands The render commands to sample from.

@@ -1,4 +1,5 @@
 #include "../meshes/lod_shaders.h"
+#include "../spatial/ico_tree.h"
 #include "../types.h"
 #include "trees.h"
 
@@ -21,18 +22,11 @@ namespace astrum
 
   void add_trees(ludo::instance& inst, uint32_t celestial_body_index)
   {
-    auto& fruit_tree_meshes = ludo::data<ludo::mesh>(inst, "fruit-trees");
-    auto& oak_tree_meshes = ludo::data<ludo::mesh>(inst, "oak-trees");
-    auto& palm_tree_meshes = ludo::data<ludo::mesh>(inst, "palm-trees");
-    auto& pine_tree_meshes = ludo::data<ludo::mesh>(inst, "pine-trees");
     auto rendering_context = ludo::first<ludo::rendering_context>(inst);
 
     auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
-    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
-    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
     auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[celestial_body_index];
-    auto& point_mass = ludo::data<astrum::point_mass>(inst, "celestial-bodies")[celestial_body_index];
     auto& terrain = ludo::data<astrum::terrain>(inst, "celestial-bodies")[celestial_body_index];
 
     auto camera_position = ludo::position(ludo::get_camera(*rendering_context).view);
@@ -73,30 +67,14 @@ namespace astrum
     }
 
     auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
-    auto grid = ludo::add(
-      inst,
-      ludo::grid3
-        {
-          .bounds =
-          {
-            .min = point_mass.transform.position - bounds_half_dimensions,
-            .max = point_mass.transform.position + bounds_half_dimensions
-          },
-          .cell_count_1d = 16,
-          .cell_capacity = 48,
-        },
-      "trees"
-    );
-    grid->compute_program_id = ludo::add(inst, ludo::build_compute_program(*grid))->id;
-    ludo::init(*grid);
+    auto ico_tree = ludo::add(inst, astrum::ico_tree { .divisions = 5, .cell_element_size = sizeof(ludo::render_mesh) }, "trees"); // TODO param divisions
+    init(*ico_tree);
 
     ludo::commit(*render_program);
-    ludo::commit(*grid);
   }
 
   void stream_trees(ludo::instance& inst, uint32_t celestial_body_index)
   {
-    auto grid = ludo::first<ludo::grid3>(inst, "trees");
     auto& fruit_tree_meshes = ludo::data<ludo::mesh>(inst, "fruit-trees");
     auto& oak_tree_meshes = ludo::data<ludo::mesh>(inst, "oak-trees");
     auto& palm_tree_meshes = ludo::data<ludo::mesh>(inst, "palm-trees");
@@ -109,16 +87,12 @@ namespace astrum
     auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
     auto& celestial_body = ludo::data<astrum::celestial_body>(inst, "celestial-bodies")[celestial_body_index];
+    auto ico_tree = ludo::first<astrum::ico_tree>(inst, "trees");
     auto& point_mass = ludo::data<astrum::point_mass>(inst, "celestial-bodies")[celestial_body_index];
     auto& terrain = ludo::data<astrum::terrain>(inst, "celestial-bodies")[celestial_body_index];
 
     auto camera_position = ludo::position(ludo::get_camera(*rendering_context).view);
     auto meshes = std::array<ludo::array<ludo::mesh>, tree_type_count> { fruit_tree_meshes, oak_tree_meshes, palm_tree_meshes, pine_tree_meshes };
-
-    auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
-    grid->bounds.min = point_mass.transform.position - bounds_half_dimensions;
-    grid->bounds.max = point_mass.transform.position + bounds_half_dimensions;
-    ludo::commit_header(*grid);
 
     auto push_required = false;
     for (auto chunk_index = uint32_t(0); chunk_index < terrain.chunks.size(); chunk_index++)
@@ -129,8 +103,9 @@ namespace astrum
         continue;
       }
 
-      auto chunk_position = point_mass.transform.position + chunk.center;
-      auto lod_index = find_lod_index(tree_lods, camera_position, chunk_position, chunk.normal);
+      auto chunk_ico_position = chunk.center;
+      ludo::normalize(chunk_ico_position);
+      auto lod_index = find_lod_index(tree_lods, camera_position, point_mass.transform.position + chunk.center, chunk.normal);
 
       if (lod_index > 0 && !chunk.trees_loaded)
       {
@@ -159,7 +134,7 @@ namespace astrum
 
           chunk.treeless = false;
           chunk.tree_render_mesh_ids[tree_type] = added_render_meshes[tree_type]->id;
-          ludo::add(*grid, *added_render_meshes[tree_type], chunk_position);
+          add(*ico_tree, reinterpret_cast<std::byte*>(added_render_meshes[tree_type]), chunk_ico_position);
         }
 
         push_required = true;
@@ -172,7 +147,7 @@ namespace astrum
           {
             auto render_mesh = ludo::find_by_id(render_meshes.begin(), render_meshes.end(), tree_render_mesh_id);
 
-            ludo::remove(*grid, *render_mesh, chunk_position);
+            remove(*ico_tree, reinterpret_cast<std::byte*>(render_mesh), chunk_ico_position);
             tree_render_mesh_id = 0;
             push_required = true;
 
@@ -193,7 +168,9 @@ namespace astrum
             auto render_mesh = ludo::find_by_id(render_meshes.begin(), render_meshes.end(), chunk.tree_render_mesh_ids[tree_type]);
             if (lod_index != ludo::cast<uint32_t>(render_mesh->instance_buffer, sizeof(ludo::mat4)))
             {
+              remove(*ico_tree, reinterpret_cast<std::byte*>(render_mesh), chunk_ico_position);
               ludo::connect(*render_mesh, meshes[tree_type][lod_index - 1], indices, vertices);
+              add(*ico_tree, reinterpret_cast<std::byte*>(render_mesh), chunk_ico_position);
 
               auto instance_stream = ludo::stream(render_mesh->instance_buffer, sizeof(ludo::mat4));
               while (!ludo::ended(instance_stream))
@@ -202,8 +179,6 @@ namespace astrum
                 instance_stream.position += tree_instance_size - sizeof(uint32_t);
               }
 
-              ludo::remove(*grid, *render_mesh, chunk_position);
-              ludo::add(*grid, *render_mesh, chunk_position);
               push_required = true;
             }
           }
@@ -215,7 +190,6 @@ namespace astrum
     {
       // TODO not while render could be happening!!!
       ludo::commit(*render_program);
-      ludo::commit(*grid);
     }
   }
 
