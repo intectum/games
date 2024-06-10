@@ -5,6 +5,7 @@ namespace astrum
 {
   void add_spaceship(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
   {
+    auto& dynamic_body_shapes = ludo::data<ludo::dynamic_body_shape>(inst, "spaceships");
     auto grid = ludo::first<ludo::grid3>(inst, "default");
     auto mesh = ludo::first<ludo::mesh>(inst, "spaceships");
     auto physics_context = ludo::first<ludo::physics_context>(inst);
@@ -33,26 +34,6 @@ namespace astrum
       "spaceships"
     );
 
-    auto kinematic_shape = ludo::add(
-      inst,
-      ludo::dynamic_body_shape
-      {
-        .convex_hulls =
-        {{
-          { 0.8f, 0.5f, 4.25f },
-          { 0.8f, -0.5f, 4.25f },
-          { -0.8f, 0.5f, 4.25f },
-          { -0.8f, -0.5f, 4.25f },
-          { 0.8f, 0.5f, -1.25f },
-          { 0.8f, -0.5f, -1.25f },
-          { -0.8f, 0.5f, -1.25f },
-          { -0.8f, -0.5f, -1.25f }
-        }}
-      },
-      "spaceships"
-    );
-    ludo::init(*kinematic_shape);
-
     auto kinematic_body = ludo::add(
       inst,
       ludo::kinematic_body
@@ -64,26 +45,7 @@ namespace astrum
       "spaceships"
     );
     ludo::init(*kinematic_body, *physics_context);
-    ludo::connect(*kinematic_body, *physics_context, { *kinematic_shape });
-
-    auto ghost_shape = ludo::add(
-      inst,
-      ludo::dynamic_body_shape
-      {
-        .convex_hulls =
-        {{
-          { 1.8f, 1.5f, 5.25f },
-          { 1.8f, -1.5f, 5.25f },
-          { -1.8f, 1.5f, 5.25f },
-          { -1.8f, -1.5f, 5.25f },
-          { 1.8f, 1.5f, -2.25f },
-          { 1.8f, -1.5f, -2.25f },
-          { -1.8f, 1.5f, -2.25f },
-          { -1.8f, -1.5f, -2.25f }
-        }}
-      }
-    );
-    ludo::init(*ghost_shape);
+    ludo::connect(*kinematic_body, *physics_context, { dynamic_body_shapes[1] });
 
     auto ghost_body = ludo::add(
       inst,
@@ -91,7 +53,7 @@ namespace astrum
       "spaceships"
     );
     ludo::init(*ghost_body, *physics_context);
-    ludo::connect(*ghost_body, *physics_context, { *ghost_shape });
+    ludo::connect(*ghost_body, *physics_context, { dynamic_body_shapes[0] });
 
     ludo::add(inst, spaceship_controls(), "spaceships");
   }

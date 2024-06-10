@@ -33,7 +33,7 @@ int main()
     astrum::import_assets ? ludo::import_counts(ludo::asset_folder + "/models/pine-tree.dae") : ludo::mesh_counts(ludo::asset_folder + "/meshes/pine-tree-0.lmesh")
   };
   auto person_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/minifig.dae");
-  auto spaceship_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/spaceship.obj");
+  auto spaceship_mesh_counts = ludo::import_counts(ludo::asset_folder + "/models/spaceship.dae");
   auto bullet_debug_counts = std::pair<uint32_t, uint32_t> { max_terrain_bodies * 48 * 2, max_terrain_bodies * 48 * 2 };
 
   auto max_rendered_instances =

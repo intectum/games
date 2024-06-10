@@ -68,8 +68,10 @@ namespace astrum
     ludo::add(inst, minifig.meshes[0], "people");
     ludo::add(inst, minifig.textures[0], "people");
 
-    auto spaceship = ludo::import(ludo::asset_folder + "/models/spaceship.obj", indices, vertices);
+    auto spaceship = ludo::import(ludo::asset_folder + "/models/spaceship.dae", indices, vertices);
     ludo::add(inst, spaceship.meshes[0], "spaceships");
+    ludo::add(inst, spaceship.dynamic_body_shapes[0], "spaceships");
+    ludo::add(inst, spaceship.dynamic_body_shapes[1], "spaceships");
 
     ludo::add(inst, solar_system());
 
@@ -79,13 +81,13 @@ namespace astrum
     const auto luna_initial_position = ludo::vec3 { -1.0f * astronomical_unit + luna_orbit_distance, 0.0f, 0.0f };
     const auto luna_initial_velocity = terra_initial_velocity + ludo::vec3 { 0.0f, orbital_speed(luna_orbit_distance, terra_mass), 0.0f };
 
-    auto person_surface_position = ludo::vec3 { 1.0f, -1.0f, 0.0f };
-    ludo::normalize(person_surface_position);
-    person_surface_position *= terra_radius + 5.0f;
+    //auto person_surface_position = ludo::vec3 { 4272.0f,-3072.0f,3606.0f };
+    auto person_surface_position = ludo::vec3 { 4138.0f, -3054.0f, 3800.0f };
     const auto person_initial_position = terra_initial_position + person_surface_position;
     const auto person_initial_velocity = ludo::vec3 { 0.0f, orbital_speed(ludo::length(person_initial_position), sol_mass), 0.0f };
 
-    const auto spaceship_initial_position = person_initial_position + ludo::vec3 { 0.0f, 0.0f, 10.0f };
+    //const auto spaceship_initial_position = person_initial_position + ludo::vec3 { 0.0f, 0.0f, 10.0f };
+    const auto spaceship_initial_position = terra_initial_position + ludo::vec3 { 4154.0f, -3046.0f, 3785.0f };
     const auto spaceship_initial_velocity = ludo::vec3 { 0.0f, orbital_speed(ludo::length(spaceship_initial_position), sol_mass), 0.0f };
 
     // Initialize camera to roughly correct position to ensure the correct terrain LODs are pre-loaded
@@ -110,7 +112,7 @@ namespace astrum
 
     auto spaceship_up = spaceship_initial_position - terra_initial_position;
     ludo::normalize(spaceship_up);
-    add_spaceship(inst, { .position = spaceship_initial_position, .rotation = ludo::quat(ludo::vec3_unit_y, spaceship_up) }, spaceship_initial_velocity);
+    add_spaceship(inst, { .position = spaceship_initial_position, .rotation = ludo::quat(ludo::vec3_unit_y, spaceship_up) * ludo::quat(ludo::vec3_unit_y, ludo::pi * 1.5f) }, spaceship_initial_velocity);
 
     ludo::add(inst, game_controls());
     ludo::add(inst, map_controls { .target_radius = sol_radius });

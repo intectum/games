@@ -44,8 +44,8 @@ namespace astrum
     ludo::init(*kinematic_body, *physics_context);
     ludo::connect(*kinematic_body, *physics_context, { *dynamic_body_shape });
 
-    ludo::add(inst, person(), "people");
-    ludo::add(inst, person_controls(), "people");
+    ludo::add(inst, person { .turn_angle = ludo::pi }, "people");
+    ludo::add(inst, person_controls { .camera_rotation = { 0, ludo::pi } }, "people");
   }
 
   void simulate_people(ludo::instance& inst)

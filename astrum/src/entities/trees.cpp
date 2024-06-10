@@ -61,7 +61,7 @@ namespace astrum
     {
       auto is_highest_detail = lod_index == tree_lods.size() - 1;
 
-      auto max_distance = tree_lods.at(lod_index).max_distance;
+      auto max_distance = tree_lods[lod_index].max_distance;
       auto min_distance = is_highest_detail ? 0.0f : tree_lods[lod_index + 1].max_distance;
       auto distance_range = max_distance - min_distance;
 
@@ -90,46 +90,6 @@ namespace astrum
     grid->compute_program_id = ludo::add(inst, ludo::build_compute_program(*grid))->id;
     ludo::init(*grid);
 
-    for (auto chunk_index = 0; chunk_index < terrain.chunks.size(); chunk_index++)
-    {
-      auto& chunk = terrain.chunks.at(chunk_index);
-      auto chunk_position = point_mass.transform.position + chunk.center;
-
-      auto lod_index = find_lod_index(tree_lods, camera_position, chunk_position, chunk.normal);
-      if (lod_index == 0)
-      {
-        continue;
-      }
-
-      auto render_meshes = add_trees(
-        inst,
-        indices,
-        vertices,
-        terrain,
-        *render_program,
-        celestial_body.radius,
-        point_mass.transform.position,
-        chunk_index,
-        lod_index,
-        { fruit_tree_meshes, oak_tree_meshes, palm_tree_meshes, pine_tree_meshes }
-      );
-
-      chunk.trees_loaded = true;
-      chunk.treeless = true;
-      for (auto tree_type = 0; tree_type < render_meshes.size(); tree_type++)
-      {
-        if (!render_meshes.at(tree_type))
-        {
-          chunk.tree_render_mesh_ids.at(tree_type) = 0;
-          continue;
-        }
-
-        chunk.treeless = false;
-        chunk.tree_render_mesh_ids.at(tree_type) = render_meshes.at(tree_type)->id;
-        ludo::add(*grid, *render_meshes.at(tree_type), chunk_position);
-      }
-    }
-
     ludo::commit(*render_program);
     ludo::commit(*grid);
   }
@@ -155,10 +115,15 @@ namespace astrum
     auto camera_position = ludo::position(ludo::get_camera(*rendering_context).view);
     auto meshes = std::array<ludo::array<ludo::mesh>, tree_type_count> { fruit_tree_meshes, oak_tree_meshes, palm_tree_meshes, pine_tree_meshes };
 
+    auto bounds_half_dimensions = ludo::vec3 { celestial_body.radius * 1.1f, celestial_body.radius * 1.1f, celestial_body.radius * 1.1f };
+    grid->bounds.min = point_mass.transform.position - bounds_half_dimensions;
+    grid->bounds.max = point_mass.transform.position + bounds_half_dimensions;
+    ludo::commit_header(*grid);
+
     auto push_required = false;
     for (auto chunk_index = uint32_t(0); chunk_index < terrain.chunks.size(); chunk_index++)
     {
-      auto& chunk = terrain.chunks.at(chunk_index);
+      auto& chunk = terrain.chunks[chunk_index];
       if (chunk.treeless)
       {
         continue;
@@ -186,15 +151,15 @@ namespace astrum
         chunk.treeless = true;
         for (auto tree_type = 0; tree_type < added_render_meshes.size(); tree_type++)
         {
-          if (!added_render_meshes.at(tree_type))
+          if (!added_render_meshes[tree_type])
           {
-            chunk.tree_render_mesh_ids.at(tree_type) = 0;
+            chunk.tree_render_mesh_ids[tree_type] = 0;
             continue;
           }
 
           chunk.treeless = false;
-          chunk.tree_render_mesh_ids.at(tree_type) = added_render_meshes.at(tree_type)->id;
-          ludo::add(*grid, *added_render_meshes.at(tree_type), chunk_position);
+          chunk.tree_render_mesh_ids[tree_type] = added_render_meshes[tree_type]->id;
+          ludo::add(*grid, *added_render_meshes[tree_type], chunk_position);
         }
 
         push_required = true;
@@ -223,12 +188,12 @@ namespace astrum
       {
         for (auto tree_type = 0; tree_type < meshes.size(); tree_type++)
         {
-          if (chunk.tree_render_mesh_ids.at(tree_type))
+          if (chunk.tree_render_mesh_ids[tree_type])
           {
-            auto render_mesh = ludo::find_by_id(render_meshes.begin(), render_meshes.end(), chunk.tree_render_mesh_ids.at(tree_type));
+            auto render_mesh = ludo::find_by_id(render_meshes.begin(), render_meshes.end(), chunk.tree_render_mesh_ids[tree_type]);
             if (lod_index != ludo::cast<uint32_t>(render_mesh->instance_buffer, sizeof(ludo::mat4)))
             {
-              ludo::connect(*render_mesh, meshes.at(tree_type)[lod_index - 1], indices, vertices);
+              ludo::connect(*render_mesh, meshes[tree_type][lod_index - 1], indices, vertices);
 
               auto instance_stream = ludo::stream(render_mesh->instance_buffer, sizeof(ludo::mat4));
               while (!ludo::ended(instance_stream))
@@ -272,11 +237,11 @@ namespace astrum
     auto trees = terrain.tree_func(terrain, radius, chunk_index);
     for (auto tree_type = 0; tree_type < trees.size(); tree_type++)
     {
-      auto& meshes_of_type = meshes.at(tree_type);
-      auto& trees_of_type = trees.at(tree_type);
+      auto& meshes_of_type = meshes[tree_type];
+      auto& trees_of_type = trees[tree_type];
       if (trees_of_type.empty())
       {
-        render_meshes.at(tree_type) = nullptr;
+        render_meshes[tree_type] = nullptr;
         continue;
       }
 
@@ -290,7 +255,7 @@ namespace astrum
 
       for (auto tree_index = uint32_t(0); tree_index < trees_of_type.size(); tree_index++)
       {
-        auto& tree = trees_of_type.at(tree_index);
+        auto& tree = trees_of_type[tree_index];
         auto tree_position = position + tree.position * terrain.height_func(tree.position) * radius;
         auto tree_rotation = ludo::mat3(ludo::vec3_unit_y, tree.position) * ludo::mat3(ludo::vec3_unit_y, tree.rotation);
         auto tree_transform = ludo::mat4(tree_position, tree_rotation);
@@ -299,7 +264,7 @@ namespace astrum
         ludo::cast<uint32_t>(render_mesh->instance_buffer, tree_index * tree_instance_size + sizeof(ludo::mat4)) = lod_index;
       }
 
-      render_meshes.at(tree_type) = render_mesh;
+      render_meshes[tree_type] = render_mesh;
     }
 
     return render_meshes;

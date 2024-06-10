@@ -32,7 +32,7 @@ namespace astrum
         .far_clipping_distance = 2.0f * astronomical_unit,
         .view =
           ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation)) *
-          ludo::mat4({ 0.0f, 2.0f, -5.0f }, ludo::mat3_identity) * // 3rd person - move away from the avatar
+          ludo::mat4({ 0.0f, 6.0f, -15.0f }, ludo::mat3_identity) * // 3rd person - move away from the avatar
           ludo::mat4(ludo::vec3_zero, ludo::mat3(0.0f, ludo::pi, 0.0f)), // Look at the spaceship
         .projection = ludo::perspective(60.0f, 16.0f / 9.0f, 0.1f, 2.0f * astronomical_unit)
       }

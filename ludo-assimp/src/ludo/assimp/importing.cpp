@@ -17,7 +17,7 @@
 
 namespace ludo
 {
-  void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes);
+  void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes = false);
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
 
   import_results import(const std::string& file_name, heap& indices, heap& vertices, const import_options& options)
@@ -36,7 +36,7 @@ namespace ludo
 
     auto mesh_objects = std::vector<import_object>();
     auto rigid_body_objects = std::vector<import_object>();
-    find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity, false);
+    find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity);
     validate(*assimp_scene, mesh_objects);
 
     import_body_shapes(results, *assimp_scene, rigid_body_objects);
@@ -58,7 +58,7 @@ namespace ludo
 
     auto mesh_objects = std::vector<import_object>();
     auto rigid_body_objects = std::vector<import_object>();
-    find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity, false);
+    find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity);
     validate(*assimp_scene, mesh_objects);
 
     return import_counts(*assimp_scene, mesh_objects);
