@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_ASSIMP_MESHES_H
-#define LUDO_ASSIMP_MESHES_H
+#pragma once
 
 #include <assimp/scene.h>
 
@@ -16,5 +15,3 @@ namespace ludo
 {
   void import_meshes(import_results& results, heap& indices, heap& vertices, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options);
 }
-
-#endif // LUDO_ASSIMP_MESHES_H

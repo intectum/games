@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_ASSIMP_MATH_H
-#define LUDO_ASSIMP_MATH_H
+#pragma once
 
 #include <assimp/color4.h>
 #include <assimp/matrix4x4.h>
@@ -26,5 +25,3 @@ namespace ludo
 
   vec4 to_vec4(const aiColor4D& original);
 }
-
-#endif // LUDO_ASSIMP_MATH_H

@@ -1,5 +1,4 @@
-#ifndef ASTRUM_TERRAIN_TERRAIN_H
-#define ASTRUM_TERRAIN_TERRAIN_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -13,5 +12,3 @@ namespace astrum
 
   void stream_terrain(ludo::instance& inst);
 }
-
-#endif // ASTRUM_TERRAIN_TERRAIN_H

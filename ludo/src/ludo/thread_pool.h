@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_THREAD_POOL_H
-#define LUDO_THREAD_POOL_H
+#pragma once
 
 #include <future>
 
@@ -22,5 +21,3 @@ namespace ludo
   /// \return A future whose result is the finalizer for the task.
   std::future<task_finalizer> thread_pool_execute(const task& task);
 }
-
-#endif // LUDO_THREAD_POOL_H

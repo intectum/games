@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_TESTING_H
-#define LUDO_TESTING_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -30,5 +29,3 @@ namespace ludo
 }
 
 #include "testing.hpp"
-
-#endif // LUDO_TESTING_H

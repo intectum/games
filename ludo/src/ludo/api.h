@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_API_H
-#define LUDO_API_H
+#pragma once
 
 #include "algorithm.h"
 #include "animation.h"
@@ -40,5 +39,3 @@
 #include "timer.h"
 #include "thread_pool.h"
 #include "windowing.h"
-
-#endif // LUDO_API_H

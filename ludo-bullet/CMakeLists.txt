@@ -32,7 +32,7 @@ set(BULLET_SRC_FILES
 
 # Target
 #########################
-add_library(ludo-bullet ${LUDO_LINK_TYPE} ${SRC_FILES} ${BULLET_SRC_FILES})
+add_library(ludo-bullet STATIC ${SRC_FILES} ${BULLET_SRC_FILES})
 target_include_directories(ludo-bullet PUBLIC src)
 
 # Target Dependencies

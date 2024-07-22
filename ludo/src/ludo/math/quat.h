@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_QUAT_H
-#define LUDO_MATH_QUAT_H
+#pragma once
 
 #include <array>
 #include <ostream>
@@ -152,5 +151,3 @@ namespace ludo
   /// \return The spherical linear interpolation between two quaternions.
   quat slerp(const quat& from, const quat& to, float time);
 }
-
-#endif /* LUDO_MATH_QUAT_H */

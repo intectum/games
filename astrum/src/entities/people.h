@@ -1,5 +1,4 @@
-#ifndef ASTRUM_ENTITIES_PEOPLE_H
-#define ASTRUM_ENTITIES_PEOPLE_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -9,5 +8,3 @@ namespace astrum
 
   void simulate_people(ludo::instance& inst);
 }
-
-#endif // ASTRUM_ENTITIES_PEOPLE_H

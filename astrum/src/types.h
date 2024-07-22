@@ -1,5 +1,4 @@
-#ifndef ASTRUM_TYPES_H
-#define ASTRUM_TYPES_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -152,5 +151,3 @@ namespace astrum
     float scale = 0.0f;
   };
 }
-
-#endif // ASTRUM_TYPES_H

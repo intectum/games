@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_IMPORTING_H
-#define LUDO_IMPORTING_H
+#pragma once
 
 #include "ludo/physics.h"
 #include "ludo/rendering.h"
@@ -12,7 +11,7 @@ namespace ludo
 {
   ///
   /// A results of an import.
-  struct LUDO_API import_results
+  struct import_results
   {
     std::vector<animation> animations; ///< The imported animations.
     std::vector<armature> armatures; ///< The imported animations.
@@ -23,7 +22,7 @@ namespace ludo
 
   ///
   /// A set of options for performing an import.
-  struct LUDO_API import_options
+  struct import_options
   {
     bool merge_meshes = false; ///< Determines if the meshes being imported should be merged into a single mesh.
   };
@@ -35,13 +34,11 @@ namespace ludo
   /// \param vertices The indices to allocate from.
   /// \param options The options used to modify the import behavior.
   /// \return The imported meshes.
-  LUDO_API import_results import(const std::string& file_name, heap& indices, heap& vertices, const import_options& options = {});
+  import_results import(const std::string& file_name, heap& indices, heap& vertices, const import_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a file.
   /// \param file_name The name of the file to count the vertices in.
   /// \return The total and unique vertex counts of a file. Of the form { total, unique }.
-  LUDO_API std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name);
+  std::pair<uint32_t, uint32_t> import_counts(const std::string& file_name);
 }
-
-#endif // LUDO_IMPORTING_H

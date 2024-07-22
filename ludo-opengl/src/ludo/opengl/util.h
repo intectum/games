@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_OPENGL_UTIL_H
-#define LUDO_OPENGL_UTIL_H
+#pragma once
 
 #include <GL/glew.h>
 
@@ -20,5 +19,3 @@ namespace ludo
 
   void check_opengl_error();
 }
-
-#endif // LUDO_OPENGL_UTIL_H

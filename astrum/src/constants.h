@@ -1,5 +1,4 @@
-#ifndef ASTRUM_CONSTANTS_H
-#define ASTRUM_CONSTANTS_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -66,5 +65,3 @@ namespace astrum
   const auto tree_types = std::vector<std::string> { "fruit", "oak", "palm", "pine" };
   const auto tree_lods = std::vector<lod> { { 0, terra_radius * 1.6f }, { 1, terra_radius * 0.3f }, { 2, terra_radius * 0.2f }, { 3, terra_radius * 0.1f } };
 }
-
-#endif // ASTRUM_CONSTANTS_H

@@ -1,5 +1,4 @@
-#ifndef ASTRUM_MESHES_LODS_H
-#define ASTRUM_MESHES_LODS_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -15,5 +14,3 @@ namespace astrum
 
   uint32_t find_lod_index(const std::vector<lod>& lods, const ludo::vec3& camera_position, const ludo::vec3& target_position, const ludo::vec3& target_normal);
 }
-
-#endif // ASTRUM_MESHES_LODS_H

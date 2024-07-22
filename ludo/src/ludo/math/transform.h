@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_TRANSFORM_H
-#define LUDO_MATH_TRANSFORM_H
+#pragma once
 
 #include "quat.h"
 #include "vec.h"
@@ -18,5 +17,3 @@ namespace ludo
     quat rotation = quat_identity;
   };
 }
-
-#endif /* LUDO_MATH_TRANSFORM_H */

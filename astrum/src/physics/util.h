@@ -1,5 +1,4 @@
-#ifndef ASTRUM_PHYSICS_UTIL_H
-#define ASTRUM_PHYSICS_UTIL_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -9,5 +8,3 @@ namespace astrum
 
   float orbital_speed(float orbit_radius, float mass_of_larger_body);
 }
-
-#endif // ASTRUM_PHYSICS_UTIL_H

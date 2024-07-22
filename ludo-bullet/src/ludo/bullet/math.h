@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_BULLET_MATH_H
-#define LUDO_BULLET_MATH_H
+#pragma once
 
 #include <btBulletDynamicsCommon.h>
 
@@ -20,5 +19,3 @@ namespace ludo
 
   vec3 to_vec3(const btVector3& original);
 }
-
-#endif // LUDO_BULLET_MATH_H

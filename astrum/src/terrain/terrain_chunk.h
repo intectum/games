@@ -1,5 +1,4 @@
-#ifndef ASTRUM_TERRAIN_TERRAIN_CHUNK_H
-#define ASTRUM_TERRAIN_TERRAIN_CHUNK_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -9,5 +8,3 @@ namespace astrum
 {
   void load_terrain_chunk(const terrain& terrain, float radius, uint32_t chunk_index, uint32_t lod_index, ludo::mesh& mesh);
 }
-
-#endif // ASTRUM_TERRAIN_TERRAIN_CHUNK_H

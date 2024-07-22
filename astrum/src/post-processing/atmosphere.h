@@ -1,5 +1,4 @@
-#ifndef ASTRUM_POST_PROCESSING_ATMOSPHERE_H
-#define ASTRUM_POST_PROCESSING_ATMOSPHERE_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -9,5 +8,3 @@ namespace astrum
 
   void write_atmosphere_texture(uint32_t sample_count, float scale_height, float planet_radius, float atmosphere_radius, const std::string& texture_filename, uint32_t texture_size);
 }
-
-#endif // ASTRUM_POST_PROCESSING_ATMOSPHERE_H

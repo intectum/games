@@ -6,18 +6,11 @@ include(../common.cmake)
 #########################
 project(astrum)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/lib)
-
-set(LUDO_LINK_TYPE SHARED)
 add_subdirectory(../ludo lib/ludo)
 add_subdirectory(../ludo-assimp lib/ludo-assimp)
 add_subdirectory(../ludo-bullet lib/ludo-bullet)
 add_subdirectory(../ludo-glfw lib/ludo-glfw)
 add_subdirectory(../ludo-opengl lib/ludo-opengl)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
 
 # Source
 #########################
@@ -61,18 +54,17 @@ set(SRC_FILES
 # Standalone Target
 #########################
 add_executable(astrum ${SRC_FILES})
-set_target_properties(astrum PROPERTIES INSTALL_RPATH "./lib")
 target_include_directories(astrum PUBLIC src)
 
 # Standalone Target Dependencies
 #########################
 
 # ludo
+target_link_libraries(astrum ludo)
 target_link_libraries(astrum ludo-assimp)
 target_link_libraries(astrum ludo-bullet)
 target_link_libraries(astrum ludo-glfw)
 target_link_libraries(astrum ludo-opengl)
-target_link_libraries(astrum ludo)
 
 # noise
 target_link_libraries(astrum noise)
@@ -85,44 +77,39 @@ ENDIF(UNIX)
 # Standalone Target Resources
 #########################
 add_custom_command(TARGET astrum PRE_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/assets ${PROJECT_SOURCE_DIR}/build/assets)
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/assets ${PROJECT_BINARY_DIR}/assets)
 
 # Demo Targets
 #########################
 add_executable(importy src/demos/importy.cpp)
-set_target_properties(importy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(loddy src/demos/loddy.cpp src/meshes/lod_shaders.cpp src/meshes/lods.cpp)
-set_target_properties(loddy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(noisy src/demos/noisy.cpp)
-set_target_properties(noisy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(physicy src/demos/physicy.cpp)
-set_target_properties(physicy PROPERTIES INSTALL_RPATH "./lib")
 add_executable(spinny src/demos/spinny.cpp)
-set_target_properties(spinny PROPERTIES INSTALL_RPATH "./lib")
 
 # Demo Target Dependencies
 #########################
 
 # ludo
+target_link_libraries(importy ludo)
 target_link_libraries(importy ludo-assimp)
 target_link_libraries(importy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(importy ludo-glfw)
 target_link_libraries(importy ludo-opengl)
-target_link_libraries(importy ludo)
+target_link_libraries(loddy ludo)
 target_link_libraries(loddy ludo-assimp)
 target_link_libraries(loddy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(loddy ludo-glfw)
 target_link_libraries(loddy ludo-opengl)
-target_link_libraries(loddy ludo)
+target_link_libraries(noisy ludo)
 target_link_libraries(noisy ludo-glfw)
 target_link_libraries(noisy ludo-opengl)
-target_link_libraries(noisy ludo)
+target_link_libraries(physicy ludo)
 target_link_libraries(physicy ludo-bullet)
 target_link_libraries(physicy ludo-glfw)
 target_link_libraries(physicy ludo-opengl)
-target_link_libraries(physicy ludo)
+target_link_libraries(spinny ludo)
 target_link_libraries(spinny ludo-assimp) # TODO remove, only for FreeImage...
 target_link_libraries(spinny ludo-bullet) # TODO remove, only for assimp...
 target_link_libraries(spinny ludo-glfw)
 target_link_libraries(spinny ludo-opengl)
-target_link_libraries(spinny ludo)

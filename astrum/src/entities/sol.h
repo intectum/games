@@ -1,5 +1,4 @@
-#ifndef ASTRUM_ENTITIES_SOL_H
-#define ASTRUM_ENTITIES_SOL_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -11,5 +10,3 @@ namespace astrum
 
   void sync_light_with_sol(ludo::instance& inst);
 }
-
-#endif // ASTRUM_ENTITIES_SOL_H

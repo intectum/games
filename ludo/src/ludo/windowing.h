@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_WINDOWING_H
-#define LUDO_WINDOWING_H
+#pragma once
 
 #include <array>
 
@@ -20,7 +19,7 @@ namespace ludo
     CLOSE
   };
 
-  struct LUDO_API window
+  struct window
   {
     uint64_t id = 0; ///< A unique identifier.
 
@@ -46,33 +45,31 @@ namespace ludo
   ///
   /// Initializes a window.
   /// \param window The window.
-  LUDO_API void init(window& window);
+  void init(window& window);
 
   ///
   /// De-initializes a window.
   /// \param window The window.
-  LUDO_API void de_init(window& window);
+  void de_init(window& window);
 
   ///
   /// Swaps the frame buffers in a window.
   /// \param window The window.
-  LUDO_API void swap_buffers(window& window);
+  void swap_buffers(window& window);
 
   ///
   /// Receives input from a window.
   /// \param window The window.
   /// \param instance The instance.
-  LUDO_API void receive_input(window& window, instance& instance);
+  void receive_input(window& window, instance& instance);
 
   ///
   /// Captures the mouse to a window.
   /// \param window The window.
-  LUDO_API void capture_mouse(window& window);
+  void capture_mouse(window& window);
 
   ///
   /// Releases a mouse from a window.
   /// \param window The window.
-  LUDO_API void release_mouse(window& window);
+  void release_mouse(window& window);
 }
-
-#endif // LUDO_WINDOWING_H

@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_GEOMETRY_H
-#define LUDO_GEOMETRY_H
+#pragma once
 
 #include <istream>
 #include <ostream>
@@ -40,7 +39,7 @@ namespace ludo
   ///   f: float
   /// All components except for i and u represent floats. i and u represent int32_t and uint32_t respectively.
   /// Component counts represent the number of float/int32_t/uint32_t values within the component e.g. the component p3 represents a position consisting of 3 floats.
-  struct LUDO_API vertex_format // TODO split into vertex_format and vertex_options?
+  struct vertex_format // TODO split into vertex_format and vertex_options?
   {
     std::vector<std::pair<char, uint32_t>> components; ///< The components. They are of the form { <type>, <count> }.
     uint32_t size = 0; ///< The total size of the vertex in bytes.
@@ -59,7 +58,7 @@ namespace ludo
 
   ///
   /// A mesh.
-  struct LUDO_API mesh
+  struct mesh
   {
     uint64_t id = 0; ///< A unique identifier.
     uint64_t texture_id = 0; ///< The texture to apply to the mesh. TODO remove some of these?
@@ -129,7 +128,7 @@ namespace ludo
   /// \param texture_coordinate Determines if a texture coordinate should be included.
   /// \param bone_weights Determines if bone weights should be included.
   /// \return A vertex format based on the options provided.
-  LUDO_API vertex_format format(bool normal = false, bool color = false, bool texture_coordinate = false, bool bone_weights = false);
+  vertex_format format(bool normal = false, bool color = false, bool texture_coordinate = false, bool bone_weights = false);
 
   ///
   /// Initializes a mesh with index and vertex buffers.
@@ -139,14 +138,14 @@ namespace ludo
   /// \param index_count The number of indices to allocate.
   /// \param vertex_count The number of vertices to allocate.
   /// \param vertex_size The size (in bytes) of a vertex.
-  LUDO_API void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size);
+  void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size);
 
   ///
   /// De-initializes a mesh and reclaims the index and vertex buffers.
   /// \param mesh The mesh.
   /// \param indices The indices to reclaim to.
   /// \param vertices The vertices to reclaim to.
-  LUDO_API void de_init(mesh& mesh, heap& indices, heap& vertices);
+  void de_init(mesh& mesh, heap& indices, heap& vertices);
 
   ///
   /// Loads a mesh from a ludo mesh file.
@@ -154,7 +153,7 @@ namespace ludo
   /// \param indices The indices to allocate from.
   /// \param vertices The vertices to allocate from.
   /// \return The mesh.
-  LUDO_API mesh load(const std::string& file_name, heap& indices, heap& vertices);
+  mesh load(const std::string& file_name, heap& indices, heap& vertices);
 
   ///
   /// Loads a mesh from a stream.
@@ -162,19 +161,19 @@ namespace ludo
   /// \param indices The indices to allocate from.
   /// \param vertices The vertices to allocate from.
   /// \return The mesh.
-  LUDO_API mesh load(std::istream& stream, heap& indices, heap& vertices);
+  mesh load(std::istream& stream, heap& indices, heap& vertices);
 
   ///
   /// Saves a mesh to a ludo mesh file.
   /// \param mesh The mesh.
   /// \param file_name The name of the file to save to.
-  LUDO_API void save(const mesh& mesh, const std::string& file_name);
+  void save(const mesh& mesh, const std::string& file_name);
 
   ///
   /// Saves a mesh to a stream.
   /// \param mesh The mesh.
   /// \param stream The mesh data.
-  LUDO_API void save(const mesh& mesh, std::ostream& stream);
+  void save(const mesh& mesh, std::ostream& stream);
 
   ///
   /// Reads mesh counts from a ludo mesh file.
@@ -182,7 +181,7 @@ namespace ludo
   /// \param indices The indices to allocate from.
   /// \param vertices The vertices to allocate from.
   /// \return The mesh counts.
-  LUDO_API std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name);
+  std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name);
 
   ///
   /// Reads mesh counts mesh from a stream.
@@ -190,7 +189,5 @@ namespace ludo
   /// \param indices The indices to allocate from.
   /// \param vertices The vertices to allocate from.
   /// \return The mesh counts.
-  LUDO_API std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream);
+  std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream);
 }
-
-#endif // LUDO_GEOMETRY_H

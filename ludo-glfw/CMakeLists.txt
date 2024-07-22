@@ -20,7 +20,7 @@ set(SRC_FILES
 
 # Target
 #########################
-add_library(ludo-glfw ${LUDO_LINK_TYPE} ${SRC_FILES})
+add_library(ludo-glfw STATIC ${SRC_FILES})
 target_include_directories(ludo-glfw PUBLIC src)
 
 # Target Dependencies

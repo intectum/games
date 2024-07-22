@@ -1,5 +1,4 @@
-#ifndef ASTRUM_TERRAIN_METADATA_H
-#define ASTRUM_TERRAIN_METADATA_H
+#pragma once
 
 #include <iostream>
 
@@ -15,5 +14,3 @@ namespace astrum
 
   void write_terrain_metadata(std::ostream& stream, const terrain& terrain);
 }
-
-#endif // ASTRUM_TERRAIN_METADATA_H

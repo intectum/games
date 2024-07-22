@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_UTIL_H
-#define LUDO_MATH_UTIL_H
+#pragma once
 
 namespace ludo
 {
@@ -32,5 +31,3 @@ namespace ludo
   /// \return The shortest equivalent angle.
   float shortest_angle(float angle);
 }
-
-#endif // LUDO_MATH_UTIL_H

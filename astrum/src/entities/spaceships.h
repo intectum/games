@@ -1,5 +1,4 @@
-#ifndef ASTRUM_ENTITIES_SPACESHIPS_H
-#define ASTRUM_ENTITIES_SPACESHIPS_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -13,5 +12,3 @@ namespace astrum
 
   void simulate_spaceships(ludo::instance& inst);
 }
-
-#endif // ASTRUM_ENTITIES_SPACESHIPS_H

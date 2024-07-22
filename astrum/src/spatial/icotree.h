@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef ASTRUM_SPATIAL_ICOTREE_H
-#define ASTRUM_SPATIAL_ICOTREE_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -58,5 +57,3 @@ namespace astrum
 
   ludo::buffer cell_element_data(const icotree& icotree, uint32_t cell_index);
 }
-
-#endif // ASTRUM_SPATIAL_ICOTREE_H

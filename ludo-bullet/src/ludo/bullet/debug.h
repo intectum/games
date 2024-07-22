@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_BULLET_DEBUG_H
-#define LUDO_BULLET_DEBUG_H
+#pragma once
 
 #include <btBulletDynamicsCommon.h>
 
@@ -34,5 +33,3 @@ namespace ludo
     uint32_t next_index;
   };
 }
-
-#endif // LUDO_BULLET_DEBUG_H

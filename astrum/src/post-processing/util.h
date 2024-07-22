@@ -1,5 +1,4 @@
-#ifndef ASTRUM_POST_PROCESSING_UTIL_H
-#define ASTRUM_POST_PROCESSING_UTIL_H
+#pragma once
 
 #include <ludo/api.h>
 
@@ -11,5 +10,3 @@ namespace astrum
 
   ludo::double_buffer create_post_processing_shader_buffer(uint64_t texture_id_0, uint64_t texture_id_1);
 }
-
-#endif // ASTRUM_POST_PROCESSING_UTIL_H

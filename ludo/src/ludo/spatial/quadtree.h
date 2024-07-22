@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_SPATIAL_QUADTREE_H
-#define LUDO_SPATIAL_QUADTREE_H
+#pragma once
 
 #include "../data/buffers.h"
 #include "bounds.h"
@@ -12,7 +11,7 @@ namespace ludo
 {
   ///
   /// A linear quadtree.
-  struct LUDO_API quadtree
+  struct quadtree
   {
     uint64_t id = 0; ///< A unique identifier.
 
@@ -26,33 +25,31 @@ namespace ludo
   ///
   /// Initializes an quadtree.
   /// \param quadtree The quadtree.
-  LUDO_API void init(quadtree& quadtree);
+  void init(quadtree& quadtree);
 
   ///
   /// De-initializes an quadtree.
   /// \param quadtree The quadtree.
-  LUDO_API void de_init(quadtree& quadtree);
+  void de_init(quadtree& quadtree);
 
   ///
   /// Adds an element to an quadtree.
   /// \param quadtree The quadtree to add the element to.
   /// \param element The element to add to the quadtree.
   /// \param position The position of the element.
-  LUDO_API void add(quadtree& quadtree, uint32_t element, const ludo::vec2& position);
+  void add(quadtree& quadtree, uint32_t element, const ludo::vec2& position);
 
   ///
   /// Removes an element from an quadtree.
   /// \param quadtree The quadtree to remove the element from.
   /// \param element The element to remove from the quadtree.
   /// \param position The position of the element.
-  LUDO_API void remove(quadtree& quadtree, uint32_t element, const ludo::vec2& position);
+  void remove(quadtree& quadtree, uint32_t element, const ludo::vec2& position);
 
   ///
   /// Finds elements within an quadtree.
   /// \param quadtree The quadtree to search.
   /// \param test The test to perform against the bounds of the nodes.
   /// \return The matching elements.
-  LUDO_API std::vector<uint32_t> find(const quadtree& quadtree, const std::function<int32_t(const aabb2& bounds)>& test);
+  std::vector<uint32_t> find(const quadtree& quadtree, const std::function<int32_t(const aabb2& bounds)>& test);
 }
-
-#endif // LUDO_SPATIAL_QUADTREE_H

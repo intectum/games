@@ -61,7 +61,7 @@ set(TEST_SRC_FILES
 
 # Target
 #########################
-add_library(ludo ${LUDO_LINK_TYPE} ${SRC_FILES})
+add_library(ludo STATIC ${SRC_FILES})
 target_include_directories(ludo PUBLIC src)
 
 # Test Target

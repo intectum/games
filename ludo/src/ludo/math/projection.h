@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MATH_PROJECTION_H
-#define LUDO_MATH_PROJECTION_H
+#pragma once
 
 #include "vec.h"
 
@@ -25,5 +24,3 @@ namespace ludo
   /// \return The projection.
   vec3 project_point_onto_plane(const vec3& point, const vec3& target_point, const vec3& target_normal);
 }
-
-#endif // LUDO_MATH_PROJECTION_H

@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_MESHES_UTIL_H
-#define LUDO_MESHES_UTIL_H
+#pragma once
 
 #include "../meshes.h"
 
@@ -26,5 +25,3 @@ namespace ludo
   /// \param no_normal_check Determines if normals should be taken into account when searching for matching vertices.
   void write_vertex(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& position, const vec3& normal, const vec4& color, const vec2& texture_coordinate, bool unique_only = true, bool no_normal_check = false);
 }
-
-#endif // LUDO_MESHES_UTIL_H

@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_ASSIMP_UTIL_H
-#define LUDO_ASSIMP_UTIL_H
+#pragma once
 
 #include <assimp/scene.h>
 
@@ -19,5 +18,3 @@ namespace ludo
 
   std::pair<uint32_t, uint32_t> import_counts(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
 }
-
-#endif // LUDO_ASSIMP_UTIL_H

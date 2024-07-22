@@ -2,8 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#ifndef LUDO_ANIMATION_H
-#define LUDO_ANIMATION_H
+#pragma once
 
 #include <vector>
 
@@ -18,7 +17,7 @@ namespace ludo
 
   ///
   /// An armature.
-  struct LUDO_API armature
+  struct armature
   {
     uint64_t id; ///< The ID of this armature.
 
@@ -32,7 +31,7 @@ namespace ludo
 
   ///
   /// A node in an animation.
-  struct LUDO_API animation_node
+  struct animation_node
   {
     int32_t bone_index = -1; ///< The index of the corresponding bone.
 
@@ -43,7 +42,7 @@ namespace ludo
 
   ///
   /// An animation.
-  struct LUDO_API animation
+  struct animation
   {
     uint64_t id; ///< The ID of the animation.
 
@@ -57,22 +56,22 @@ namespace ludo
   ///
   /// Initializes an armature.
   /// \param armature The armature.
-  LUDO_API void init(armature& armature);
+  void init(armature& armature);
 
   ///
   /// De-initializes an armature.
   /// \param armature The armature.
-  LUDO_API void de_init(armature& armature);
+  void de_init(armature& armature);
 
   ///
   /// Initializes an animation.
   /// \param animation The animation.
-  LUDO_API void init(animation& animation);
+  void init(animation& animation);
 
   ///
   /// De-initializes an animation.
   /// \param animation The animation.
-  LUDO_API void de_init(animation& animation);
+  void de_init(animation& animation);
 
   ///
   /// Interpolates an animation.
@@ -80,7 +79,5 @@ namespace ludo
   /// \param armature The armature to interpolate the animation on.
   /// \param time The time within the animation to interpolate to.
   /// \param final_transforms The result of the interpolation.
-  LUDO_API void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms);
+  void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms);
 }
-
-#endif // LUDO_ANIMATION_H

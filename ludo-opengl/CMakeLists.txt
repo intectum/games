@@ -39,7 +39,7 @@ set(SRC_FILES
 
 # Target
 #########################
-add_library(ludo-opengl ${LUDO_LINK_TYPE} ${SRC_FILES})
+add_library(ludo-opengl STATIC ${SRC_FILES})
 target_include_directories(ludo-opengl PUBLIC src)
 
 # Target Dependencies
