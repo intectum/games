@@ -57,16 +57,16 @@ namespace ludo
       }
     }
 
-    auto meshes_3 = find_parallel(grid_1, [&](const aabb2& bounds)
+    auto meshes_3 = find(grid_1, [&](const aabb2& bounds)
     {
       return intersect(bounds_2, bounds) ? 0 : -1;
     });
-    test_equal("grid2: find parallel", meshes_3.size(), std::size_t(1));
+    test_equal("grid2: find", meshes_3.size(), std::size_t(1));
 
-    auto meshes_4 = find_parallel(grid_1, [&](const aabb2& bounds)
+    auto meshes_4 = find(grid_1, [&](const aabb2& bounds)
     {
       return intersect(bounds_3, bounds) ? 0 : -1;
     });
-    test_equal("grid2: find parallel 2", meshes_4.size(), std::size_t(0));
+    test_equal("grid2: find 2", meshes_4.size(), std::size_t(0));
   }
 }

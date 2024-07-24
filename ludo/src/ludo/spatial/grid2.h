@@ -60,11 +60,11 @@ namespace ludo
   void remove(grid2& grid, const render_mesh& render_mesh, const vec2& position);
 
   ///
-  /// Finds render meshes within a grid using a parallel search across all cells.
+  /// Finds render meshes within a grid.
   /// \param grid The grid to search.
   /// \param test The test to perform against the bounds of the cells.
   /// \return The matching render mesh IDs.
-  std::vector<uint64_t> find_parallel(const grid2& grid, const std::function<int32_t(const aabb2& bounds)>& test);
+  std::vector<uint64_t> find(const grid2& grid, const std::function<int32_t(const aabb2& bounds)>& test);
 }
 
 #endif // LUDO_SPATIAL_GRID2_H

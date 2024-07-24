@@ -35,7 +35,6 @@
 #include "spatial/grid3.h"
 #include "spatial/octree.h"
 #include "spatial/quadtree.h"
-#include "tasks.h"
 #include "timer.h"
 #include "thread_pool.h"
 #include "windowing.h"

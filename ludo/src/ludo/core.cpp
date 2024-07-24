@@ -13,6 +13,9 @@ namespace ludo
 {
   uint64_t next_id = 1;
 
+  // TODO arghhh! global!
+  std::vector<float> total_script_times;
+
   void play(instance& instance)
   {
     auto total_timer = timer();
@@ -41,7 +44,26 @@ namespace ludo
     // Make a copy of the scripts array to allow for insert/removal of scripts from within a script.
     auto scripts_copy = std::vector<ludo::script>(scripts.begin(), scripts.end());
 
-    series(scripts_copy)(instance);
+    for (auto index = 0; index < scripts_copy.size(); index++)
+    {
+      auto timer = ludo::timer();
+
+      scripts[index](instance);
+
+      if (total_script_times.size() < index)
+      {
+        // Don't record the time. We're in no-man's land now...
+      }
+      else
+      {
+        if (total_script_times.size() < index + 1)
+        {
+          total_script_times.emplace_back();
+        }
+
+        total_script_times[index] += elapsed(timer);
+      }
+    }
 
     instance.delta_time = elapsed(delta_timer);
   }

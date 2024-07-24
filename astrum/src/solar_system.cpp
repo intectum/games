@@ -131,8 +131,6 @@ namespace astrum
       );
     }
 
-    ludo::add<ludo::script>(inst, ludo::finalize_background_tasks);
-
     ludo::add<ludo::script>(inst, center_universe);
     ludo::add<ludo::script>(inst, relativize_universe);
 

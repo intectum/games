@@ -26,18 +26,6 @@ namespace ludo
 
   template<typename T, typename Arg1, typename Arg2, typename Arg3>
   T* add(instance& instance, const std::function<void(ludo::instance& instance, Arg1 arg1, Arg2 arg2, Arg3 arg3)>& init, Arg1 arg1, Arg2 arg2, Arg3 arg3, const std::string& partition = "default");
-
-  ///
-  /// Creates a script that executes the given scripts in series and blocks this thread until they are all complete.
-  /// \param scripts The scripts to execute in series.
-  /// \return A script that executes the given scripts in series.
-  script series(const std::vector<script>& scripts);
-
-  ///
-  /// Creates a script that executes the given scripts in parallel and blocks this thread until they are all complete.
-  /// \param scripts The scripts to execute in parallel.
-  /// \return A script that executes the given scripts in parallel.
-  script parallel(const std::vector<script>& scripts);
 }
 
 #include "scripts.hpp"

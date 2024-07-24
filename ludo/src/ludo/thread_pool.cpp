@@ -2,38 +2,45 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <iostream>
+#include <queue>
+#include <thread>
 
 #include "thread_pool.h"
 
 namespace ludo
 {
-  const auto thread_pool_size = std::thread::hardware_concurrency();
+  static auto queue = std::queue<std::function<void()>>();
+  static auto mutex = std::mutex();
+  static auto semaphore = std::counting_semaphore(0);
 
-  auto thread_pool_executing = std::atomic_uint(0);
-  auto thread_pool_semaphore = std::counting_semaphore(thread_pool_size);
-
-  uint32_t thread_pool_available()
+  void thread_pool_start()
   {
-    return thread_pool_size - thread_pool_executing.load();
+    static auto threads = std::vector<std::thread>();
+    while (threads.size() < std::thread::hardware_concurrency())
+    {
+      threads.emplace_back([]()
+      {
+        while (true)
+        {
+          semaphore.acquire();
+
+          mutex.lock();
+          auto task = queue.front();
+          queue.pop();
+          mutex.unlock();
+
+          task();
+        }
+      });
+    }
   }
 
-  std::future<task_finalizer> thread_pool_execute(const task& task)
+  void thread_pool_enqueue(const std::function<void()>& task)
   {
-    while (!thread_pool_semaphore.try_acquire_for(std::chrono::duration(std::chrono::seconds(1))))
-    {
-      std::cout << "waiting for thread pool availability..." << std::endl;
-    }
-    thread_pool_executing++;
+    mutex.lock();
+    queue.push(task);
+    mutex.unlock();
 
-    return std::async(std::launch::async, [task]()
-    {
-      auto finalizer = task();
-
-      thread_pool_executing--;
-      thread_pool_semaphore.release();
-
-      return finalizer;
-    });
+    semaphore.release();
   }
 }

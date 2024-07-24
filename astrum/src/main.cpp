@@ -149,6 +149,8 @@ int main()
 
   ludo::commit(*default_grid);
 
+  ludo::thread_pool_start();
+
   ludo::add<ludo::script>(inst, [](ludo::instance& inst)
   {
     auto window = ludo::first<ludo::window>(inst);

@@ -4,7 +4,6 @@
 
 #include <cmath>
 
-#include "../tasks.h"
 #include "grid3.h"
 
 namespace ludo
@@ -165,43 +164,33 @@ namespace ludo
     );
   }
 
-  std::vector<uint64_t> find_parallel(const grid3& grid, const std::function<int32_t(const aabb3& bounds)>& test)
+  std::vector<uint64_t> find(const grid3& grid, const std::function<int32_t(const aabb3& bounds)>& test)
   {
     auto render_mesh_ids = std::vector<uint64_t>();
     auto cell_count = static_cast<uint32_t>(std::pow(grid.cell_count_1d, 3));
     auto cell_dimensions = ludo::cell_dimensions(grid);
 
-    divide_and_conquer(cell_count, [&grid, &test, &render_mesh_ids, cell_dimensions](uint32_t start, uint32_t end)
+    for (auto index = uint32_t(0); index < cell_count; index++)
     {
-      auto task_render_mesh_ids = std::vector<uint64_t>();
+      auto x = index / (grid.cell_count_1d * grid.cell_count_1d);
+      auto y = (index / grid.cell_count_1d) % grid.cell_count_1d;
+      auto z = index % grid.cell_count_1d;
 
-      for (auto index = start; index < end; index++)
+      auto xyz = vec3 { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) };
+      auto min = grid.bounds.min + xyz * cell_dimensions;
+
+      auto bounds = aabb3
       {
-        auto x = index / (grid.cell_count_1d * grid.cell_count_1d);
-        auto y = (index / grid.cell_count_1d) % grid.cell_count_1d;
-        auto z = index % grid.cell_count_1d;
-
-        auto xyz = vec3 { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) };
-        auto min = grid.bounds.min + xyz * cell_dimensions;
-
-        auto bounds = aabb3
-        {
-          .min = min,
-          .max = min + cell_dimensions
-        };
-
-        if (test(bounds) != -1)
-        {
-          auto ids = cell_render_mesh_ids(grid, index);
-          task_render_mesh_ids.insert(task_render_mesh_ids.end(), ids.begin(), ids.end());
-        }
-      }
-
-      return [&render_mesh_ids, task_render_mesh_ids]()
-      {
-        render_mesh_ids.insert(render_mesh_ids.end(), task_render_mesh_ids.begin(), task_render_mesh_ids.end());
+        .min = min,
+        .max = min + cell_dimensions
       };
-    });
+
+      if (test(bounds) != -1)
+      {
+        auto ids = cell_render_mesh_ids(grid, index);
+        render_mesh_ids.insert(render_mesh_ids.end(), ids.begin(), ids.end());
+      }
+    }
 
     return render_mesh_ids;
   }

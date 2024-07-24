@@ -35,13 +35,11 @@ set(SRC_FILES
     src/ludo/meshes/sphere_uv.cpp
     src/ludo/meshes/util.cpp
     src/ludo/rendering.cpp
-    src/ludo/scripts.cpp
     src/ludo/spatial/bounds.cpp
     src/ludo/spatial/grid2.cpp
     src/ludo/spatial/grid3.cpp
     src/ludo/spatial/octree.cpp
     src/ludo/spatial/quadtree.cpp
-    src/ludo/tasks.cpp
     src/ludo/testing.cpp
     src/ludo/thread_pool.cpp
     src/ludo/timer.cpp)

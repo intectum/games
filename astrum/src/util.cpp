@@ -12,8 +12,6 @@ namespace astrum
 
   auto script_names = std::vector<std::string>
   {
-    "ludo::finalize_background_tasks",
-
     "astrum::center_universe",
     "astrum::relativize_universe",
 
