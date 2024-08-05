@@ -1,7 +1,7 @@
 #include <iostream>
 #include <random>
 
-#include <libnoise/noise.h>
+#include <noise/noise.h>
 
 #include "../constants.h"
 #include "../terrain/mesh.h"
@@ -79,7 +79,8 @@ namespace astrum
     auto noise = 0.0f;
 
     // Continents
-    noise += static_cast<float>(perlin_continent.GetValue(position[0], position[1], position[2])) * 0.05f;
+    //noise += static_cast<float>(perlin_continent.GetValue(position[0], position[1], position[2])) * 0.05f;
+    noise += ludo::perlin(position, 2.0f) * 0.05f;
 
     // Mountains
     auto mountain_mask = static_cast<float>(perlin_mountain_mask.GetValue(position[0], position[1], position[2]));
@@ -89,7 +90,8 @@ namespace astrum
     }
 
     // Details
-    noise += static_cast<float>(perlin_detail.GetValue(position[0], position[1], position[2])) * 0.0005f;
+    //noise += static_cast<float>(perlin_detail.GetValue(position[0], position[1], position[2])) * 0.0005f;
+    noise += ludo::perlin(position, 50.0f) * 0.0005f;
 
     return 1.0f + std::max(noise, 0.0f);
   }

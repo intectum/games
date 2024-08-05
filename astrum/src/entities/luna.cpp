@@ -1,6 +1,6 @@
 #include <random>
 
-#include <libnoise/noise.h>
+#include <noise/noise.h>
 
 #include "../constants.h"
 #include "../terrain/terrain.h"
@@ -86,7 +86,8 @@ namespace astrum
     auto noise = 0.0f;
 
     // Details
-    noise += static_cast<float>(perlin.GetValue(position[0], position[1], position[2])) * 0.001f;
+    //noise += static_cast<float>(perlin.GetValue(position[0], position[1], position[2])) * 0.001f;
+    noise += ludo::perlin(position, 50.0f) * 0.001f;
 
     noise = std::max(noise, 0.0f);
 
