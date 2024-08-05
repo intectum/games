@@ -13,6 +13,6 @@ This is a monorepo of all of Intectum's internal game projects. It includes an i
 
 ## Deps
 
-`apt install freeglut3-dev libnoise-dev xorg-dev`
+`apt install freeglut3-dev xorg-dev`
 
 3rd party dependencies are included as git submodules.

@@ -6,12 +6,19 @@ include(../common.cmake)
 #########################
 project(astrum)
 
+# Project Dependencies
+#########################
+
+# ludo
 add_subdirectory(../ludo lib/ludo)
 add_subdirectory(../ludo-assimp lib/ludo-assimp)
 add_subdirectory(../ludo-bullet lib/ludo-bullet)
 add_subdirectory(../ludo-glfw lib/ludo-glfw)
 add_subdirectory(../ludo-opengl lib/ludo-opengl)
 add_subdirectory(../ludo-stb lib/ludo-stb)
+
+# noise
+add_subdirectory(lib/libnoise lib/libnoise)
 
 # Source
 #########################
@@ -69,6 +76,7 @@ target_link_libraries(astrum ludo-opengl)
 target_link_libraries(astrum ludo-stb)
 
 # noise
+target_include_directories(astrum PUBLIC lib/libnoise/src)
 target_link_libraries(astrum noise)
 
 # pthread

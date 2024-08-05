@@ -1,3 +1,6 @@
+[submodule "astrum/lib/libnoise"]
+	path = astrum/lib/libnoise
+	url = https://github.com/qknight/libnoise.git
 [submodule "ludo-assimp/lib/assimp"]
 	path = ludo-assimp/lib/assimp
 	url = https://github.com/assimp/assimp.git
