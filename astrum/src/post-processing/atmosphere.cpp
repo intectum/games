@@ -23,15 +23,16 @@ namespace astrum
 
   const auto shader_buffer_size = 5 * sizeof(uint64_t) + 8 /* align 16 */ + sizeof(ludo::vec3) + 2 * sizeof(float);
 
-  void add_atmosphere(ludo::instance& inst, const ludo::render_mesh& render_mesh, uint32_t celestial_body_index, float planet_radius, float atmosphere_radius)
+  ludo::frame_buffer add_atmosphere(ludo::instance& inst, float planet_radius, float atmosphere_radius)
   {
-    auto& frame_buffers = ludo::data<ludo::frame_buffer>(inst);
-    auto& previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
+    auto &frame_buffers = ludo::data<ludo::frame_buffer>(inst);
+    auto &previous_frame_buffer = frame_buffers[frame_buffers.length - 1];
 
-    auto& render_commands = data_heap(inst, "ludo::vram_render_commands");
+    auto &render_commands = data_heap(inst, "ludo::vram_render_commands");
 
-    auto render_program = ludo::add(inst, ludo::render_program { .format = ludo::vertex_format_pt }, "atmosphere");
-    ludo::init(*render_program, ludo::asset_folder + "/shaders/post.vert", ludo::asset_folder + "/shaders/atmosphere.frag", render_commands, 1);
+    auto render_program = ludo::add(inst, ludo::render_program{.format = ludo::vertex_format_pt}, "atmosphere");
+    ludo::init(*render_program, ludo::asset_folder + "/shaders/post.vert",
+               ludo::asset_folder + "/shaders/atmosphere.frag", render_commands, 1);
     render_program->shader_buffer = ludo::allocate_dual(shader_buffer_size);
 
     auto frame_buffer = add_post_processing_frame_buffer(inst);
@@ -46,12 +47,14 @@ namespace astrum
 
     auto map_data_size = uint32_t(map_size * map_size * sizeof(float));
 
-    auto atmospheric_density_stream = std::ifstream(ludo::asset_folder + "/effects/atmospheric-density.map", std::ios::binary);
+    auto atmospheric_density_stream = std::ifstream(ludo::asset_folder + "/effects/atmospheric-density.map",
+                                                    std::ios::binary);
     auto atmospheric_density_data = new std::byte[map_data_size];
-    atmospheric_density_stream.read(reinterpret_cast<char*>(atmospheric_density_data), map_data_size);
+    atmospheric_density_stream.read(reinterpret_cast<char *>(atmospheric_density_data), map_data_size);
 
-    auto atmospheric_density_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size });
-    ludo::init(*atmospheric_density_texture, { .clamp = true });
+    auto atmospheric_density_texture = ludo::add(inst,
+                                                 ludo::texture{.components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size});
+    ludo::init(*atmospheric_density_texture, {.clamp = true});
     ludo::write(*atmospheric_density_texture, atmospheric_density_data);
     ludo::write(stream, ludo::handle(*atmospheric_density_texture));
 
@@ -59,10 +62,11 @@ namespace astrum
 
     auto optical_depth_stream = std::ifstream(ludo::asset_folder + "/effects/optical-depth.map", std::ios::binary);
     auto optical_depth_data = new std::byte[map_data_size];
-    optical_depth_stream.read(reinterpret_cast<char*>(optical_depth_data), map_data_size);
+    optical_depth_stream.read(reinterpret_cast<char *>(optical_depth_data), map_data_size);
 
-    auto optical_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size });
-    ludo::init(*optical_depth_texture, { .clamp = true });
+    auto optical_depth_texture = ludo::add(inst,
+                                           ludo::texture{.components = ludo::pixel_components::R, .datatype = ludo::pixel_datatype::FLOAT32, .width = map_size, .height = map_size});
+    ludo::init(*optical_depth_texture, {.clamp = true});
     ludo::write(*optical_depth_texture, optical_depth_data);
     ludo::write(stream, ludo::handle(*optical_depth_texture));
 
@@ -77,24 +81,26 @@ namespace astrum
     ludo::write(stream, planet_radius);
     ludo::write(stream, atmosphere_radius);
 
-    ludo::add<ludo::script>(inst, [=](ludo::instance& inst)
-    {
-      auto rendering_context = ludo::first<ludo::rendering_context>(inst);
-      auto& render_programs = ludo::data<ludo::render_program>(inst);
-      auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
+    return *frame_buffer;
+  }
 
-      auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
-      auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
-      auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+  void commit_atmosphere_render_commands(ludo::instance& inst, const ludo::frame_buffer& frame_buffer, const ludo::render_mesh& render_mesh, uint32_t celestial_body_index)
+  {
+    auto rendering_context = ludo::first<ludo::rendering_context>(inst);
+    auto& render_programs = ludo::data<ludo::render_program>(inst);
+    auto render_program = ludo::first<ludo::render_program>(inst, "atmosphere");
 
-      auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
+    auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
+    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
+    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
 
-      ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 5 * sizeof(uint64_t) + 8 /* align 16 */) = celestial_body_point_masses[celestial_body_index].transform.position;
+    auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
 
-      ludo::use_and_clear(*frame_buffer);
-      ludo::add_render_command(*render_program, render_mesh);
-      ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
-    });
+    ludo::cast<ludo::vec3>(render_program->shader_buffer.back, 5 * sizeof(uint64_t) + 8 /* align 16 */) = celestial_body_point_masses[celestial_body_index].transform.position;
+
+    ludo::use_and_clear(frame_buffer);
+    ludo::add_render_command(*render_program, render_mesh);
+    ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
   }
 
   void write_atmosphere_textures(float atmosphere_radius)

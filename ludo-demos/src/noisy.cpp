@@ -8,7 +8,6 @@ int main()
   // SETUP
 
   auto inst = ludo::instance();
-  ludo::allocate<ludo::script>(inst, 3);
 
   auto window = ludo::window { .title = "noisy!", .width = 1920, .height = 1080, .v_sync = false };
   ludo::init(window);
@@ -112,21 +111,18 @@ int main()
     ludo::instance_transform(sample_render_mesh, sample_render_mesh.instances.count++) = ludo::mat4(sample * 1.0001f, rotation);
   }
 
-  // SCRIPTS
+  // PLAY
 
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  auto mouse_movement_accumulator = new std::array<int32_t, 2>();
+  ludo::play(inst, [&](ludo::instance& inst)
   {
-    ludo::receive_input(window, inst);
+    ludo::receive_input(window);
 
     if (window.active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
     {
       ludo::stop(inst);
     }
-  });
 
-  auto mouse_movement_accumulator = new std::array<int32_t, 2>();
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
-  {
     if (window.active_mouse_button_states[ludo::mouse_button::LEFT] == ludo::button_state::HOLD)
     {
       (*mouse_movement_accumulator)[0] += window.mouse_movement[0];
@@ -137,10 +133,7 @@ int main()
     camera.view = ludo::mat4(ludo::vec3_zero, ludo::mat3(ludo::quat(float((*mouse_movement_accumulator)[0]) / 500.0f, float((*mouse_movement_accumulator)[1]) / 500.0f, 0.0f)));
     ludo::translate(camera.view, { 0.0f, 0.0f, 3.0f });
     ludo::set_camera(rendering_context, camera);
-  });
 
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
-  {
     ludo::start_render_transaction(rendering_context, render_programs);
     ludo::swap_buffers(window);
 
@@ -152,8 +145,4 @@ int main()
     ludo::commit_render_commands(rendering_context, render_programs, render_commands, indices, vertices);
     ludo::commit_render_transaction(rendering_context);
   });
-
-  // PLAY
-
-  ludo::play(inst);
 }

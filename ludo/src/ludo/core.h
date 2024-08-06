@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <functional>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -30,7 +31,8 @@ namespace ludo
   /// Play!
   /// Executes frames forever! ...or until it is stopped.
   /// @param instance The instance to execute frames of.
-  void play(instance& instance);
+  /// @param frame The frame function.
+  void play(instance& instance, const std::function<void(ludo::instance& instance)>& kernel);
 
   ///
   /// Stop!
@@ -42,5 +44,5 @@ namespace ludo
   ///
   /// Executes a single frame.
   /// @param instance The instance to execute a frame of.
-  void frame(instance& instance);
+  void frame(instance& instance, const std::function<void(ludo::instance& instance)>& kernel);
 }
