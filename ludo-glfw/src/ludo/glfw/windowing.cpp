@@ -133,7 +133,7 @@ namespace ludo
     glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(window.id));
   }
 
-  void receive_input(window& window, instance& instance)
+  void receive_input(window& window)
   {
     for (auto& active_keyboard_button_state : window.active_keyboard_button_states)
     {

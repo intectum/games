@@ -128,34 +128,34 @@ namespace astrum
         }
       );
     }
+  }
 
-    ludo::add<ludo::script>(inst, center_universe);
-    ludo::add<ludo::script>(inst, relativize_universe);
+  void update_solar_system(ludo::instance& inst)
+  {
+    auto physics_context = ludo::first<ludo::physics_context>(inst);
 
-    ludo::add<ludo::script>(inst, simulate_gravity);
-    ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-    {
-      auto physics_context = ludo::first<ludo::physics_context>(inst);
+    center_universe(inst);
+    relativize_universe(inst);
 
-      ludo::simulate(*physics_context, inst.delta_time);
-    });
-    ludo::add<ludo::script, std::vector<std::string>>(inst, simulate_point_mass_physics, { "people", "spaceships" });
+    simulate_gravity(inst);
+    ludo::simulate(*physics_context, inst.delta_time);
+    simulate_point_mass_physics(inst, { "people", "spaceships" });
 
-    ludo::add<ludo::script>(inst, stream_terrain);
-    ludo::add<ludo::script, uint32_t>(inst, stream_trees, 1);
+    stream_terrain(inst);
+    stream_trees(inst, 1);
 
-    ludo::add<ludo::script>(inst, sync_light_with_sol);
+    sync_light_with_sol(inst);
 
-    ludo::add<ludo::script>(inst, simulate_people);
-    ludo::add<ludo::script>(inst, simulate_spaceships);
+    simulate_people(inst);
+    simulate_spaceships(inst);
 
-    ludo::add<ludo::script>(inst, control_game);
+    control_game(inst);
 
-    ludo::add<ludo::script, std::vector<std::string>>(inst, sync_render_meshes_with_point_masses, { "people", "spaceships" });
+    sync_render_meshes_with_point_masses(inst, { "people", "spaceships" });
 
     if (show_paths)
     {
-      ludo::add<ludo::script>(inst, update_prediction_paths);
+      update_prediction_paths(inst);
     }
   }
 }

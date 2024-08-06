@@ -70,7 +70,6 @@ namespace astrum
     ludo::allocate<ludo::dynamic_body>(prediction_inst, dynamic_bodies.length);
     ludo::allocate<ludo::kinematic_body>(prediction_inst, 0); // Required by point mass physics script
     ludo::allocate<ludo::physics_context>(prediction_inst, 1);
-    ludo::allocate<ludo::script>(prediction_inst, 1);
     ludo::allocate<ludo::static_body>(prediction_inst, 0); // Required by point mass physics script
 
     ludo::allocate<point_mass>(prediction_inst, point_masses.length);
@@ -88,15 +87,6 @@ namespace astrum
     {
       ludo::add(prediction_inst, point_mass);
     }
-
-    ludo::add<ludo::script>(prediction_inst, [](ludo::instance& prediction_inst)
-    {
-      auto physics_context = ludo::first<ludo::physics_context>(prediction_inst);
-
-      simulate_gravity(prediction_inst);
-      ludo::simulate(*physics_context, prediction_inst.delta_time);
-      simulate_point_mass_physics(prediction_inst, {});
-    });
 
     auto& prediction_dynamic_bodies = ludo::data<ludo::dynamic_body>(prediction_inst);
     auto& prediction_point_masses = ludo::data<point_mass>(prediction_inst);
@@ -133,13 +123,19 @@ namespace astrum
 
       prediction_inst.delta_time = path_delta_time;
       prediction_inst.total_time += path_delta_time;
-      ludo::frame(prediction_inst);
+      ludo::frame(prediction_inst, [](ludo::instance& prediction_inst)
+      {
+        auto physics_context = ludo::first<ludo::physics_context>(prediction_inst);
+
+        simulate_gravity(prediction_inst);
+        ludo::simulate(*physics_context, prediction_inst.delta_time);
+        simulate_point_mass_physics(prediction_inst, {});
+      });
     }
 
     ludo::deallocate<ludo::dynamic_body>(prediction_inst);
     ludo::deallocate<ludo::kinematic_body>(prediction_inst); // Required by point mass physics script
     ludo::deallocate<ludo::physics_context>(prediction_inst);
-    ludo::deallocate<ludo::script>(prediction_inst);
     ludo::deallocate<ludo::static_body>(prediction_inst); // Required by point mass physics script
 
     ludo::deallocate<point_mass>(prediction_inst);

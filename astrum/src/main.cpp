@@ -8,7 +8,6 @@
 #include "post-processing/atmosphere.h"
 #include "post-processing/bloom.h"
 #include "post-processing/tone_mapping.h"
-#include "post-processing/pass.h"
 #include "post-processing/util.h"
 #include "solar_system.h"
 #include "terrain/terrain.h"
@@ -94,7 +93,6 @@ int main()
   ludo::allocate<ludo::mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_mesh>(inst, max_rendered_instances);
   ludo::allocate<ludo::render_program>(inst, 12);
-  ludo::allocate<ludo::script>(inst, 36);
   ludo::allocate<ludo::static_body>(inst, max_terrain_bodies);
   ludo::allocate<ludo::texture>(inst, 21);
   ludo::allocate<ludo::window>(inst, 1);
@@ -135,12 +133,12 @@ int main()
   default_grid->compute_program_id = ludo::add(inst, ludo::build_compute_program(*default_grid))->id;
   ludo::init(*default_grid);
 
-  auto msaa_color_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT16, .width = window->width, .height = window->height });
-  ludo::init(*msaa_color_texture, { .samples = astrum::msaa_samples });
-  auto msaa_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::DEPTH, .datatype = ludo::pixel_datatype::FLOAT32, .width = window->width, .height = window->height });
-  ludo::init(*msaa_depth_texture, { .samples = astrum::msaa_samples });
-  auto msaa_frame_buffer = ludo::add(inst, ludo::frame_buffer { .width = window->width, .height = window->height, .color_texture_ids = { msaa_color_texture->id }, .depth_texture_id = msaa_depth_texture->id });
-  ludo::init(*msaa_frame_buffer);
+  auto multi_sample_color_texture = ludo::add(inst, ludo::texture { .datatype = ludo::pixel_datatype::FLOAT16, .width = window->width, .height = window->height });
+  ludo::init(*multi_sample_color_texture, { .samples = astrum::multi_sample_count });
+  auto multi_sample_depth_texture = ludo::add(inst, ludo::texture { .components = ludo::pixel_components::DEPTH, .datatype = ludo::pixel_datatype::FLOAT32, .width = window->width, .height = window->height });
+  ludo::init(*multi_sample_depth_texture, { .samples = astrum::multi_sample_count });
+  auto multi_sample_frame_buffer = ludo::add(inst, ludo::frame_buffer { .width = window->width, .height = window->height, .color_texture_ids = { multi_sample_color_texture->id }, .depth_texture_id = multi_sample_depth_texture->id });
+  ludo::init(*multi_sample_frame_buffer);
 
   auto physics_context = ludo::add(inst, ludo::physics_context { .gravity = ludo::vec3_zero });
   ludo::init(*physics_context);
@@ -157,43 +155,6 @@ int main()
 
   ludo::commit(*default_grid);
 
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto window = ludo::first<ludo::window>(inst);
-
-    ludo::receive_input(*window, inst);
-
-    if (window->active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
-    {
-      ludo::stop(inst);
-    }
-  });
-
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto msaa_frame_buffer = ludo::first<ludo::frame_buffer>(inst);
-    auto rendering_context = ludo::first<ludo::rendering_context>(inst);
-    auto& render_programs = ludo::data<ludo::render_program>(inst);
-    auto window = ludo::first<ludo::window>(inst);
-
-    ludo::start_render_transaction(*rendering_context, render_programs);
-    ludo::swap_buffers(*window);
-
-    ludo::use_and_clear(*msaa_frame_buffer);
-  });
-
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto& grids = ludo::data<ludo::grid3>(inst);
-    auto rendering_context = ludo::first<ludo::rendering_context>(inst);
-    auto& compute_programs = ludo::data<ludo::compute_program>(inst);
-    auto& render_programs = ludo::data<ludo::render_program>(inst);
-
-    auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
-
-    ludo::add_render_commands(grids, compute_programs, render_programs, render_commands, ludo::get_camera(*rendering_context));
-  });
-
   if (astrum::visualize_physics)
   {
     auto bullet_debug_render_program = ludo::add(inst, ludo::render_program { .primitive = ludo::mesh_primitive::LINE_LIST }, "physics");
@@ -204,48 +165,62 @@ int main()
 
     auto bullet_debug_render_mesh = ludo::add(inst, ludo::render_mesh(), "physics");
     ludo::init(*bullet_debug_render_mesh, *bullet_debug_render_program, *bullet_debug_mesh, indices, vertices, 1);
+  }
 
-    ludo::add<ludo::script>(inst, [](ludo::instance& inst)
+  // Post-processing
+  auto post_processing_render_mesh = astrum::add_post_processing_render_mesh(inst);
+  auto single_sample_frame_buffer = astrum::add_post_processing_frame_buffer(inst, true);
+  //astrum::write_atmosphere_textures(astrum::terra_atmosphere_scale);
+  auto atmosphere_frame_buffer = astrum::add_atmosphere(inst, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
+  //auto bloom_frame_buffers = astrum::add_bloom(inst, *post_processing_render_mesh, 5, 0.1f);
+  auto tone_mapping_frame_buffer = astrum::add_tone_mapping(inst);
+
+  std::cout << std::fixed << std::setprecision(4) << "remaining load time: " << ludo::elapsed(timer) << "s" << std::endl;
+
+  auto& compute_programs = ludo::data<ludo::compute_program>(inst);
+  auto& grids = ludo::data<ludo::grid3>(inst);
+  auto& render_programs = ludo::data<ludo::render_program>(inst);
+
+  ludo::play(inst, [&](ludo::instance& inst)
+  {
+    astrum::update_solar_system(inst);
+
+    ludo::receive_input(*window);
+
+    if (window->active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
+    {
+      ludo::stop(inst);
+    }
+
+    ludo::start_render_transaction(*rendering_context, render_programs);
+    ludo::swap_buffers(*window);
+
+    ludo::use_and_clear(*multi_sample_frame_buffer);
+
+    ludo::add_render_commands(grids, compute_programs, render_programs, render_commands, ludo::get_camera(*rendering_context));
+
+    if (astrum::visualize_physics)
     {
       auto mesh = ludo::first<ludo::mesh>(inst, "physics");
-      auto physics_context = ludo::first<ludo::physics_context>(inst);
       auto render_mesh = ludo::first<ludo::render_mesh>(inst, "physics");
       auto render_program = ludo::first<ludo::render_program>(inst, "physics");
 
       ludo::visualize(*physics_context, *mesh);
       ludo::add_render_command(*render_program, *render_mesh);
-    });
-  }
-
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
-    auto rendering_context = ludo::first<ludo::rendering_context>(inst);
-    auto& render_programs = ludo::data<ludo::render_program>(inst);
-
-    auto& render_commands = ludo::data_heap(inst, "ludo::vram_render_commands");
-    auto& indices = ludo::data_heap(inst, "ludo::vram_indices");
-    auto& vertices = ludo::data_heap(inst, "ludo::vram_vertices");
+    }
 
     ludo::commit_render_commands(*rendering_context, render_programs, render_commands, indices, vertices);
-  });
 
-  // Post-processing
-  auto post_processing_render_mesh = astrum::add_post_processing_render_mesh(inst);
-  astrum::add_pass(inst); // Implicitly converts MSAA textures to regular textures
-  //astrum::write_atmosphere_textures(astrum::terra_atmosphere_scale);
-  astrum::add_atmosphere(inst, *post_processing_render_mesh, 1, astrum::terra_radius, astrum::terra_radius * astrum::terra_atmosphere_scale);
-  astrum::add_bloom(inst, *post_processing_render_mesh, 5, 0.1f);
-  astrum::add_tone_mapping(inst, *post_processing_render_mesh);
-  astrum::add_pass(inst, true);
+    ludo::blit(*multi_sample_frame_buffer, *single_sample_frame_buffer); // Convert MSAA textures to regular textures
+    astrum::commit_atmosphere_render_commands(inst, atmosphere_frame_buffer, *post_processing_render_mesh, 1);
+    //astrum::commit_bloom_render_commands(inst, bloom_frame_buffers, *post_processing_render_mesh);
+    astrum::commit_tone_mapping_render_commands(inst, tone_mapping_frame_buffer, *post_processing_render_mesh);
+    ludo::blit(tone_mapping_frame_buffer, ludo::frame_buffer { .width = window->width, .height = window->height });
 
-  ludo::add<ludo::script>(inst, [](ludo::instance& inst)
-  {
     ludo::commit_render_transaction(*ludo::first<ludo::rendering_context>(inst));
+
+    //astrum::print_timings(inst);
   });
 
-  ludo::add<ludo::script>(inst, astrum::print_timings);
-
-  std::cout << std::fixed << std::setprecision(4) << "remaining load time: " << ludo::elapsed(timer) << "s" << std::endl;
-
-  ludo::play(inst);
+  ludo::thread_pool_stop();
 }

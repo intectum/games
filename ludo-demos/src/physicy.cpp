@@ -1,7 +1,4 @@
-#include "btBulletDynamicsCommon.h"
-
 #include <ludo/api.h>
-#include <ludo/bullet/math.h>
 #include <ludo/opengl/util.h>
 
 int main()
@@ -9,7 +6,6 @@ int main()
   // SETUP
 
   auto inst = ludo::instance();
-  ludo::allocate<ludo::script>(inst, 3);
 
   auto window = ludo::window { .title = "physicy!", .width = 1920, .height = 1080, .v_sync = false };
   ludo::init(window);
@@ -72,20 +68,17 @@ int main()
   auto physics_render_mesh = ludo::render_mesh();
   ludo::init(physics_render_mesh, *render_program, physics_mesh, indices, vertices, 1);
 
-  // SCRIPTS
+  // PLAY
 
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
+  ludo::play(inst, [&](ludo::instance& inst)
   {
-    ludo::receive_input(window, inst);
+    ludo::receive_input(window);
 
     if (window.active_window_frame_button_states[ludo::window_frame_button::CLOSE] == ludo::button_state::UP)
     {
       ludo::stop(inst);
     }
-  });
 
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
-  {
     if (window.active_mouse_button_states[ludo::mouse_button::LEFT] == ludo::button_state::HOLD)
     {
       kinematic_box.transform.position[0] += float(window.mouse_movement[0]) / 100.0f;
@@ -101,10 +94,7 @@ int main()
     }
 
     ludo::simulate(physics_context, inst.delta_time);
-  });
 
-  ludo::add<ludo::script>(inst, [&](ludo::instance& inst)
-  {
     ludo::start_render_transaction(rendering_context, render_programs);
     ludo::swap_buffers(window);
 
@@ -116,8 +106,4 @@ int main()
     ludo::commit_render_commands(rendering_context, render_programs, render_commands, indices, vertices);
     ludo::commit_render_transaction(rendering_context);
   });
-
-  // PLAY
-
-  ludo::play(inst);
 }

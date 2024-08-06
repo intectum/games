@@ -17,6 +17,7 @@ set(SRC_FILES
     src/ludo/data/buffers.cpp
     src/ludo/data/data.cpp
     src/ludo/data/heaps.cpp
+    src/ludo/ecs.cpp
     src/ludo/files.cpp
     src/ludo/math/distance.cpp
     src/ludo/math/mat.cpp
@@ -24,6 +25,7 @@ set(SRC_FILES
     src/ludo/math/quat.cpp
     src/ludo/math/util.cpp
     src/ludo/math/vec.cpp
+    src/ludo/memory.cpp
     src/ludo/meshes.cpp
     src/ludo/meshes/box.cpp
     src/ludo/meshes/circle.cpp
@@ -44,7 +46,7 @@ set(SRC_FILES
     src/ludo/spatial/octree.cpp
     src/ludo/spatial/quadtree.cpp
     src/ludo/testing.cpp
-    src/ludo/thread_pool.cpp
+    src/ludo/threading.cpp
     src/ludo/timer.cpp)
 
 set(TEST_SRC_FILES

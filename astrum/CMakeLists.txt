@@ -48,8 +48,7 @@ set(SRC_FILES
     src/physics/relativity.cpp
     src/physics/util.cpp
     src/post-processing/atmosphere.cpp
-    src/post-processing/bloom.cpp
-    src/post-processing/pass.cpp
+    #src/post-processing/bloom.cpp
     src/post-processing/tone_mapping.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
@@ -60,7 +59,8 @@ set(SRC_FILES
     src/terrain/terrain.cpp
     src/terrain/terrain_chunk.cpp
     src/terrain/mesh.cpp
-    src/util.cpp)
+    #src/util.cpp
+)
 
 # Target
 #########################

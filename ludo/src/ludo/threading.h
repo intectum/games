@@ -8,7 +8,13 @@
 
 namespace ludo
 {
+  ///
+  /// Starts the thread pool.
   void thread_pool_start();
+
+  ///
+  /// Stops the thread pool.
+  void thread_pool_stop();
 
   ///
   /// Executes a task in the thread pool.
