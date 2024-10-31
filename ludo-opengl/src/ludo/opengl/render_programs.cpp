@@ -190,12 +190,12 @@ namespace ludo
   {
     auto position = (render_program.active_commands.start + render_program.active_commands.count++) * sizeof(render_command);
     cast<render_command>(render_program.command_buffer, position) =
-      {
-        .index_count = render_mesh.indices.count,
-        .instance_count = render_mesh.instances.count,
-        .index_start = render_mesh.indices.start,
-        .vertex_start = render_mesh.vertices.start,
-        .instance_start = render_mesh.instances.start
-      };
+    {
+      .index_count = render_mesh.indices.count,
+      .instance_count = render_mesh.instances.count,
+      .index_start = render_mesh.indices.start,
+      .vertex_start = render_mesh.vertices.start,
+      .instance_start = render_mesh.instances.start
+    };
   }
 }
