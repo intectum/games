@@ -11,4 +11,10 @@ namespace fast_dom
 
     css_property_count
   };
+
+  enum display_outer
+  {
+    display_outer_block,
+    display_outer_inline
+  };
 }

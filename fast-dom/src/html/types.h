@@ -27,6 +27,7 @@ namespace fast_dom
     ludo::vec3* positions;
     ludo::vec3* sizes;
     ludo::vec3* layout_positions;
+    display_outer* display_outers;
 
     uint32_t count = 0;
   };

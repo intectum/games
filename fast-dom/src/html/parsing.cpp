@@ -25,6 +25,7 @@ namespace fast_dom
     auto& names = doc.names;
     auto& attribute_sets = doc.attribute_sets;
     auto& parent_indices = doc.parent_indices;
+    auto& display_outers = doc.display_outers;
 
     uint32_t pos = 0;
     uint32_t tag_index = 0;
@@ -46,6 +47,11 @@ namespace fast_dom
       names[tag_index] = name;
       attribute_sets[tag_index] = attribute_set;
       parent_indices[tag_index] = parent_tag_index;
+
+      if (std::strncmp(name.data, "span", name.length) == 0)
+      {
+        display_outers[tag_index] = display_outer_inline;
+      }
 
       if (type == fast_dom::tag_type_opening)
       {

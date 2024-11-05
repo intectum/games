@@ -49,7 +49,7 @@ int main()
 
   // PARSE
 
-  auto raw_html = "<body><div style=\"height:50px;background-color:red;\"/><div style=\"width:200px;height:50px;background-color:green;\"/><div style=\"height:50px;background-color:blue;\"/></body>";
+  auto raw_html = "<body><div style=\"height:50px;background-color:red;\"/><div style=\"width:200px;height:50px;background-color:green;\"/><div style=\"height:50px;background-color:blue;\"><span style=\"width:25px;height:25px;background-color:red;\"/><span style=\"width:25px;height:25px;background-color:green;\"/></div></body>";
   auto html = fast_dom::str { .data = raw_html, .length = (uint32_t) std::strlen(raw_html) };
 
   auto timer = ludo::timer();
@@ -68,6 +68,7 @@ int main()
   doc.positions = new ludo::vec3[tag_count];
   doc.sizes = new ludo::vec3[tag_count];
   doc.layout_positions = new ludo::vec3[tag_count];
+  doc.display_outers = new fast_dom::display_outer[tag_count];
   doc.count = tag_count;
 
   fast_dom::parse_tags(html, doc);
