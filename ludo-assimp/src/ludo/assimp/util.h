@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <assimp/scene.h>
 
 #include <ludo/math/mat.h>

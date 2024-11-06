@@ -5,6 +5,8 @@
 #ifndef LUDO_SPATIAL_GRID2_H
 #define LUDO_SPATIAL_GRID2_H
 
+#include <functional>
+
 #include "../compute.h"
 #include "../rendering.h"
 #include "bounds.h"

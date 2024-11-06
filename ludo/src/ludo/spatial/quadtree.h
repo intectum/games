@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "../data/buffers.h"
 #include "bounds.h"
 

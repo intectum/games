@@ -2,6 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <functional>
 #include <limits>
 #include <map>
 

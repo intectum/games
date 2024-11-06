@@ -7,7 +7,7 @@ This is a monorepo of all of Intectum's internal game projects. It includes an i
 ### Clone
 
 ```
-git clone https://github.com/gyan-intectum-nz/games.git --recurse-submodules
+git clone https://github.com/intectum/games.git --recurse-submodules
 ```
 
 ### Install Dependencies (Ubuntu)
