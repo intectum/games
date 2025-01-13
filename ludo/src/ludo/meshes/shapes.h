@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "../math/vec.h"
 #include "../meshes.h"
 
 namespace ludo
@@ -25,13 +26,13 @@ namespace ludo
   };
 
   ///
-  /// Builds a box within a mesh.
-  /// \param mesh The mesh to build the box in.
+  /// Appends a box within a mesh.
+  /// \param mesh The mesh to append the box in.
+  /// \param indices The indices to append the box in.
+  /// \param vertices The vertices to append the box in.
   /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the box at.
-  /// \param start_vertex The vertex to start building the box at.
   /// \param options The options used to build the box.
-  void box(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {});
+  void append_box(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a box.
@@ -41,13 +42,12 @@ namespace ludo
   std::pair<uint32_t, uint32_t> box_counts(const vertex_format& format, const shape_options& options = {});
 
   ///
-  /// Builds a circle within a mesh.
-  /// \param mesh The mesh to build the circle in.
-  /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the circle at.
-  /// \param start_vertex The vertex to start building the circle at.
+  /// Appends a circle within a mesh.
+  /// \param mesh The mesh to append the circle in.
+  /// \param indices The indices to append the circle in.
+  /// \param vertices The vertices to append the circle in.
   /// \param options The options used to build the circle.
-  void circle(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {});
+  void append_circle(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a circle.
@@ -59,11 +59,11 @@ namespace ludo
   ///
   /// Builds a cylinder within a mesh.
   /// \param mesh The mesh to build the cylinder in.
+  /// \param indices The indices to append the cylinder in.
+  /// \param vertices The vertices to append the cylinder in.
   /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the cylinder at.
-  /// \param start_vertex The vertex to start building the cylinder at.
   /// \param options The options used to build the cylinder.
-  void cylinder(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {});
+  void append_cylinder(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a cylinder.
@@ -73,13 +73,13 @@ namespace ludo
   std::pair<uint32_t, uint32_t> cylinder_counts(const vertex_format& format, const shape_options& options = {});
 
   ///
-  /// Builds a rectangle within a mesh.
-  /// \param mesh The mesh to build the rectangle in.
+  /// Appends a rectangle within a mesh.
+  /// \param mesh The mesh to append the rectangle in.
+  /// \param indices The indices to append the rectangle in.
+  /// \param vertices The vertices to append the rectangle in.
   /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the rectangle at.
-  /// \param start_vertex The vertex to start building the rectangle at.
   /// \param options The options used to build the rectangle.
-  void rectangle(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {});
+  void append_rectangle(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in a rectangle.
@@ -91,12 +91,12 @@ namespace ludo
   ///
   /// Builds a cube-based sphere within a mesh.
   /// \param mesh The mesh to build the sphere in.
+  /// \param indices The indices to append the sphere in.
+  /// \param vertices The vertices to append the sphere in.
   /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the sphere at.
-  /// \param start_vertex The vertex to start building the sphere at.
   /// \param options The options used to build the sphere.
   /// \param spherified Determines if the points of the cube should be 'spherified' instead of just normalized.
-  void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {}, bool spherified = true);
+  void append_sphere_cube(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {}, bool spherified = true);
 
   ///
   /// Determines the total and unique vertex counts in a cube-based sphere.
@@ -108,11 +108,11 @@ namespace ludo
   ///
   /// Builds a icosahedron-based sphere within a mesh.
   /// \param mesh The mesh to build the sphere in.
+  /// \param indices The indices to append the sphere in.
+  /// \param vertices The vertices to append the sphere in.
   /// \param format The vertex format of the mesh.
-  /// \param start_index The index to start building the sphere at.
-  /// \param start_vertex The vertex to start building the sphere at.
   /// \param options The options used to build the sphere.
-  void sphere_ico(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options = {});
+  void append_sphere_ico(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options = {});
 
   ///
   /// Determines the total and unique vertex counts in an icosahedron-based sphere.

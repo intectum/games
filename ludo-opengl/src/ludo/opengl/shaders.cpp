@@ -30,10 +30,7 @@ namespace ludo
     GLchar info_log[1024];
     glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-    if (compile_status == 0)
-    {
-      std::cout << "shader compile log: " << info_log << std::endl;
-    }
+    if (info_log[0]) std::cout << "shader compile log: " << info_log << std::endl;
     assert(compile_status && "failed to compile shader");
 
     return shader;

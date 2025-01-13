@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "../math/vec.h"
 #include "../meshes.h"
 
 namespace ludo
@@ -27,9 +28,10 @@ namespace ludo
   ///
   /// Calculates the bounds of the given mesh.
   /// \param mesh The mesh.
+  /// \param vertices The vertices.
   /// \param format The vertex format.
   /// \return The bounds of the given mesh.
-  aabb3 bounds(const mesh& mesh, const vertex_format& format);
+  aabb3 bounds(const mesh& mesh, const std::byte* vertices, const vertex_format& format);
 
   ///
   /// Determines whether an AABB is contained within another AABB.

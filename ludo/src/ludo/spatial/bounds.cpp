@@ -9,7 +9,7 @@
 namespace ludo
 {
   // TODO this will need to be recomputed when the mesh rotates! Can we have a variation that works for any orientation?
-  aabb3 bounds(const mesh& mesh, const vertex_format& format)
+  aabb3 bounds(const mesh& mesh, const std::byte* vertices, const vertex_format& format)
   {
     auto bounds = aabb3
     {
@@ -17,9 +17,10 @@ namespace ludo
       .max = vec3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest())
     };
 
-    for (auto vertex_position = 0; vertex_position < mesh.vertex_buffer.size; vertex_position += format.size)
+    auto position_data = vertices + mesh.vertices.start * format.size + format.position_offset;
+    for (auto index = mesh.vertices.start; index < mesh.vertices.start + mesh.vertices.count; index++)
     {
-      auto position = cast<ludo::vec3>(mesh.vertex_buffer, vertex_position + format.position_offset);
+      auto& position = *reinterpret_cast<const vec3*>(position_data);
 
       bounds.min =
       {
@@ -34,6 +35,8 @@ namespace ludo
         std::max(bounds.max[1], position[1]),
         std::max(bounds.max[2], position[2])
       };
+
+      position_data += format.size;
     }
 
     return bounds;

@@ -11,34 +11,31 @@ namespace ludo
 {
   debug_drawer::debug_drawer() :
     mesh(nullptr),
-    debug_mode(btIDebugDraw::DBG_DrawWireframe),
-    next_index(0)
+    indices(),
+    vertices(),
+    debug_mode(btIDebugDraw::DBG_DrawWireframe)
   {
   }
 
   void debug_drawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
   {
-    auto index_position = next_index * sizeof(uint32_t);
-    auto vertex_position = next_index * vertex_format_pc.size;
+    cast<uint32_t>(indices, mesh->indices.count * sizeof(uint32_t)) = mesh->indices.count;
+    mesh->indices.count++;
+    cast<uint32_t>(indices, mesh->indices.count * sizeof(uint32_t)) = mesh->indices.count;
+    mesh->indices.count++;
 
-    cast<uint32_t>(mesh->index_buffer, index_position) = next_index;
-    index_position += sizeof(uint32_t);
-    cast<uint32_t>(mesh->index_buffer, index_position) = next_index + 1;
-
-    cast<vec3>(mesh->vertex_buffer, vertex_position) = to_vec3(from);
-    vertex_position += sizeof(vec3);
-    cast<vec4>(mesh->vertex_buffer, vertex_position) = vec4(to_vec3(color));
-    vertex_position += sizeof(vec4);
-    cast<vec3>(mesh->vertex_buffer, vertex_position) = to_vec3(to);
-    vertex_position += sizeof(vec3);
-    cast<vec4>(mesh->vertex_buffer, vertex_position) = vec4(to_vec3(color));
-
-    next_index += 2;
+    cast<vec3>(vertices, mesh->vertices.count * mesh->vertex_size) = to_vec3(from);
+    cast<vec4>(vertices, mesh->vertices.count * mesh->vertex_size + sizeof(vec3)) = vec4(to_vec3(color));
+    mesh->vertices.count++;
+    cast<vec3>(vertices, mesh->vertices.count * mesh->vertex_size) = to_vec3(to);
+    cast<vec4>(vertices, mesh->vertices.count * mesh->vertex_size + sizeof(vec3)) = vec4(to_vec3(color));
+    mesh->vertices.count++;
   }
 
   void debug_drawer::clearLines()
   {
-    next_index = 0;
+    mesh->indices.count = 0;
+    mesh->vertices.count = 0;
   }
 
   void debug_drawer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color)

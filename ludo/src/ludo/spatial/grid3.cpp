@@ -26,8 +26,6 @@ namespace ludo
 
   void init(grid3& grid)
   {
-    grid.id = next_id++;
-
     auto cell_count = static_cast<uint32_t>(std::pow(grid.cell_count_1d, 3));
     auto cell_size = cell_header_size + grid.cell_capacity * render_mesh_size;
 

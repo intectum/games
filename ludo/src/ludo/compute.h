@@ -4,9 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <istream>
-
-#include "data/data.h"
 
 namespace ludo
 {
@@ -15,8 +14,6 @@ namespace ludo
   struct compute_program
   {
     uint64_t id = 0; ///< The ID of this compute program.
-
-    buffer shader_buffer; ///< A buffer containing data available to this compute program.
   };
 
   ///

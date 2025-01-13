@@ -1,113 +1,116 @@
-#include "../types.h"
 #include "gravity.h"
+#include "../constants.h"
+#include "../ecs.h"
 
 namespace astrum
 {
   ludo::vec3 gravitational_force(const ludo::vec3& relative_position, float mass_a, float mass_b);
 
-  void simulate_gravity(ludo::instance& inst)
+  void simulate_gravity(ludo::instance& inst, std::vector<ludo::container>& containers, uint32_t relative_celestial_body_index)
   {
-    auto& dynamic_bodies = ludo::data<ludo::dynamic_body>(inst);
+    auto relative_celestial_body_gravitational_accelerations = reinterpret_cast<const ludo::vec3*>(
+      get_components(
+        containers[relative_celestial_body_index],
+        "celestial_body",
+        "gravitational_acceleration"
+      )->data
+    );
 
-    auto& point_masses = ludo::data<point_mass>(inst);
-    auto& solar_system = *ludo::first<astrum::solar_system>(inst);
-
-    auto& celestial_body_point_masses = ludo::data<point_mass>(inst, "celestial-bodies");
-
-    auto body_accelerations = std::vector<ludo::vec3>(dynamic_bodies.length, ludo::vec3_zero);
-    auto point_mass_accelerations = std::vector<ludo::vec3>(point_masses.length, ludo::vec3_zero);
-
-    // Body <-> body gravitational acceleration
-    for (auto index_a = 0; dynamic_bodies.length && index_a < dynamic_bodies.length - 1; index_a++)
-    {
-      auto& body_a = dynamic_bodies[index_a];
-
-      for (auto index_b = index_a + 1; index_b < dynamic_bodies.length; index_b++)
+    ludo::run(
+      containers,
       {
-        auto& body_b = dynamic_bodies[index_b];
-
-        auto relative_position = body_b.transform.position - body_a.transform.position;
-        auto force = gravitational_force(relative_position, body_a.mass, body_b.mass);
-
-        body_accelerations[index_a] += force / body_a.mass;
-        body_accelerations[index_b] -= force / body_b.mass;
-      }
-    }
-
-    // Point mass <-> point mass gravitational acceleration
-    for (auto index_a = 0; index_a < point_masses.length && point_masses.length - 1; index_a++)
-    {
-      auto& point_mass_a = point_masses[index_a];
-
-      for (auto index_b = index_a + 1; index_b < point_masses.length; index_b++)
-      {
-        auto& point_mass_b = point_masses[index_b];
-
-        auto relative_position = point_mass_b.transform.position - point_mass_a.transform.position;
-        if (relative_position == ludo::vec3_zero)
+        // Calculate gravitational acceleration
+        ludo::job
         {
-          // TODO A bit of a hack, this should only occur when our pilot is in the spaceship. Probably eventually we can get rid of this when we make the overall vehicle system better.
-          continue;
+          .read_component_names = { "position", "mass" },
+          .write_component_names = { "gravitational_acceleration" },
+          .kernel = [&](uint32_t entity_start, uint32_t entity_count, const std::vector<ludo::arena>& read_component_data, std::vector<ludo::arena>& write_component_data)
+          {
+            auto positions = reinterpret_cast<const ludo::vec3*>(read_component_data[0].data);
+            auto masses = reinterpret_cast<const float*>(read_component_data[1].data);
+            auto gravitational_accelerations = reinterpret_cast<ludo::vec3*>(write_component_data[0].data);
+
+            for (auto index = 0; index < entity_count; index++)
+            {
+              auto& position = positions[index];
+              auto& mass = masses[index];
+              auto& gravitational_acceleration = gravitational_accelerations[index];
+
+              gravitational_acceleration = ludo::vec3_zero;
+
+              ludo::run(
+                containers,
+                {
+                  ludo::job
+                  {
+                    .read_component_names = { "position", "mass" },
+                    .kernel = [&](uint32_t other_entity_start, uint32_t other_entity_count, const std::vector<ludo::arena>& other_read_component_data, std::vector<ludo::arena>& other_write_component_data)
+                    {
+                      auto other_positions = reinterpret_cast<const ludo::vec3*>(read_component_data[0].data);
+                      auto other_masses = reinterpret_cast<const float*>(read_component_data[1].data);
+
+                      for (auto other_index = 0; other_index < other_entity_count; other_index++)
+                      {
+                        if (other_entity_start + other_index == entity_start + index) continue;
+
+                        auto& other_position = other_positions[index];
+                        auto& other_mass = other_masses[index];
+
+                        auto relative_position = other_position - position;
+
+                        // TODO A bit of a hack, this should only occur when our pilot is in the spaceship. Probably eventually we can get rid of this when we make the overall vehicle system better.
+                        if (relative_position == ludo::vec3_zero) continue;
+
+                        auto force = gravitational_force(relative_position, mass, other_mass);
+
+                        gravitational_acceleration += force / other_mass;
+                      }
+                    }
+                  }
+                }
+              );
+            }
+          }
+        },
+        // Cancel out the relative celestial body (since it is static!)
+        ludo::job
+        {
+          .write_component_names = { "gravitational_acceleration" },
+          .kernel = [&](uint32_t entity_start, uint32_t entity_count, const std::vector<ludo::arena>& read_component_data, std::vector<ludo::arena>& write_component_data)
+          {
+            auto gravitational_accelerations = reinterpret_cast<ludo::vec3*>(write_component_data[0].data);
+
+            for (auto index = 0; index < entity_count; index++)
+            {
+              auto& gravitational_acceleration = gravitational_accelerations[index];
+
+              if (&gravitational_acceleration == relative_celestial_body_gravitational_accelerations) return;
+
+              gravitational_acceleration -= relative_celestial_body_gravitational_accelerations[0];
+            }
+          }
+        },
+        // Apply gravitational acceleration
+        ludo::job
+        {
+          .read_component_names = { "gravitational_acceleration", "resting" },
+          .write_component_names = { "linear_velocity" },
+          .kernel = [&](uint32_t entity_start, uint32_t entity_count, const std::vector<ludo::arena>& read_component_data, std::vector<ludo::arena>& write_component_data)
+          {
+            auto gravitational_accelerations = reinterpret_cast<const ludo::vec3*>(read_component_data[0].data);
+            auto restings = reinterpret_cast<const float*>(read_component_data[1].data);
+            auto linear_velocities = reinterpret_cast<ludo::vec3*>(write_component_data[0].data);
+
+            for (auto index = 0; index < entity_count; index++)
+            {
+              if (restings[index]) continue;
+
+              linear_velocities[index] += gravitational_accelerations[index] * inst.delta_time;
+            }
+          }
         }
-
-        auto force = gravitational_force(relative_position, point_mass_a.mass, point_mass_b.mass);
-
-        point_mass_accelerations[index_a] += force / point_mass_a.mass;
-        point_mass_accelerations[index_b] -= force / point_mass_b.mass;
       }
-    }
-
-    // Body <-> point mass gravitational acceleration
-    for (auto index_a = 0; index_a < dynamic_bodies.length; index_a++)
-    {
-      auto& body = dynamic_bodies[index_a];
-
-      for (auto index_b = 0; index_b < point_masses.length; index_b++)
-      {
-        auto& point_mass = point_masses[index_b];
-
-        auto relative_position = point_mass.transform.position - body.transform.position;
-        auto force = gravitational_force(relative_position, body.mass, point_mass.mass);
-
-        body_accelerations[index_a] += force / body.mass;
-        point_mass_accelerations[index_b] -= force / point_mass.mass;
-      }
-    }
-
-    // Cancel out the relative celestial body (since it is static!)
-    if (solar_system.relative_celestial_body_index != -1)
-    {
-      auto relative_point_mass_index = celestial_body_point_masses.begin() - point_masses.begin() + solar_system.relative_celestial_body_index;
-      auto relative_point_mass_acceleration = point_mass_accelerations[relative_point_mass_index];
-
-      for (auto& body_acceleration : body_accelerations)
-      {
-        body_acceleration -= relative_point_mass_acceleration;
-      }
-
-      for (auto& point_mass_acceleration : point_mass_accelerations)
-      {
-        point_mass_acceleration -= relative_point_mass_acceleration;
-      }
-    }
-
-    // Apply gravitational acceleration to bodies and point masses
-    for (auto index = 0; index < dynamic_bodies.length; index++)
-    {
-      auto& body = dynamic_bodies[index];
-      ludo::apply_force(body, body.mass * body_accelerations[index]);
-    }
-
-    for (auto index = 0; index < point_masses.length; index++)
-    {
-      auto& point_mass = point_masses[index];
-      if (point_mass.resting)
-      {
-        continue;
-      }
-
-      point_mass.linear_velocity += point_mass_accelerations[index] * inst.delta_time;
-    }
+    );
   }
 
   ludo::vec3 gravitational_force(const ludo::vec3& relative_position, float mass_a, float mass_b)

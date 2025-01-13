@@ -48,99 +48,51 @@ namespace ludo
       format.has_bone_weights = true;
       format.bone_weights_offset = format.size;
 
-      format.components.emplace_back(std::pair { 'b', max_bone_weights_per_vertex });
+      format.components.emplace_back('b', max_bone_weights_per_vertex);
       format.size += max_bone_weights_per_vertex * (sizeof(uint32_t) + sizeof(float));
     }
 
     return format;
   }
 
-  void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size)
-  {
-    mesh.id = next_id++;
-
-    mesh.index_buffer = allocate(indices, index_count * sizeof(uint32_t));
-    mesh.vertex_buffer = allocate(vertices, vertex_count * vertex_size, vertex_size);
-    mesh.vertex_size = vertex_size;
-  }
-
-  void de_init(mesh& mesh, heap& indices, heap& vertices)
-  {
-    mesh.id = 0;
-
-    if (mesh.index_buffer.data)
-    {
-      deallocate(indices, mesh.index_buffer);
-    }
-
-    if (mesh.vertex_buffer.data)
-    {
-      deallocate(vertices, mesh.vertex_buffer);
-    }
-  }
-
-  mesh load(const std::string& file_name, heap& indices, heap& vertices)
+  void load(mesh& mesh, buffer& indices, buffer& vertices, const std::string& file_name)
   {
     auto stream = std::ifstream(file_name, std::ios::binary);
-
-    return load(stream, indices, vertices);
+    return load(mesh, indices, vertices, stream);
   }
 
-  mesh load(std::istream& stream, heap& indices, heap& vertices)
+  void load(mesh& mesh, buffer& indices, buffer& vertices, std::istream& stream)
   {
-    auto mesh = ludo::mesh();
-    mesh.id = next_id++;
-
-    stream.read(reinterpret_cast<char*>(&mesh.index_buffer.size), sizeof(uint64_t));
-    mesh.index_buffer = allocate(indices, mesh.index_buffer.size);
-    stream.read(reinterpret_cast<char*>(mesh.index_buffer.data), static_cast<int64_t>(mesh.index_buffer.size));
-
-    stream.read(reinterpret_cast<char*>(&mesh.vertex_size), sizeof(uint32_t));
-
-    stream.read(reinterpret_cast<char*>(&mesh.vertex_buffer.size), sizeof(uint64_t));
-    mesh.vertex_buffer = allocate(vertices, mesh.vertex_buffer.size, mesh.vertex_size);
-    stream.read(reinterpret_cast<char*>(mesh.vertex_buffer.data), static_cast<int64_t>(mesh.vertex_buffer.size));
-
-    return mesh;
+    load_metadata(mesh, stream);
+    stream.read(reinterpret_cast<char*>(indices.data), mesh.indices.count * sizeof(uint32_t));
+    stream.read(reinterpret_cast<char*>(vertices.data), mesh.vertices.count * mesh.vertex_size);
   }
 
-  void save(const mesh& mesh, const std::string& file_name)
-  {
-    auto stream = std::ofstream(file_name, std::ios::binary);
-
-    save(mesh, stream);
-  }
-
-  void save(const mesh& mesh, std::ostream& stream)
-  {
-    stream.write(reinterpret_cast<const char*>(&mesh.index_buffer.size), sizeof(uint64_t));
-    stream.write(reinterpret_cast<const char*>(mesh.index_buffer.data), static_cast<int64_t>(mesh.index_buffer.size));
-
-    stream.write(reinterpret_cast<const char*>(&mesh.vertex_size), sizeof(uint32_t));
-
-    stream.write(reinterpret_cast<const char*>(&mesh.vertex_buffer.size), sizeof(uint64_t));
-    stream.write(reinterpret_cast<const char*>(mesh.vertex_buffer.data), static_cast<int64_t>(mesh.vertex_buffer.size));
-  }
-
-  std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name)
+  void load_metadata(mesh& mesh, const std::string& file_name)
   {
     auto stream = std::ifstream(file_name);
-
-    return mesh_counts(stream);
+    return load_metadata(mesh, stream);
   }
 
-  std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream)
+  void load_metadata(mesh& mesh, std::istream& stream)
   {
-    auto index_buffer_size = uint64_t(0);
-    stream.read(reinterpret_cast<char*>(&index_buffer_size), sizeof(uint64_t));
-    stream.seekg(static_cast<int64_t>(index_buffer_size), std::ios_base::cur);
+    stream.read(reinterpret_cast<char*>(&mesh.indices.count), sizeof(uint32_t));
+    stream.read(reinterpret_cast<char*>(&mesh.vertices.count), sizeof(uint32_t));
+    stream.read(reinterpret_cast<char*>(&mesh.vertex_size), sizeof(uint32_t));
+  }
 
-    auto vertex_size = uint32_t(0);
-    stream.read(reinterpret_cast<char*>(&vertex_size), sizeof(uint32_t));
+  void save(const mesh& mesh, const buffer& indices, const buffer& vertices, const std::string& file_name)
+  {
+    auto stream = std::ofstream(file_name, std::ios::binary);
+    save(mesh, indices, vertices, stream);
+  }
 
-    auto vertex_buffer_size = uint64_t(0);
-    stream.read(reinterpret_cast<char*>(&vertex_buffer_size), sizeof(uint64_t));
-
-    return { index_buffer_size / sizeof(uint32_t), vertex_buffer_size / vertex_size };
+  void save(const mesh& mesh, const buffer& indices, const buffer& vertices, std::ostream& stream)
+  {
+    stream.write(reinterpret_cast<const char*>(&mesh.indices.count), sizeof(uint32_t));
+    stream.write(reinterpret_cast<const char*>(&mesh.vertices.count), sizeof(uint32_t));
+    stream.write(reinterpret_cast<const char*>(&mesh.vertex_size), sizeof(uint32_t));
+    stream.write(reinterpret_cast<const char*>(indices.data), mesh.indices.count * sizeof(uint32_t));
+    stream.write(reinterpret_cast<const char*>(vertices.data), mesh.vertices.count * mesh.vertex_size);
   }
 }

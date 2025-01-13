@@ -5,7 +5,7 @@
 
 namespace astrum
 {
-  std::vector<ludo::contact> deepest_contacts(const std::vector<ludo::contact>& contacts)
+  /* TODO std::vector<ludo::contact> deepest_contacts(const std::vector<ludo::contact>& contacts)
   {
     auto deepest_contacts = std::vector<ludo::contact>();
     for (auto& contact : contacts)
@@ -26,7 +26,7 @@ namespace astrum
     }
 
     return deepest_contacts;
-  }
+  }*/
 
   float orbital_speed(float orbit_radius, float mass_of_larger_body)
   {

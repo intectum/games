@@ -1,21 +1,54 @@
+#include "../ecs.h"
+#include "../constants.h"
 #include "../types.h"
+#include "person.h"
 
 namespace astrum
 {
-  void control_person(ludo::instance& inst, uint32_t index)
+  void control_person(const ludo::instance& inst, ludo::container& container, const ludo::window& window, uint32_t index, ludo::vec3& camera_position, ludo::quat& camera_rotation)
   {
-    auto& window = *ludo::first<ludo::window>(inst);
-    auto& rendering_context = *ludo::first<ludo::rendering_context>(inst);
+    auto positions = reinterpret_cast<const ludo::vec3*>(
+      get_components(
+        container,
+        "person",
+        "position"
+      )->data
+    );
 
-    auto& person_controls = ludo::data<astrum::person_controls>(inst, "people")[index];
-    auto& person = ludo::data<astrum::person>(inst, "people")[index];
-    const auto& point_mass = ludo::data<astrum::point_mass>(inst, "people")[index];
+    auto rotations = reinterpret_cast<const ludo::quat*>(
+      get_components(
+        container,
+        "person",
+        "rotation"
+      )->data
+    );
 
-    person_controls.forward = window.active_keyboard_button_states[ludo::keyboard_button::W] == ludo::button_state::HOLD;
-    person_controls.back = window.active_keyboard_button_states[ludo::keyboard_button::S] == ludo::button_state::HOLD;
-    person_controls.left = window.active_keyboard_button_states[ludo::keyboard_button::A] == ludo::button_state::HOLD;
-    person_controls.right = window.active_keyboard_button_states[ludo::keyboard_button::D] == ludo::button_state::HOLD;
-    person_controls.jump = window.active_keyboard_button_states[ludo::keyboard_button::SPACE] == ludo::button_state::UP;
+    auto people = reinterpret_cast<person*>(
+      get_components(
+        container,
+        "person",
+        "person"
+      )->data
+    );
+
+    auto person_controlses = reinterpret_cast<person_controls*>(
+      get_components(
+        container,
+        "person",
+        "person_controls"
+      )->data
+    );
+
+    auto& position = positions[index];
+    auto& rotation = rotations[index];
+    auto& person = people[index];
+    auto& person_controls = person_controlses[index];
+
+    person_controls.forward = window.keyboard_button_states.at(ludo::keyboard_button_w) == ludo::button_state_hold;
+    person_controls.back = window.keyboard_button_states.at(ludo::keyboard_button_s) == ludo::button_state_hold;
+    person_controls.left = window.keyboard_button_states.at(ludo::keyboard_button_s) == ludo::button_state_hold;
+    person_controls.right = window.keyboard_button_states.at(ludo::keyboard_button_d) == ludo::button_state_hold;
+    person_controls.jump = window.keyboard_button_states.at(ludo::keyboard_button_space) == ludo::button_state_up;
 
     // Camera
     auto rotation_delta_angles = ludo::vec2
@@ -29,18 +62,13 @@ namespace astrum
     person_controls.camera_rotation[0] = ludo::shortest_angle(person_controls.camera_rotation[0]);
     person_controls.camera_rotation[1] = ludo::shortest_angle(person_controls.camera_rotation[1]);
 
-    ludo::set_camera(
-      rendering_context,
-      {
-        .near_clipping_distance = 0.1f,
-        .far_clipping_distance = 2.0f * astronomical_unit,
-        .view =
-          ludo::mat4(point_mass.transform.position, ludo::mat3(point_mass.transform.rotation)) *
-          ludo::mat4(ludo::vec3_zero, ludo::mat3(ludo::quat(person_controls.camera_rotation[0], person_controls.camera_rotation[1] - person.turn_angle, 0.0f))) * // TODO why do the quat and mat constructors work differently? I want consistency!
-          ludo::mat4({ 0.0f, 1.0f, -3.0f }, ludo::mat3_identity) * // 3rd person - move away from the avatar
-          ludo::mat4(ludo::vec3_zero, ludo::mat3(0.0f, ludo::pi, 0.0f)), // Look at the avatar
-        .projection = ludo::perspective(60.0f, 16.0f / 9.0f, 0.1f, 2.0f * astronomical_unit)
-      }
-    );
+    auto view =
+      ludo::mat4(position, ludo::mat3(rotation)) *
+      ludo::mat4(ludo::vec3_zero, ludo::mat3(ludo::quat(person_controls.camera_rotation[0], person_controls.camera_rotation[1] - person.turn_angle, 0.0f))) * // TODO why do the quat and mat constructors work differently? I want consistency!
+      ludo::mat4({ 0.0f, 1.0f, -3.0f }, ludo::mat3_identity) * // 3rd person - move away from the avatar
+      ludo::mat4(ludo::vec3_zero, ludo::mat3(0.0f, ludo::pi, 0.0f)); // Look at the avatar
+
+    camera_position = ludo::position(view);
+    camera_rotation = ludo::quat(ludo::mat3(view));
   }
 }

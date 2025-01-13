@@ -23,31 +23,6 @@ const float dither_scale = 8.0;
 
 // Types
 
-struct camera_t
-{
-  float near_clipping_distance;
-  float far_clipping_distance;
-
-  mat4 view;
-  mat4 projection;
-
-  vec3 position;
-  mat4 view_projection;
-};
-
-struct light_t
-{
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-
-  vec3 position;
-  vec3 direction;
-  vec3 attenuation;
-  float strength;
-  float range;
-};
-
 struct point_t
 {
   vec3 position;
@@ -69,14 +44,37 @@ in point_t point;
 
 // Buffers
 
-layout(std430, binding = 0) buffer rendering_context_layout
+layout(std430, binding = 0) buffer camera_position_layout
 {
-  camera_t camera;
-  uint light_count;
-  light_t lights[];
+  vec3 camera_positions[];
 };
 
-layout(std430, binding = 1) buffer render_program_layout
+layout(std430, binding = 2) buffer camera_view_layout
+{
+  mat4 camera_views[];
+};
+
+layout(std430, binding = 3) buffer camera_projection_layout
+{
+  mat4 camera_projections[];
+};
+
+layout(std430, binding = 4) buffer camera_near_clipping_distance_layout
+{
+  float camera_near_clipping_distances[];
+};
+
+layout(std430, binding = 5) buffer camera_far_clipping_distance_layout
+{
+  float camera_far_clipping_distances[];
+};
+
+layout(std430, binding = 13) buffer light_position_layout
+{
+  vec3 light_positions[];
+};
+
+layout(std430, binding = 20) buffer atmosphere_layout
 {
   sampler2D color_sampler;
   // TODO why is sampler2DShadow not working? AMD thing? I'm sure it was working before...
@@ -97,7 +95,7 @@ float linear_depth()
   //float depth = texture(depth_sampler, vec3(point.tex_coords, 0.0));
   float depth = texture(depth_sampler, point.tex_coords).r;
 
-  return camera.near_clipping_distance * camera.far_clipping_distance / (camera.far_clipping_distance + depth * (camera.near_clipping_distance - camera.far_clipping_distance));
+  return camera_near_clipping_distances[0] * camera_far_clipping_distances[0] / (camera_far_clipping_distances[0] + depth * (camera_near_clipping_distances[0] - camera_far_clipping_distances[0]));
 }
 
 vec2 ray_sphere_intersection(vec3 ray_origin, vec3 ray_direction, vec3 sphere_center, float sphere_radius)
@@ -152,9 +150,9 @@ vec3 pixel_view_vector()
 {
   vec4 ndc = vec4(vec3(point.tex_coords, 0.0) * 2.0 - 1.0, 1.0);
 
-  mat4 camera_projection_inverse = inverse(camera.projection);
+  mat4 camera_projection_inverse = inverse(camera_projections[0]);
   vec4 view = camera_projection_inverse * ndc;
-  return vec3(camera.view * vec4(view.xyz, 0.0));
+  return vec3(camera_views[0] * vec4(view.xyz, 0.0));
 }
 
 // The amount of light scattered in a given angle by scattering.
@@ -223,11 +221,11 @@ vec3 out_scatter(planet_t planet, vec3 ray_origin, vec3 ray_direction, float ori
 // The amount of light scattered in (gained) along a ray.
 vec3 in_scatter(planet_t planet, vec3 ray_origin, vec3 ray_direction, float ray_length)
 {
-  float camera_altitude = normalized_altitude(planet, camera.position);
+  float camera_altitude = normalized_altitude(planet, camera_positions[0]);
   float step_size = ray_length / (in_scatter_sample_count + 1);
 
   // We'll just compute this once assuming the star is so far away that the rays from the star are essentially parallel.
-  vec3 star_direction = normalize(lights[0].position - ray_origin);
+  vec3 star_direction = normalize(light_positions[0] - ray_origin);
 
   vec3 in_scattered_light = vec3(0.0, 0.0, 0.0);
   for (uint sample_index = 1; sample_index <= in_scatter_sample_count; sample_index++)
@@ -253,12 +251,12 @@ void main()
   color = texture(color_sampler, point.tex_coords);
 
   vec3 view_direction = normalize(pixel_view_vector());
-  vec2 view_ray_intersections = ray_sphere_intersection(camera.position, view_direction, planet.position, planet.atmosphere_radius);
+  vec2 view_ray_intersections = ray_sphere_intersection(camera_positions[0], view_direction, planet.position, planet.atmosphere_radius);
   float atmosphere_depth = min(linear_depth() - view_ray_intersections[0], view_ray_intersections[1] - view_ray_intersections[0]);
 
   if (atmosphere_depth > 0.0)
   {
-    vec3 near_position_in_atmosphere = camera.position + view_direction * view_ray_intersections[0];
+    vec3 near_position_in_atmosphere = camera_positions[0] + view_direction * view_ray_intersections[0];
 
     color += vec4(in_scatter(planet, near_position_in_atmosphere, view_direction, atmosphere_depth), 0.0);
 

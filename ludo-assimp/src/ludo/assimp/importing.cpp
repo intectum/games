@@ -20,7 +20,7 @@ namespace ludo
   void find_objects(const aiNode& assimp_node, std::vector<import_object>& mesh_objects, std::vector<import_object>& rigid_body_objects, const mat4& parent_transform, bool rigid_body_shapes = false);
   void validate(const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects);
 
-  import_results import(const std::string& file_name, heap& indices, heap& vertices, const import_options& options)
+  import_results import(const std::string& file_name, buffer& indices, buffer& vertices, const import_options& options)
   {
     Assimp::Importer importer;
     auto assimp_scene = importer.ReadFile(file_name, aiProcessPreset_TargetRealtime_MaxQuality);
@@ -39,7 +39,7 @@ namespace ludo
     find_objects(*assimp_scene->mRootNode, mesh_objects, rigid_body_objects, mat4_identity);
     validate(*assimp_scene, mesh_objects);
 
-    import_body_shapes(results, *assimp_scene, rigid_body_objects);
+    //import_body_shapes(results, *assimp_scene, rigid_body_objects); TODO
     import_meshes(results, indices, vertices, folder, *assimp_scene, mesh_objects, options);
 
     return results;

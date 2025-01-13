@@ -17,8 +17,6 @@ namespace ludo
   /// A 2D grid with uniformly-sized square cells.
   struct grid2
   {
-    uint64_t id = 0; ///< A unique identifier.
-
     aabb2 bounds; ///< The outer bounds.
     uint8_t cell_count_1d = 1; ///< The number of cells in each dimension.
     uint32_t cell_capacity = 16; ///< The maximum number of render meshes that can be added to a cell.

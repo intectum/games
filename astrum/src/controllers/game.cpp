@@ -1,22 +1,21 @@
+#include <btBulletDynamicsCommon.h>
+
+#include "../ecs.h"
 #include "../entities/spaceships.h"
 #include "game.h"
 #include "map.h"
 #include "person.h"
 #include "spaceship.h"
-#include "types.h"
 
 namespace astrum
 {
-  void perform_person_action(ludo::instance& inst, game_controls& game_controls);
-  void perform_spaceship_action(ludo::instance& inst, game_controls& game_controls);
+  void perform_person_action(ludo::container& container, game_controls& game_controls);
+  void perform_spaceship_action(ludo::container& container, game_controls& game_controls);
 
-  void control_game(ludo::instance& inst)
+  void control_game(const ludo::instance& inst, std::vector<ludo::container>& containers, const ludo::window& window, game_controls& game_controls, map_controls& map_controls, ludo::vec3& camera_position, ludo::quat& camera_rotation)
   {
-    auto& window = *ludo::first<ludo::window>(inst);
-    auto& game_controls = *ludo::first<astrum::game_controls>(inst);
-
-    auto action = window.active_keyboard_button_states[ludo::keyboard_button::F] == ludo::button_state::UP;
-    auto map = window.active_keyboard_button_states[ludo::keyboard_button::M] == ludo::button_state::UP;
+    auto action = window.keyboard_button_states.at(ludo::keyboard_button_f) == ludo::button_state_up;
+    auto map = window.keyboard_button_states.at(ludo::keyboard_button_m) == ludo::button_state_up;
 
     if (map)
     {
@@ -35,10 +34,10 @@ namespace astrum
     {
       if (action)
       {
-        perform_person_action(inst, game_controls);
+        perform_person_action(containers[0], game_controls);
       }
 
-      control_person(inst, game_controls.person_index);
+      control_person(inst, containers[0], window, game_controls.person_index, camera_position, camera_rotation);
       return;
     }
 
@@ -46,32 +45,48 @@ namespace astrum
     {
       if (action)
       {
-        perform_spaceship_action(inst, game_controls);
+        perform_spaceship_action(containers[0], game_controls);
       }
 
-      control_spaceship(inst, game_controls.spaceship_index);
+      control_spaceship(containers[0], window, game_controls.spaceship_index, camera_position, camera_rotation);
       return;
     }
 
     if (game_controls.mode == game_controls::mode::map)
     {
-      control_map(inst);
+      control_map(inst, containers, window, map_controls, camera_position, camera_rotation);
     }
   }
 
-  void perform_person_action(ludo::instance& inst, game_controls& game_controls)
+  void perform_person_action(ludo::container& container, game_controls& game_controls)
   {
-    auto& person_kinematic_body = ludo::data<ludo::kinematic_body>(inst, "people")[game_controls.person_index];
-    auto& spaceship_ghost_bodies = ludo::data<ludo::ghost_body>(inst, "spaceships");
-    auto physics_context = ludo::first<ludo::physics_context>(inst);
+    auto person_kinematic_bodies = reinterpret_cast<btRigidBody*>(
+      get_components(
+        container,
+        "person",
+        "kinematic_body"
+      )->data
+    );
 
-    for (auto spaceship_index = uint32_t(0); spaceship_index < spaceship_ghost_bodies.length; spaceship_index++)
+    auto spaceship_count = get_archetype(container, "spaceship")->count;
+    auto spaceship_ghost_bodies = reinterpret_cast<btRigidBody*>(
+      get_components(
+        container,
+        "spaceship",
+        "ghost_body"
+      )->data
+    );
+
+    auto& person_kinematic_body = person_kinematic_bodies[game_controls.person_index];
+
+    // TODO enter spaceship
+    /*for (auto spaceship_index = uint32_t(0); spaceship_index < spaceship_count; spaceship_index++)
     {
-      for (auto& contact : ludo::contacts(*physics_context, spaceship_ghost_bodies[spaceship_index].id))
+      for (auto& contact : ludo::contacts(physics_context, spaceship_ghost_bodies[spaceship_index]))
       {
-        if (contact.body_b_id == person_kinematic_body.id)
+        if (contact.body_b_id == person_kinematic_body)
         {
-          enter_spaceship(inst, game_controls.person_index, spaceship_index);
+          enter_spaceship(container, game_controls.person_index, spaceship_index);
 
           game_controls.previous_mode = game_controls.mode;
           game_controls.mode = game_controls::mode::spaceship;
@@ -80,12 +95,12 @@ namespace astrum
           return;
         }
       }
-    }
+    }*/
   }
 
-  void perform_spaceship_action(ludo::instance& inst, game_controls& game_controls)
+  void perform_spaceship_action(ludo::container& container, game_controls& game_controls)
   {
-    exit_spaceship(inst, game_controls.person_index, game_controls.spaceship_index);
+    exit_spaceship(container, game_controls.person_index, game_controls.spaceship_index);
 
     game_controls.previous_mode = game_controls.mode;
     game_controls.mode = game_controls::mode::person;

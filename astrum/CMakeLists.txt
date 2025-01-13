@@ -26,40 +26,40 @@ add_subdirectory(lib/libnoise)
 # Source
 #########################
 set(SRC_FILES
+    src/containers.cpp
     src/controllers/game.cpp
     src/controllers/map.cpp
     src/controllers/person.cpp
     src/controllers/spaceship.cpp
+    src/ecs.cpp
     src/entities/luna.cpp
     src/entities/people.cpp
     src/entities/sol.cpp
     src/entities/spaceships.cpp
     src/entities/terra.cpp
-    src/entities/trees.cpp
+    #src/entities/trees.cpp
     src/main.cpp
     src/meshes/ico_chunks.cpp
     src/meshes/ico_faces.cpp
     src/meshes/lod_shaders.cpp
     src/meshes/lods.cpp
-    src/paths.cpp
+    #src/paths.cpp
     src/physics/centering.cpp
     src/physics/gravity.cpp
     src/physics/point_masses.cpp
     src/physics/relativity.cpp
     src/physics/util.cpp
     src/post-processing/atmosphere.cpp
-    #src/post-processing/bloom.cpp
+    src/post-processing/bloom.cpp
     src/post-processing/tone_mapping.cpp
     src/post-processing/util.cpp
     src/solar_system.cpp
-    src/spatial/icotree.cpp
+    #src/spatial/icotree.cpp
     src/terrain/mesh.cpp
-    src/terrain/metadata.cpp
-    src/terrain/static_bodies.cpp
+    #src/terrain/static_bodies.cpp
     src/terrain/terrain.cpp
     src/terrain/terrain_chunk.cpp
     src/terrain/mesh.cpp
-    #src/util.cpp
 )
 
 # Target
@@ -75,8 +75,8 @@ target_link_libraries(astrum ludo)
 target_link_libraries(astrum ludo-assimp)
 target_link_libraries(astrum ludo-bullet)
 target_link_libraries(astrum ludo-glfw)
-target_link_libraries(astrum ludo-opengl)
 target_link_libraries(astrum ludo-stb)
+target_link_libraries(astrum ludo-opengl)
 
 # noise
 target_include_directories(astrum PUBLIC lib/libnoise/src)
@@ -104,8 +104,8 @@ target_link_libraries(loddy ludo)
 target_link_libraries(loddy ludo-assimp)
 target_link_libraries(loddy ludo-bullet) # TODO revise, only for assimp...
 target_link_libraries(loddy ludo-glfw)
-target_link_libraries(loddy ludo-opengl)
 target_link_libraries(loddy ludo-stb)
+target_link_libraries(loddy ludo-opengl)
 
 # Demo Target Resources
 #########################

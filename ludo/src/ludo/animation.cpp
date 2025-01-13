@@ -15,26 +15,6 @@ namespace ludo
   quat interpolate_rotation(float tick_time, const animation_node& animation_node);
   vec3 interpolate_scale(float tick_time, const animation_node& animation_node);
 
-  void init(armature& armature)
-  {
-    armature.id = next_id++;
-  }
-
-  void de_init(armature& armature)
-  {
-    armature.id = 0;
-  }
-
-  void init(animation& animation)
-  {
-    animation.id = next_id++;
-  }
-
-  void de_init(animation& animation)
-  {
-    animation.id = 0;
-  }
-
   // This function is based on this tutorial for Assimp animation: https://ogldev.org/www/tutorial38/tutorial38.html
   void interpolate(const animation& animation, const armature& armature, float time, mat4* final_transforms)
   {

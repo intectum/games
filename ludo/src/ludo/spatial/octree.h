@@ -6,7 +6,6 @@
 
 #include <functional>
 
-#include "../data/buffers.h"
 #include "bounds.h"
 
 namespace ludo
@@ -15,13 +14,11 @@ namespace ludo
   /// A linear octree.
   struct octree
   {
-    uint64_t id = 0; ///< A unique identifier.
-
     aabb3 bounds; ///< The outer bounds.
     uint32_t divisions = 1; ///< The number of divisions (layers).
     uint32_t cell_capacity = 16; ///< The maximum number of elements that can be added to a cell.
 
-    ludo::buffer buffer; ///< The cell data.
+    ludo::arena arena; ///< The cell data.
   };
 
   ///

@@ -4,7 +4,5 @@
 
 namespace astrum
 {
-  void add_person(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity);
-
-  void simulate_people(ludo::instance& inst);
+  void simulate_people(const ludo::instance& inst, std::vector<ludo::container>& containers, const ludo::animation& animation, const ludo::armature& armature, uint32_t relative_celestial_body_index);
 }

@@ -2,6 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <cassert>
 #include <iostream>
 
 #include <GLFW/glfw3.h>
@@ -14,7 +15,7 @@
 
 namespace ludo
 {
-  void init(window& window)
+  void open(window& window)
   {
     // This first part only really needs to happen once, but it is idempotent.
     {
@@ -61,20 +62,20 @@ namespace ludo
         return;
       }
 
-      auto simple_button = keyboard_button();
+      auto keyboard_button = ludo::keyboard_button();
       auto button_pair = input_map.find(key);
       if (button_pair != input_map.end())
       {
-        simple_button = button_pair->second;
+        keyboard_button = button_pair->second;
       }
 
       if (action == GLFW_PRESS)
       {
-        window.active_keyboard_button_states[simple_button] = button_state::DOWN;
+        window.keyboard_button_states[keyboard_button] = button_state_down;
       }
       else if (action == GLFW_RELEASE)
       {
-        window.active_keyboard_button_states[simple_button] = button_state::UP;
+        window.keyboard_button_states[keyboard_button] = button_state_up;
       }
     });
 
@@ -82,27 +83,27 @@ namespace ludo
     {
       auto& window = *static_cast<ludo::window*>(glfwGetWindowUserPointer(glfw_window));
 
-      auto simple_button = mouse_button();
+      auto mouse_button = ludo::mouse_button();
       if (button == GLFW_MOUSE_BUTTON_MIDDLE)
       {
-        simple_button = mouse_button::MIDDLE;
+        mouse_button = mouse_button_middle;
       }
       else if (button == GLFW_MOUSE_BUTTON_LEFT)
       {
-        simple_button = mouse_button::LEFT;
+        mouse_button = mouse_button_left;
       }
       else if (button == GLFW_MOUSE_BUTTON_RIGHT)
       {
-        simple_button = mouse_button::RIGHT;
+        mouse_button = mouse_button_right;
       }
 
       if (action == GLFW_PRESS)
       {
-        window.active_mouse_button_states[simple_button] = button_state::DOWN;
+        window.mouse_button_states[mouse_button] = button_state_down;
       }
       else if (action == GLFW_RELEASE)
       {
-        window.active_mouse_button_states[simple_button] = button_state::UP;
+        window.mouse_button_states[mouse_button] = button_state_up;
       }
     });
 
@@ -117,16 +118,15 @@ namespace ludo
     {
       auto& window = *static_cast<ludo::window*>(glfwGetWindowUserPointer(glfw_window));
 
-      window.active_window_frame_button_states[window_frame_button::CLOSE] = button_state::UP;
+      window.frame_button_states[window_frame_button_close] = button_state_down;
     });
   }
 
-  void de_init(window& window)
+  void close(window& window)
   {
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(window.id));
     window.id = 0;
   }
-
 
   void swap_buffers(window& window)
   {
@@ -135,35 +135,39 @@ namespace ludo
 
   void receive_input(window& window)
   {
-    for (auto& active_keyboard_button_state : window.active_keyboard_button_states)
+    for (auto& keyboard_button_state : window.keyboard_button_states)
     {
-      if (active_keyboard_button_state.second == button_state::DOWN)
+      if (keyboard_button_state == button_state_down)
       {
-        active_keyboard_button_state.second = button_state::HOLD;
+        keyboard_button_state = button_state_hold;
       }
-      else if (active_keyboard_button_state.second == button_state::UP)
+      else if (keyboard_button_state == button_state_up)
       {
-        active_keyboard_button_state.second = button_state::NONE;
+        keyboard_button_state = button_state_none;
       }
     }
 
-    for (auto& active_mouse_button_state : window.active_mouse_button_states)
+    for (auto& mouse_button_state : window.mouse_button_states)
     {
-      if (active_mouse_button_state.second == button_state::DOWN)
+      if (mouse_button_state == button_state_down)
       {
-        active_mouse_button_state.second = button_state::HOLD;
+        mouse_button_state = button_state_hold;
       }
-      else if (active_mouse_button_state.second == button_state::UP)
+      else if (mouse_button_state == button_state_up)
       {
-        active_mouse_button_state.second = button_state::NONE;
+        mouse_button_state = button_state_none;
       }
     }
 
-    for (auto& active_window_frame_button_states : window.active_window_frame_button_states)
+    for (auto& frame_button_states : window.frame_button_states)
     {
-      if (active_window_frame_button_states.second == button_state::UP)
+      if (frame_button_states == button_state_down)
       {
-        active_window_frame_button_states.second = button_state::NONE;
+        frame_button_states = button_state_up;
+      }
+      else if (frame_button_states == button_state_up)
+      {
+        frame_button_states = button_state_none;
       }
     }
 

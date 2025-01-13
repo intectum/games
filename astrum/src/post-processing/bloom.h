@@ -4,7 +4,5 @@
 
 namespace astrum
 {
-  void add_bloom(ludo::instance& inst, uint32_t iterations = 5, float final_texture_size = 1.0f);
-
-  void commit_bloom_render_commands(ludo::instance& inst, const ludo::render_mesh& render_mesh, uint32_t iterations);
+  std::tuple<std::vector<ludo::render_program>, std::vector<ludo::buffer>, std::vector<ludo::frame_buffer>> build_bloom(const ludo::window& window, const ludo::frame_buffer& previous_frame_buffer, uint32_t iterations, float final_texture_size);
 }

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "math/mat.h"
-#include "math/transform.h"
+#include "math/quat.h"
 #include "meshes.h"
 
 namespace ludo
@@ -19,8 +19,6 @@ namespace ludo
   /// An armature.
   struct armature
   {
-    uint64_t id; ///< The ID of this armature.
-
     mat4 transform; ///< The transform of this armature.
 
     int32_t bone_index = -1; ///< The index of the bone represented by this armature.
@@ -44,34 +42,12 @@ namespace ludo
   /// An animation.
   struct animation
   {
-    uint64_t id; ///< The ID of the animation.
-
     std::string name; ///< The name of the animation.
     float ticks = 0.0f; ///< The duration.
     float ticks_per_second = 0.0f; ///< The speed to play at.
 
     std::vector<animation_node> nodes; ///< The nodes that make up the animation.
   };
-
-  ///
-  /// Initializes an armature.
-  /// \param armature The armature.
-  void init(armature& armature);
-
-  ///
-  /// De-initializes an armature.
-  /// \param armature The armature.
-  void de_init(armature& armature);
-
-  ///
-  /// Initializes an animation.
-  /// \param animation The animation.
-  void init(animation& animation);
-
-  ///
-  /// De-initializes an animation.
-  /// \param animation The animation.
-  void de_init(animation& animation);
 
   ///
   /// Interpolates an animation.

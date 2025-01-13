@@ -2,65 +2,55 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
-#include <limits>
-#include <map>
-
 #include "clean.h"
 #include "util.h"
 
 namespace ludo
 {
-  std::pair<uint32_t, uint32_t> clean(mesh& destination, const mesh& source, const vertex_format& destination_format, const vertex_format& source_format, bool dry_run)
+  void clean(mesh& dest_mesh, buffer& dest_indices, buffer& dest_vertices, const buffer& src_indices, const buffer& src_vertices, uint32_t count, const vertex_format& dest_format, const vertex_format& src_format, bool dry_run)
   {
-    auto counts = std::pair<uint32_t, uint32_t> { 0, 0 };
-
-    auto to_mesh = destination;
     if (dry_run)
     {
-      to_mesh = ludo::mesh();
-      to_mesh.index_buffer = allocate(destination.index_buffer.size);
-      to_mesh.vertex_buffer = allocate(destination.vertex_buffer.size);
+      dest_indices = allocate_buffer(count * sizeof(uint32_t));
+      dest_vertices = allocate_buffer(count * dest_format.size);
     }
 
-    auto index_stream = stream(source.index_buffer);
-    while (!ended(index_stream))
+    for (auto index = 0; index < count; index += 3)
     {
-      auto indices = std::array<uint32_t, 3>
-      {
-        read<uint32_t>(index_stream),
-        read<uint32_t>(index_stream),
-        read<uint32_t>(index_stream)
-      };
+      auto index_0 = cast<uint32_t>(src_indices, index * sizeof(uint32_t));
+      auto index_1 = cast<uint32_t>(src_indices, (index + 1) * sizeof(uint32_t));
+      auto index_2 = cast<uint32_t>(src_indices, (index + 2) * sizeof(uint32_t));
 
-      auto positions = std::array<vec3, 3>
-      {
-        cast<vec3>(source.vertex_buffer, indices[0] * source_format.size + source_format.position_offset),
-        cast<vec3>(source.vertex_buffer, indices[1] * source_format.size + source_format.position_offset),
-        cast<vec3>(source.vertex_buffer, indices[2] * source_format.size + source_format.position_offset)
-      };
+      auto& position_0 = cast<vec3>(src_vertices, index_0 * src_format.size + src_format.position_offset);
+      auto& position_1 = cast<vec3>(src_vertices, index_1 * src_format.size + src_format.position_offset);
+      auto& position_2 = cast<vec3>(src_vertices, index_2 * src_format.size + src_format.position_offset);
 
-      auto perpendicular = cross(positions[1] - positions[0], positions[2] - positions[0]);
+      auto perpendicular = cross(position_1 - position_0, position_2 - position_0);
       auto area = length(perpendicular) / 2.0f;
       if (!near(area, 0.0f))
       {
-        for (auto index : indices)
-        {
-          auto& position = cast<vec3>(source.vertex_buffer, index * source_format.size + source_format.position_offset);
-          auto normal = source_format.has_normal ? cast<vec3>(source.vertex_buffer, index * source_format.size + source_format.normal_offset) : vec3();
-          auto color = source_format.has_color ? cast<vec4>(source.vertex_buffer, index * source_format.size + source_format.color_offset) : vec4();
-          auto texture_coordinate = source_format.has_texture_coordinate ? cast<vec2>(source.vertex_buffer, index * source_format.size + source_format.texture_coordinate_offset): vec2();
+        auto normal_0 = src_format.has_normal ? cast<vec3>(src_vertices, index_0 * src_format.size + src_format.normal_offset) : vec3();
+        auto normal_1 = src_format.has_normal ? cast<vec3>(src_vertices, index_1 * src_format.size + src_format.normal_offset) : vec3();
+        auto normal_2 = src_format.has_normal ? cast<vec3>(src_vertices, index_2 * src_format.size + src_format.normal_offset) : vec3();
 
-          write_vertex(to_mesh, destination_format, counts.first, counts.second, position, normal, color, texture_coordinate);
-        }
+        auto color_0 = src_format.has_color ? cast<vec4>(src_vertices, index_0 * src_format.size + src_format.color_offset) : vec4();
+        auto color_1 = src_format.has_color ? cast<vec4>(src_vertices, index_1 * src_format.size + src_format.color_offset) : vec4();
+        auto color_2 = src_format.has_color ? cast<vec4>(src_vertices, index_2 * src_format.size + src_format.color_offset) : vec4();
+
+        auto texture_coordinate_0 = src_format.has_texture_coordinate ? cast<vec2>(src_vertices, index_0 * src_format.size + src_format.texture_coordinate_offset): vec2();
+        auto texture_coordinate_1 = src_format.has_texture_coordinate ? cast<vec2>(src_vertices, index_1 * src_format.size + src_format.texture_coordinate_offset): vec2();
+        auto texture_coordinate_2 = src_format.has_texture_coordinate ? cast<vec2>(src_vertices, index_2 * src_format.size + src_format.texture_coordinate_offset): vec2();
+
+        append_vertex(dest_mesh, dest_indices, dest_vertices, dest_format, position_0, normal_0, color_0, texture_coordinate_0);
+        append_vertex(dest_mesh, dest_indices, dest_vertices, dest_format, position_1, normal_1, color_1, texture_coordinate_1);
+        append_vertex(dest_mesh, dest_indices, dest_vertices, dest_format, position_2, normal_2, color_2, texture_coordinate_2);
       }
     }
 
     if (dry_run)
     {
-      deallocate(to_mesh.index_buffer);
-      deallocate(to_mesh.vertex_buffer);
+      free_buffer(dest_indices);
+      free_buffer(dest_vertices);
     }
-
-    return counts;
   }
 }

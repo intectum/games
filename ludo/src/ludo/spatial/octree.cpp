@@ -3,6 +3,7 @@
  */
 
 #include <cmath>
+#include <cstring>
 
 #include "octree.h"
 
@@ -19,32 +20,30 @@ namespace ludo
 
   void init(octree& octree)
   {
-    octree.id = next_id++;
-
     auto cell_count = static_cast<uint32_t>(std::pow(8, octree.divisions));
     auto cell_size = sizeof(uint32_t) + octree.cell_capacity * sizeof(uint32_t);
 
     auto data_size = cell_count * cell_size;
-    octree.buffer = allocate(data_size);
+    octree.arena = allocate_arena(data_size);
 
     auto offset = uint32_t(0);
     for (auto cell_index = uint32_t(0); cell_index < cell_count; cell_index++)
     {
-      cast<uint32_t>(octree.buffer, offset) = 0;
+      cast<uint32_t>(octree.arena, offset) = 0;
       offset += cell_size;
     }
   }
 
   void de_init(octree& octree)
   {
-    deallocate(octree.buffer);
+    free_arena(octree.arena);
   }
 
   void add(octree& octree, uint32_t element, const ludo::vec3& position)
   {
     auto index = to_index(octree, to_cell_coordinates(octree, position));
     auto offset = cell_offset(octree, index);
-    auto stream = ludo::stream(octree.buffer, offset);
+    auto stream = ludo::stream(octree.arena, offset);
 
     auto element_count = peek<uint32_t>(stream);
 
@@ -117,14 +116,14 @@ namespace ludo
     assert(element_index < octree.cell_capacity && "element not found");
 
     auto offset = cell_offset(octree, cell_index);
-    auto stream = ludo::stream(octree.buffer, offset);
+    auto stream = ludo::stream(octree.arena, offset);
 
     auto element_count = peek<uint32_t>(stream) - 1;
     write(stream, element_count);
     stream.position += element_index * sizeof(uint32_t);
     std::memmove(
-      octree.buffer.data + stream.position,
-      octree.buffer.data + stream.position + sizeof(uint32_t),
+      octree.arena.data + stream.position,
+      octree.arena.data + stream.position + sizeof(uint32_t),
       (element_count - element_index) * sizeof(uint32_t)
     );
   }
@@ -170,7 +169,7 @@ namespace ludo
   uint32_t cell_element_index(const octree& octree, uint32_t cell_index, uint32_t element)
   {
     auto offset = cell_offset(octree, cell_index);
-    auto stream = ludo::stream(octree.buffer, offset);
+    auto stream = ludo::stream(octree.arena, offset);
 
     auto element_count = read<uint32_t>(stream);
     for (auto element_index = uint32_t(0); element_index < element_count; element_index++)
@@ -188,7 +187,7 @@ namespace ludo
   {
     auto elements = std::vector<uint32_t>();
     auto offset = cell_offset(octree, cell_index);
-    auto stream = ludo::stream(octree.buffer, offset);
+    auto stream = ludo::stream(octree.arena, offset);
 
     auto element_count = read<uint32_t>(stream);
     for (auto element_index = uint32_t(0); element_index < element_count; element_index++)

@@ -602,8 +602,7 @@ namespace ludo
                        inverseRelativeTransform);
   }
 
-  mesh* subtract(context& context,
-                 const vertex_format& format,
+  mesh* subtract(const vertex_format& format,
                  const mesh& lhs,
                  const mesh& rhs,
                  const Matrix44& relative_transform)

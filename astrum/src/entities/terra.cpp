@@ -1,7 +1,6 @@
-#include <iostream>
 #include <random>
 
-#include <libnoise/noise.h>
+#include <noise/noise.h>
 
 #include "../constants.h"
 #include "../terrain/mesh.h"
@@ -10,9 +9,6 @@
 
 namespace astrum
 {
-  float terra_height(const ludo::vec3& position);
-  ludo::vec4 terra_color(float longitude, const std::array<float, 3>& heights, float gradient);
-  std::array<std::vector<tree>, tree_type_count> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index);
   void terra_tree_internal(uint32_t divisions, noise::module::Perlin& perlin_forest, const std::array<ludo::vec3, 3>& face, std::vector<ludo::vec3>& positions);
 
   const auto beach_max_height = 1.0001f;
@@ -20,45 +16,6 @@ namespace astrum
   auto seed = 123456;
   auto tree_random = std::mt19937(seed);
   std::uniform_real_distribution<float> tree_distribution(0.0f, 1.0f);
-
-  void add_terra(ludo::instance& inst, const ludo::transform& initial_transform, const ludo::vec3& initial_velocity)
-  {
-    auto celestial_body = ludo::add(
-      inst,
-      astrum::celestial_body
-      {
-        .name = "terra",
-        .radius = terra_radius,
-        .mass = terra_mass,
-      },
-      "celestial-bodies"
-    );
-
-    ludo::add(
-      inst,
-      point_mass
-      {
-        .mass = celestial_body->mass,
-        .transform = initial_transform,
-        .linear_velocity = initial_velocity
-      },
-    "celestial-bodies"
-    );
-
-    add_terrain(
-      inst,
-      terrain
-      {
-        .format = ludo::vertex_format_pnc,
-        .lods = terra_lods,
-        .height_func = terra_height,
-        .color_func = terra_color,
-        .tree_func = terra_tree
-      },
-      *celestial_body,
-      "celestial-bodies"
-    );
-  }
 
   float terra_height(const ludo::vec3& position)
   {
@@ -139,21 +96,19 @@ namespace astrum
   // which in the case of a planet could be hundreds of thousands and memory was a problem (as well as speed).
   // Perhaps more sophisticated poisson disc sampling does not have these same limitations?
   // For now, placing them at regular intervals and applying some jitter to their positions seems adequate.
-  std::array<std::vector<tree>, tree_type_count> terra_tree(const terrain& terrain, float radius, uint32_t chunk_index)
+  // TODO
+  /*std::array<std::vector<tree>, tree_type_count> terra_tree(float radius, uint32_t chunk_index)
   {
     auto perlin_forest = noise::module::Perlin();
     perlin_forest.SetSeed(seed);
     perlin_forest.SetFrequency(2.0f);
 
-    auto temp_mesh = ludo::mesh
-    {
-      .index_buffer = ludo::allocate(3 * sizeof(uint32_t)),
-      .vertex_buffer = ludo::allocate(3 * sizeof(ludo::vec3))
-    };
+    auto temp_mesh = ludo::mesh();
+    ludo::mesh_alloc(temp_mesh, 3, 3, sizeof(ludo::vec3));
 
     terrain_mesh(terrain, radius, temp_mesh, ludo::vertex_format_p, ludo::vertex_format_p, false, chunk_index, 5, 5, 5);
 
-    auto vertex_stream = ludo::stream(temp_mesh.vertex_buffer);
+    auto vertex_stream = ludo::stream(temp_mesh.vertices);
     auto face = std::array<ludo::vec3, 3>
     {
       read<ludo::vec3>(vertex_stream),
@@ -165,8 +120,7 @@ namespace astrum
     ludo::normalize(face[1]);
     ludo::normalize(face[2]);
 
-    ludo::deallocate(temp_mesh.index_buffer);
-    ludo::deallocate(temp_mesh.vertex_buffer);
+    ludo::mesh_free(temp_mesh);
 
     auto positions = std::vector<ludo::vec3>();
     terra_tree_internal(6, perlin_forest, face, positions);
@@ -194,7 +148,7 @@ namespace astrum
     }
 
     return trees;
-  }
+  }*/
 
   void terra_tree_internal(uint32_t divisions, noise::module::Perlin& perlin_forest, const std::array<ludo::vec3, 3>& face, std::vector<ludo::vec3>& positions)
   {

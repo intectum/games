@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "../math/mat.h"
 #include "../meshes.h"
 
 namespace ludo
@@ -14,5 +15,5 @@ namespace ludo
   /// \param rhs The mesh to subtract
   /// \param relative_transform The position and orientation of the rhs mesh relative to the lhs mesh
   /// \return The difference
-  mesh* subtract(instance& instance, const vertex_format& format, const mesh& lhs, const mesh& rhs, const mat4& relative_transform);
+  mesh* subtract(const vertex_format& format, const mesh& lhs, const mesh& rhs, const mat4& relative_transform);
 }

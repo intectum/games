@@ -3,6 +3,7 @@
  */
 
 #include <cmath>
+#include <cstring>
 
 #include "quadtree.h"
 
@@ -19,32 +20,30 @@ namespace ludo
 
   void init(quadtree& quadtree)
   {
-    quadtree.id = next_id++;
-
     auto cell_count = static_cast<uint32_t>(std::pow(4, quadtree.divisions));
     auto cell_size = sizeof(uint32_t) + quadtree.cell_capacity * sizeof(uint32_t);
 
     auto data_size = cell_count * cell_size;
-    quadtree.buffer = allocate(data_size);
+    quadtree.arena = allocate_arena(data_size);
 
     auto offset = uint32_t(0);
     for (auto cell_index = uint32_t(0); cell_index < cell_count; cell_index++)
     {
-      cast<uint32_t>(quadtree.buffer, offset) = 0;
+      cast<uint32_t>(quadtree.arena, offset) = 0;
       offset += cell_size;
     }
   }
 
   void de_init(quadtree& quadtree)
   {
-    deallocate(quadtree.buffer);
+    free_arena(quadtree.arena);
   }
 
   void add(quadtree& quadtree, uint32_t element, const ludo::vec2& position)
   {
     auto index = to_index(quadtree, to_cell_coordinates(quadtree, position));
     auto offset = cell_offset(quadtree, index);
-    auto stream = ludo::stream(quadtree.buffer, offset);
+    auto stream = ludo::stream(quadtree.arena, offset);
 
     auto element_count = peek<uint32_t>(stream);
 
@@ -104,14 +103,14 @@ namespace ludo
     assert(element_index < quadtree.cell_capacity && "element not found");
 
     auto offset = cell_offset(quadtree, cell_index);
-    auto stream = ludo::stream(quadtree.buffer, offset);
+    auto stream = ludo::stream(quadtree.arena, offset);
 
     auto element_count = peek<uint32_t>(stream) - 1;
     write(stream, element_count);
     stream.position += element_index * sizeof(uint32_t);
     std::memmove(
-      quadtree.buffer.data + stream.position,
-      quadtree.buffer.data + stream.position + sizeof(uint32_t),
+      quadtree.arena.data + stream.position,
+      quadtree.arena.data + stream.position + sizeof(uint32_t),
       (element_count - element_index) * sizeof(uint32_t)
     );
   }
@@ -157,7 +156,7 @@ namespace ludo
   uint32_t cell_element_index(const quadtree& quadtree, uint32_t cell_index, uint32_t element)
   {
     auto offset = cell_offset(quadtree, cell_index);
-    auto stream = ludo::stream(quadtree.buffer, offset);
+    auto stream = ludo::stream(quadtree.arena, offset);
 
     auto element_count = read<uint32_t>(stream);
     for (auto element_index = uint32_t(0); element_index < element_count; element_index++)
@@ -175,7 +174,7 @@ namespace ludo
   {
     auto elements = std::vector<uint32_t>();
     auto offset = cell_offset(quadtree, cell_index);
-    auto stream = ludo::stream(quadtree.buffer, offset);
+    auto stream = ludo::stream(quadtree.arena, offset);
 
     auto element_count = read<uint32_t>(stream);
     for (auto element_index = uint32_t(0); element_index < element_count; element_index++)

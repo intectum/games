@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "ico_faces.h"
 #include "ico_chunks.h"
 

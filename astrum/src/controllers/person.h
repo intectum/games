@@ -4,5 +4,5 @@
 
 namespace astrum
 {
-  void control_person(ludo::instance& inst, uint32_t index);
+  void control_person(const ludo::instance& inst, ludo::container& container, const ludo::window& window, uint32_t index, ludo::vec3& camera_position, ludo::quat& camera_rotation);
 }

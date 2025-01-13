@@ -14,9 +14,6 @@ project(ludo)
 set(SRC_FILES
     src/ludo/animation.cpp
     src/ludo/core.cpp
-    src/ludo/data/buffers.cpp
-    src/ludo/data/data.cpp
-    src/ludo/data/heaps.cpp
     src/ludo/ecs.cpp
     src/ludo/files.cpp
     src/ludo/math/distance.cpp
@@ -41,8 +38,8 @@ set(SRC_FILES
     src/ludo/meshes/util.cpp
     src/ludo/rendering.cpp
     src/ludo/spatial/bounds.cpp
-    src/ludo/spatial/grid2.cpp
-    src/ludo/spatial/grid3.cpp
+    #src/ludo/spatial/grid2.cpp
+    #src/ludo/spatial/grid3.cpp
     src/ludo/spatial/octree.cpp
     src/ludo/spatial/quadtree.cpp
     src/ludo/testing.cpp

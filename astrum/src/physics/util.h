@@ -4,7 +4,7 @@
 
 namespace astrum
 {
-  std::vector<ludo::contact> deepest_contacts(const std::vector<ludo::contact>& contacts);
+  //std::vector<ludo::contact> deepest_contacts(const std::vector<ludo::contact>& contacts); TODO
 
   float orbital_speed(float orbit_radius, float mass_of_larger_body);
 }

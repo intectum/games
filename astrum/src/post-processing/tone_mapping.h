@@ -4,7 +4,5 @@
 
 namespace astrum
 {
-  ludo::frame_buffer add_tone_mapping(ludo::instance& inst);
-
-  void commit_tone_mapping_render_commands(ludo::instance& inst, const ludo::frame_buffer& frame_buffer, const ludo::render_mesh& render_mesh);
+  std::tuple<ludo::render_program, ludo::buffer, ludo::frame_buffer> build_tone_mapper(const ludo::window& window, const ludo::frame_buffer& previous_frame_buffer);
 }

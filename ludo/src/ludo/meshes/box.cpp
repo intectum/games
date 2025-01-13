@@ -7,15 +7,12 @@
 
 namespace ludo
 {
-  void box(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options)
+  void append_box(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options)
   {
-    auto index_index = start_index;
-    auto vertex_index = start_vertex;
-
-    box(mesh, format, index_index, vertex_index, options, true, false);
+    append_box(mesh, indices, vertices, format, options, true, false);
   }
 
-  void box(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const shape_options& options, bool unique_only, bool no_normal_check)
+  void append_box(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options, bool unique_only, bool no_normal_check)
   {
     assert(options.divisions >= 1 && "must have at-least 1 division");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
@@ -25,11 +22,11 @@ namespace ludo
     if (options.outward_faces)
     {
       // Front
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * -0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * 0.5f },
         vec3 { options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -42,11 +39,11 @@ namespace ludo
       );
 
       // Back
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { -options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -59,11 +56,11 @@ namespace ludo
       );
 
       // Left
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * -0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { 0.0f, 0.0f, options.dimensions[2] },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -76,11 +73,11 @@ namespace ludo
       );
 
       // Right
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * 0.5f },
         vec3 { 0.0f, 0.0f, -options.dimensions[2] },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -93,11 +90,11 @@ namespace ludo
       );
 
       // Top
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * -0.5f, options.dimensions[1] * 0.5f, options.dimensions[2] * 0.5f },
         vec3 { options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, 0.0f, -options.dimensions[2] },
@@ -110,11 +107,11 @@ namespace ludo
       );
 
       // Bottom
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * -0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, 0.0f, options.dimensions[2] },
@@ -130,11 +127,11 @@ namespace ludo
     if (options.inward_faces)
     {
       // Front
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * 0.5f },
         vec3 { -options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -147,11 +144,11 @@ namespace ludo
       );
 
       // Back
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { -options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -164,11 +161,11 @@ namespace ludo
       );
 
       // Left
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * -0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * 0.5f },
         vec3 { 0.0f, 0.0f, -options.dimensions[0] },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -181,11 +178,11 @@ namespace ludo
       );
 
       // Right
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { 0.0f, 0.0f, options.dimensions[0] },
         vec3 { 0.0f, options.dimensions[1], 0.0f },
@@ -198,11 +195,11 @@ namespace ludo
       );
 
       // Top
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * 0.5f, options.dimensions[2] * 0.5f },
         vec3 { -options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, 0.0f, -options.dimensions[1] },
@@ -215,11 +212,11 @@ namespace ludo
       );
 
       // Bottom
-      rectangle(
+      append_rectangle(
         mesh,
+        indices,
+        vertices,
         format,
-        index_index,
-        vertex_index,
         options.center + vec3 { options.dimensions[0] * 0.5f, options.dimensions[1] * -0.5f, options.dimensions[2] * -0.5f },
         vec3 { -options.dimensions[0], 0.0f, 0.0f },
         vec3 { 0.0f, 0.0f, options.dimensions[1] },

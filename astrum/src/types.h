@@ -2,51 +2,16 @@
 
 #include <ludo/api.h>
 
-#include "constants.h"
-
 namespace astrum
 {
   struct patch;
   struct tree;
 
-  struct celestial_body
+  struct terrain_funcs
   {
-    uint64_t id;
-
-    std::string name;
-    float radius = 0.0f;
-    float mass = 0.0f;
-  };
-
-  struct terrain_chunk
-  {
-    uint64_t mesh_id = 0;
-    uint64_t render_mesh_id = 0;
-    std::array<uint64_t, tree_type_count> tree_render_mesh_ids;
-
-    ludo::vec3 center;
-    ludo::vec3 normal;
-    uint32_t lod_index = 0;
-
-    bool trees_loaded = false;
-    bool treeless = false;
-    bool locked = false;
-  };
-
-  struct terrain
-  {
-    uint64_t id = 0;
-
-    ludo::vertex_format format;
-    std::vector<lod> lods;
-    std::function<float(const ludo::vec3& position)> height_func;
-    std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color_func;
-    std::function<std::array<std::vector<tree>, tree_type_count>(const terrain& terrain, float radius, uint32_t chunk_index)> tree_func;
-
-    std::vector<terrain_chunk> chunks;
-
-    std::unordered_map<uint32_t, uint64_t> static_body_ids;
-    std::unordered_map<uint32_t, uint64_t> static_body_mesh_ids;
+    std::function<float(const ludo::vec3& position)> height;
+    std::function<ludo::vec4(float longitude, const std::array<float, 3>& heights, float gradient)> color;
+    //std::function<std::array<std::vector<tree>, tree_type_count>(float radius, uint32_t chunk_index)> tree; TODO
   };
 
   struct game_controls
@@ -105,26 +70,6 @@ namespace astrum
     ludo::vec2 camera_rotation = ludo::vec2_zero;
   };
 
-  struct point_mass
-  {
-    uint64_t id = 0;
-
-    float mass = 0.0f;
-
-    ludo::transform transform;
-    ludo::vec3 linear_velocity = ludo::vec3_zero;
-    bool resting = false;
-
-    std::vector<point_mass*> children;
-  };
-
-  struct solar_system
-  {
-    uint64_t id = 0;
-
-    int32_t relative_celestial_body_index = -1;
-  };
-
   struct spaceship_controls
   {
     uint64_t id = 0;
@@ -144,10 +89,11 @@ namespace astrum
     float roll = 0.0f;
   };
 
-  struct tree
+  // TODO
+  /*struct tree
   {
     ludo::vec3 position;
     float rotation = 0.0f;
     float scale = 0.0f;
-  };
+  };*/
 }

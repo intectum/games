@@ -4,13 +4,5 @@
 
 #pragma once
 
-namespace ludo
-{
-  ///
-  /// A range
-  struct range
-  {
-    uint32_t start = 0;
-    uint32_t count = 0;
-  };
-}
+#include "math.h"
+#include "physics.h"

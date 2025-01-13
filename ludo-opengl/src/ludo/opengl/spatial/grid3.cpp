@@ -206,8 +206,8 @@ void main()
     for (auto& render_program : render_programs)
     {
       write(stream, render_program.id);
-      write(stream, static_cast<uint32_t>((render_program.command_buffer.data - render_commands.data) / sizeof(render_command) + render_program.active_commands.start));
-      write(stream, render_program.active_commands.count);
+      //write(stream, static_cast<uint32_t>((render_program.command_buffer.data - render_commands.data) / sizeof(render_command) + render_program.active_commands.start));
+      //write(stream, render_program.active_commands.count); TODO
     }
 
     for (auto& grid : grids)
@@ -229,7 +229,7 @@ void main()
     for (auto index = 0; index < render_programs.length; index++)
     {
       auto offset = 6 * 16 + 8 + index * (sizeof(uint64_t) + 2 * sizeof(uint32_t));
-      render_programs[index].active_commands.count = cast<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t));
+      //render_programs[index].active_commands.count = cast<uint32_t>(context_buffer, offset + sizeof(uint64_t) + sizeof(uint32_t)); TODO
     }
 
     deallocate_vram(context_buffer);

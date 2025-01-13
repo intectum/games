@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <unordered_map>
+
 #include "textures.h"
 #include "util.h"
 

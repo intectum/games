@@ -7,16 +7,16 @@
 #include <array>
 
 #include "core.h"
-#include "data/data.h"
 #include "input.h"
 
 namespace ludo
 {
   ///
   /// The buttons on a window frame.
-  enum class window_frame_button
+  enum window_frame_button
   {
-    CLOSE
+    window_frame_button_close,
+    window_frame_button_count
   };
 
   struct window
@@ -31,26 +31,26 @@ namespace ludo
     bool fullscreen = false; ///< Determines if the window is fullscreen.
     bool v_sync = true; ///< Determines if the window is vertically synchronized.
 
-    std::unordered_map<window_frame_button, button_state> active_window_frame_button_states; ///< The currently active window frame buttons.
+    std::array<button_state, window_frame_button_count> frame_button_states; ///< The currently active window frame buttons.
 
-    std::unordered_map<keyboard_button, button_state> active_keyboard_button_states; ///< The currently active keyboard buttons.
+    std::array<button_state, keyboard_button_count> keyboard_button_states; ///< The currently active keyboard buttons.
 
     bool mouse_captured = false; ///< Determines if the mouse is captured.
     std::array<int32_t, 2> mouse_position; ///< The current position of the mouse.
     std::array<int32_t, 2> mouse_movement; ///< The current movement of the mouse.
     std::array<float, 2> mouse_scroll; ///< The current mouse scroll.
-    std::unordered_map<mouse_button, button_state> active_mouse_button_states; ///< The currently active mouse buttons.
+    std::array<button_state, mouse_button_count> mouse_button_states; ///< The currently active mouse buttons.
   };
 
   ///
-  /// Initializes a window.
+  /// Opens a window.
   /// \param window The window.
-  void init(window& window);
+  void open(window& window);
 
   ///
-  /// De-initializes a window.
+  /// Closes a window.
   /// \param window The window.
-  void de_init(window& window);
+  void close(window& window);
 
   ///
   /// Swaps the frame buffers in a window.

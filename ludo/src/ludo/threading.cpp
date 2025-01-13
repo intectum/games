@@ -18,7 +18,7 @@ namespace ludo
 
   void thread_pool_start()
   {
-    while (threads.size() < std::thread::hardware_concurrency())
+    //while (threads.size() < std::thread::hardware_concurrency())
     {
       threads.emplace_back([]()
       {

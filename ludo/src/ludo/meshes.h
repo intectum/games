@@ -5,13 +5,9 @@
 #pragma once
 
 #include <istream>
-#include <ostream>
+#include <vector>
 
-#include "data/buffers.h"
-#include "data/data.h"
-#include "math/mat.h"
-#include "math/vec.h"
-#include "util.h"
+#include "memory.h"
 
 namespace ludo
 {
@@ -60,13 +56,8 @@ namespace ludo
   /// A mesh.
   struct mesh
   {
-    uint64_t id = 0; ///< A unique identifier.
-    uint64_t texture_id = 0; ///< The texture to apply to the mesh. TODO remove some of these?
-    uint64_t armature_id = 0; ///< The armature to apply to the mesh. TODO remove some of these?
-    std::vector<uint64_t> animation_ids; ///< The animations to apply to the mesh. TODO remove some of these?
-
-    buffer index_buffer; ///< A buffer containing the indices.
-    buffer vertex_buffer; ///< A buffer containing the vertices.
+    range indices; ///< The indices.
+    range vertices; ///< The vertices.
     uint32_t vertex_size = 0; ///< The size in bytes of a vertex within this mesh.
   };
 
@@ -131,63 +122,46 @@ namespace ludo
   vertex_format format(bool normal = false, bool color = false, bool texture_coordinate = false, bool bone_weights = false);
 
   ///
-  /// Initializes a mesh with index and vertex buffers.
-  /// \param mesh The mesh.
-  /// \param indices The indices to allocate from.
-  /// \param vertices The vertices to allocate from.
-  /// \param index_count The number of indices to allocate.
-  /// \param vertex_count The number of vertices to allocate.
-  /// \param vertex_size The size (in bytes) of a vertex.
-  void init(mesh& mesh, heap& indices, heap& vertices, uint32_t index_count, uint32_t vertex_count, uint8_t vertex_size);
-
-  ///
-  /// De-initializes a mesh and reclaims the index and vertex buffers.
-  /// \param mesh The mesh.
-  /// \param indices The indices to reclaim to.
-  /// \param vertices The vertices to reclaim to.
-  void de_init(mesh& mesh, heap& indices, heap& vertices);
-
-  ///
   /// Loads a mesh from a ludo mesh file.
+  /// \param mesh The mesh to load the metadata into.
+  /// \param indices The memory to load the indices into.
+  /// \param vertices The memory to load the vertices into.
   /// \param file_name The name of the file containing the mesh data.
-  /// \param indices The indices to allocate from.
-  /// \param vertices The vertices to allocate from.
-  /// \return The mesh.
-  mesh load(const std::string& file_name, heap& indices, heap& vertices);
+  void load(mesh& mesh, buffer& indices, buffer& vertices, const std::string& file_name);
 
   ///
-  /// Loads a mesh from a stream.
+  /// Loads a mesh from a ludo mesh stream.
+/// \param mesh The mesh to load the data into.
+/// \param indices The memory to load the indices into.
+/// \param vertices The memory to load the vertices into.
   /// \param stream The mesh data.
-  /// \param indices The indices to allocate from.
-  /// \param vertices The vertices to allocate from.
-  /// \return The mesh.
-  mesh load(std::istream& stream, heap& indices, heap& vertices);
+  void load(mesh& mesh, buffer& indices, buffer& vertices, std::istream& stream);
+
+  ///
+  /// Loads metadata from a ludo mesh file.
+  /// \param mesh The mesh to load the metadata into.
+  /// \param file_name The name of the file containing the mesh data.
+  void load_metadata(mesh& mesh, const std::string& file_name);
+
+  ///
+  /// Loads metadata from a ludo mesh stream.
+  /// \param mesh The mesh to load the metadata into.
+  /// \param stream The mesh data.
+  void load_metadata(mesh& mesh, std::istream& stream);
 
   ///
   /// Saves a mesh to a ludo mesh file.
   /// \param mesh The mesh.
+  /// \param indices The indices.
+  /// \param vertices The vertices.
   /// \param file_name The name of the file to save to.
-  void save(const mesh& mesh, const std::string& file_name);
+  void save(const mesh& mesh, const buffer& indices, const buffer& vertices, const std::string& file_name);
 
   ///
-  /// Saves a mesh to a stream.
+  /// Saves a mesh to a ludo mesh stream.
   /// \param mesh The mesh.
+  /// \param indices The indices.
+  /// \param vertices The vertices.
   /// \param stream The mesh data.
-  void save(const mesh& mesh, std::ostream& stream);
-
-  ///
-  /// Reads mesh counts from a ludo mesh file.
-  /// \param file_name The name of the file containing the mesh data.
-  /// \param indices The indices to allocate from.
-  /// \param vertices The vertices to allocate from.
-  /// \return The mesh counts.
-  std::pair<uint32_t, uint32_t> mesh_counts(const std::string& file_name);
-
-  ///
-  /// Reads mesh counts mesh from a stream.
-  /// \param stream The mesh data.
-  /// \param indices The indices to allocate from.
-  /// \param vertices The vertices to allocate from.
-  /// \return The mesh counts.
-  std::pair<uint32_t, uint32_t> mesh_counts(std::istream& stream);
+  void save(const mesh& mesh, const buffer& indices, const buffer& vertices, std::ostream& stream);
 }

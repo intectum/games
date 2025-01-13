@@ -4,5 +4,5 @@
 
 namespace astrum
 {
-  void relativize_universe(ludo::instance& inst);
+  uint32_t relativize_universe(std::vector<ludo::container>& containers, uint32_t relative_celestial_body_index, const ludo::vec3& camera_position);
 }

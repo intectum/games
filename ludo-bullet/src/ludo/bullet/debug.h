@@ -29,7 +29,8 @@ namespace ludo
     void setDebugMode(int debug_mode) override;
 
     ludo::mesh* mesh;
+    ludo::buffer indices;
+    ludo::buffer vertices;
     int32_t debug_mode;
-    uint32_t next_index;
   };
 }

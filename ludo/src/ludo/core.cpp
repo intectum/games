@@ -7,9 +7,7 @@
 
 namespace ludo
 {
-  uint64_t next_id = 1;
-
-  void play(instance& instance, const std::function<void(ludo::instance& instance)>& kernel)
+  void play(instance& instance, const std::function<void()>& kernel)
   {
     auto total_timer = timer();
 
@@ -27,11 +25,11 @@ namespace ludo
     instance.playing = false;
   }
 
-  void frame(instance& instance, const std::function<void(ludo::instance& instance)>& kernel)
+  void frame(instance& instance, const std::function<void()>& kernel)
   {
     auto delta_timer = timer();
 
-    kernel(instance);
+    kernel();
 
     instance.delta_time = elapsed(delta_timer);
   }

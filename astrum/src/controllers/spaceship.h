@@ -4,5 +4,5 @@
 
 namespace astrum
 {
-  void control_spaceship(ludo::instance& inst, uint32_t index);
+  void control_spaceship(ludo::container& container, const ludo::window& window, uint32_t index, ludo::vec3& camera_position, ludo::quat& camera_rotation);
 }

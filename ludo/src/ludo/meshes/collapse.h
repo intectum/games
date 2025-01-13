@@ -8,5 +8,5 @@
 
 namespace ludo
 {
-  void collapse(mesh& mesh, const vertex_format& format, uint32_t iterations);
+  void collapse(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, uint32_t iterations);
 }

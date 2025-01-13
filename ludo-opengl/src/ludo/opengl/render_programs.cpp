@@ -13,47 +13,21 @@
 
 namespace ludo
 {
-  void init(render_program& render_program, const vertex_format& format, heap& render_commands, uint32_t instance_capacity)
+  void init(render_program& render_program, const vertex_format& format)
   {
     render_program.format = format;
 
-    if (!render_program.instance_size)
-    {
-      render_program.instance_size = sizeof(mat4);
-      if (format.has_texture_coordinate)
-      {
-        render_program.instance_size += 16;
-      }
-      if (format.has_bone_weights)
-      {
-        render_program.instance_size += max_bones_per_armature * sizeof(mat4);
-      }
-    }
-
     auto vertex_shader_code = default_vertex_shader_code(format);
     auto fragment_shader_code = default_fragment_shader_code(format);
-    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, instance_capacity);
+    init(render_program, vertex_shader_code, fragment_shader_code);
   }
 
-  void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name, heap& render_commands, uint32_t instance_capacity)
+  void init(render_program& render_program, const std::string& vertex_shader_file_name, const std::string& fragment_shader_file_name)
   {
     auto vertex_shader_code = std::ifstream(vertex_shader_file_name);
     auto fragment_shader_code = std::ifstream(fragment_shader_file_name);
 
-    init(render_program, vertex_shader_code, fragment_shader_code, render_commands, instance_capacity);
-  }
-
-  void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code, heap& render_commands, uint32_t instance_capacity)
-  {
     init(render_program, vertex_shader_code, fragment_shader_code);
-
-    render_program.command_buffer = allocate(render_commands, instance_capacity * sizeof(render_command));
-
-    if (render_program.instance_size)
-    {
-      render_program.instance_buffer_front = allocate_vram(instance_capacity * render_program.instance_size);
-      render_program.instance_buffer_back = allocate_heap(instance_capacity * render_program.instance_size);
-    }
   }
 
   void init(render_program& render_program, std::istream& vertex_shader_code, std::istream& fragment_shader_code)
@@ -83,39 +57,13 @@ namespace ludo
     glDeleteShader(fragment_shader); check_opengl_error();
   }
 
-  void de_init(render_program& render_program, heap& render_commands)
+  void de_init(render_program& render_program)
   {
     glDeleteProgram(render_program.id); check_opengl_error();
     render_program.id = 0;
-
-    if (render_program.command_buffer.data)
-    {
-      deallocate(render_commands, render_program.command_buffer);
-    }
-
-    if (render_program.shader_buffer.back.data)
-    {
-      deallocate_dual(render_program.shader_buffer);
-    }
-
-    if (render_program.instance_buffer_front.data)
-    {
-      deallocate_vram(render_program.instance_buffer_front);
-    }
-
-    if (render_program.instance_buffer_back.data)
-    {
-      deallocate(render_program.instance_buffer_back);
-    }
   }
 
-  void commit(render_program& render_program)
-  {
-    commit(render_program.shader_buffer);
-    std::memcpy(render_program.instance_buffer_front.data, render_program.instance_buffer_back.data, render_program.instance_buffer_front.size);
-  }
-
-  void use(render_program& render_program)
+  void use(const render_program& render_program)
   {
     glValidateProgram(render_program.id); check_opengl_error();
 
@@ -125,21 +73,10 @@ namespace ludo
     GLchar info_log[1024];
     glGetProgramInfoLog(render_program.id, sizeof(info_log), nullptr, info_log); check_opengl_error();
 
-    if (info_log[0])
-    {
-      std::cout << "render program validation log: " << info_log << std::endl;
-    }
+    if (info_log[0]) std::cout << "render program validation log: " << info_log << std::endl;
     assert(validate_status && "failed to validate render program");
 
     glUseProgram(render_program.id); check_opengl_error();
-
-    if (render_program.push_on_bind)
-    {
-      commit(render_program);
-    }
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, render_program.shader_buffer.front.id); check_opengl_error();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, render_program.instance_buffer_front.id); check_opengl_error();
 
     // Convert b4 to u4f4
     auto format = render_program.format;
@@ -184,18 +121,5 @@ namespace ludo
         offset += format.components[index].second * sizeof(float);
       }
     }
-  }
-
-  void add_render_command(render_program& render_program, const render_mesh& render_mesh)
-  {
-    auto position = (render_program.active_commands.start + render_program.active_commands.count++) * sizeof(render_command);
-    cast<render_command>(render_program.command_buffer, position) =
-      {
-        .index_count = render_mesh.indices.count,
-        .instance_count = render_mesh.instances.count,
-        .index_start = render_mesh.indices.start,
-        .vertex_start = render_mesh.vertices.start,
-        .instance_start = render_mesh.instances.start
-      };
   }
 }

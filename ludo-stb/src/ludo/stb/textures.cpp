@@ -40,7 +40,7 @@ namespace ludo
       return {};
     }
 
-    assert(channels_in_file == 3 || channels_in_file == 4 && "unsupported pixel components");
+    assert((channels_in_file == 3 || channels_in_file == 4) && "unsupported pixel components");
 
     auto texture = ludo::texture
     {
@@ -48,11 +48,12 @@ namespace ludo
       .width = uint32_t(x),
       .height = uint32_t(y)
     };
-    ludo::init(texture);
-    ludo::write(texture, reinterpret_cast<std::byte*>(data));
+
+    init(texture);
+    write(texture, reinterpret_cast<std::byte*>(data));
 
     stbi_image_free(data);
-    free(stream_data);
+    ::free(stream_data);
 
     return texture;
   }

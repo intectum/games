@@ -4,79 +4,14 @@
 
 #pragma once
 
-#include "core.h"
+#include "math/quat.h"
+#include "math/mat.h"
 #include "meshes.h"
-#include "math/transform.h"
-#include "math/vec.h"
-#include "rendering.h"
 
 namespace ludo
 {
-  ///
-  /// A physics context.
-  struct physics_context
-  {
-    uint64_t id = 0; ///< A unique identifier.
-
-    vec3 gravity = { 0.0f, -9.8f, 0.0f }; ///< The gravitational force to apply to all dynamic bodies.
-  };
-
-  ///
-  /// A static body.
-  /// The transform of this body should not be changed.
-  /// Not affected by physics.
-  /// Can affect dynamic bodies.
-  struct static_body
-  {
-    uint64_t id = 0; ///< A unique identifier.
-
-    ludo::transform transform; ///< The transform.
-  };
-
-  ///
-  /// A dynamic body.
-  /// The transform of this body is updated during the physics frame function.
-  /// Affected by physics.
-  /// Can affect dynamic bodies.
-  struct dynamic_body
-  {
-    uint64_t id = 0; ///< A unique identifier.
-
-    ludo::transform transform; ///< The transform.
-
-    float mass = 0.0f; ///< The mass.
-    vec3 linear_velocity = vec3_zero; ///< The linear velocity.
-    vec3 angular_velocity = vec3_zero; ///< The angular velocity.
-  };
-
-  ///
-  /// A kinematic body.
-  /// The transform and velocities of this body needs to be updated manually.
-  /// Not affected by physics.
-  /// Can affect dynamic bodies.
-  struct kinematic_body
-  {
-    uint64_t id = 0; ///< A unique identifier.
-
-    ludo::transform transform; ///< The transform.
-
-    vec3 linear_velocity = vec3_zero; ///< The linear velocity.
-    vec3 angular_velocity = vec3_zero; ///< The angular velocity.
-  };
-
-  ///
-  /// A ghost body.
-  /// The transform of this body needs to be updated manually.
-  /// Not affected by physics.
-  /// Cannot affect other bodies.
-  struct ghost_body
-  {
-    uint64_t id = 0; ///< A unique identifier.
-
-    ludo::transform transform; ///< The transform.
-  };
-
-  ///
+  // TODO
+  /*///
   /// A dynamic body shape.
   /// The shape is a collection of convex hulls that are applicable to dynamic bodies.
   struct dynamic_body_shape
@@ -110,35 +45,14 @@ namespace ludo
     dynamic_body* body_a = nullptr; ///< The first body being constrained.
     dynamic_body* body_b = nullptr; ///< The second body being constrained (optional).
 
-    transform frame_a; ///< The frame of reference for the first body.
-    transform frame_b; ///< The frame of reference for the second body.
+    mat4 frame_a; ///< The frame of reference for the first body.
+    mat4 frame_b; ///< The frame of reference for the second body.
 
     vec3 linear_lower_limit = vec3_one; ///< The linear lower limits to constrain movement to.
     vec3 linear_upper_limit = vec3_zero; ///< The linear upper limits to constrain movement to.
     vec3 angular_lower_limit = vec3_one; ///< The angular lower limits to constrain rotation to.
     vec3 angular_upper_limit = vec3_zero; ///< The angular upper limits to constrain rotation to.
   };
-
-  ///
-  /// Initializes a physics context.
-  /// \param physics_context The physics context.
-  void init(physics_context& physics_context);
-
-  ///
-  /// De-initializes a physics context.
-  /// \param physics_context The physics context.
-  void de_init(physics_context& physics_context);
-
-  ///
-  /// Commits the state of a physics context to the physics engine.
-  /// \param context The physics context.
-  void commit(const physics_context& physics_context);
-
-  ///
-  /// Simulates physics.
-  /// \param physics_context The physics context.
-  /// \param delta_time The time since the last simulation.
-  void simulate(physics_context& physics_context, float delta_time);
 
   ///
   /// Visualizes physics.
@@ -162,41 +76,12 @@ namespace ludo
   std::vector<contact> contacts(const physics_context& physics_context, uint64_t body_a_id, uint64_t body_b_id);
 
   ///
-  /// Initializes a static body.
-  /// \param static_body The static body.
-  /// \param physics_context The physics context.
-  void init(static_body& static_body, physics_context& physics_context);
-
-  ///
-  /// De-initializes a static body.
-  /// \param static_body The static body.
-  /// \param physics_context The physics context.
-  void de_init(static_body& static_body, physics_context& physics_context);
-
-  ///
   /// Connects a static body to a mesh.
   /// \param static_body The static body.
   /// \param physics_context The physics context.
   /// \param mesh The mesh.
   /// \param vertex_format The vertex format of the mesh.
   void connect(static_body& static_body, physics_context& physics_context, const mesh& mesh, const vertex_format& format);
-
-  ///
-  /// Commits the state of a static body to the physics engine.
-  /// \param static_body The static body.
-  void commit(const static_body& static_body);
-
-  ///
-  /// Initializes a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param physics_context The physics context.
-  void init(dynamic_body& dynamic_body, physics_context& physics_context);
-
-  ///
-  /// De-initializes a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param physics_context The physics context.
-  void de_init(dynamic_body& dynamic_body, physics_context& physics_context);
 
   ///
   /// Connects a dynamic body to a dynamic body shape.
@@ -206,59 +91,6 @@ namespace ludo
   void connect(dynamic_body& dynamic_body, physics_context& physics_context, const dynamic_body_shape& dynamic_body_shape);
 
   ///
-  /// Commits the state of a dynamic body to the physics engine.
-  /// \param dynamic_body The dynamic body.
-  void commit(const dynamic_body& dynamic_body);
-
-  ///
-  /// Fetches the state of a dynamic body from the physics engine.
-  /// \param dynamic_body The dynamic body.
-  void fetch(dynamic_body& dynamic_body);
-
-  ///
-  /// Applies a force to a position on a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param force The force to apply.
-  /// \param position The position at which to apply the force.
-  void apply_force(dynamic_body& dynamic_body, const vec3& force, const vec3& position = vec3_zero);
-
-  ///
-  /// Applies an impulse to a position on a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param impulse The impulse to apply.
-  /// \param position The position at which to apply the impulse.
-  void apply_impulse(dynamic_body& dynamic_body, const vec3& impulse, const vec3& position = vec3_zero);
-
-  ///
-  /// Applies torque to a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param torque The torque to apply.
-  void apply_torque(dynamic_body& dynamic_body, const vec3& torque);
-
-  ///
-  /// Applies a torque impulse to a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  /// \param torque_impulse The torque impulse to apply.
-  void apply_torque_impulse(dynamic_body& body, const vec3& torque_impulse);
-
-  ///
-  /// Clears any forces acting on a dynamic body.
-  /// \param dynamic_body The dynamic body.
-  void clear_forces(dynamic_body& dynamic_body);
-
-  ///
-  /// Initializes a kinematic body.
-  /// \param kinematic_body The kinematic body.
-  /// \param physics_context The physics context.
-  void init(kinematic_body& kinematic_body, physics_context& physics_context);
-
-  ///
-  /// De-initializes a kinematic body.
-  /// \param kinematic_body The kinematic body.
-  /// \param physics_context The physics context.
-  void de_init(kinematic_body& kinematic_body, physics_context& physics_context);
-
-  ///
   /// Connects a kinematic body to body shapes.
   /// \param kinematic_body The kinematic body.
   /// \param physics_context The physics context.
@@ -266,67 +98,10 @@ namespace ludo
   void connect(kinematic_body& kinematic_body, physics_context& physics_context, const dynamic_body_shape& dynamic_body_shape);
 
   ///
-  /// Commits the state of a kinematic body to the physics engine.
-  /// \param kinematic_body The kinematic body.
-  void commit(const kinematic_body& kinematic_body);
-
-  ///
-  /// Fetches the state of a kinematic body from the physics engine.
-  /// \param kinematic_body The kinematic body.
-  void fetch(kinematic_body& kinematic_body);
-
-  ///
-  /// Initializes a ghost body.
-  /// \param ghost_body The ghost body.
-  /// \param physics_context The physics context.
-  void init(ghost_body& ghost_body, physics_context& physics_context);
-
-  ///
-  /// De-initializes a ghost body.
-  /// \param ghost_body The ghost body.
-  /// \param physics_context The physics context.
-  void de_init(ghost_body& ghost_body, physics_context& physics_context);
-
-  ///
   /// Connects a ghost body to body shapes.
   /// \param ghost_body The ghost body.
   /// \param physics_context The physics context.
   /// \param body_shapes The body shapes.
   /// \param dynamic_body_shape The dynamic body shape.
-  void connect(ghost_body& ghost_body, physics_context& physics_context, const dynamic_body_shape& dynamic_body_shape);
-
-  ///
-  /// Commits the state of a ghost body to the physics engine.
-  /// \param ghost_body The ghost body.
-  void commit(const ghost_body& ghost_body);
-
-  ///
-  /// Fetches the state of a ghost body from the physics engine.
-  /// \param ghost_body The ghost body.
-  void fetch(ghost_body& ghost_body);
-
-  ///
-  /// Initializes a dynamic body shape.
-  /// \param dynamic_body_shape The dynamic body shape.
-  void init(dynamic_body_shape& dynamic_body_shape);
-
-  ///
-  /// De-initializes a dynamic body shape.
-  /// \param dynamic_body_shape The dynamic body shape.
-  void de_init(dynamic_body_shape& dynamic_body_shape);
-
-  ///
-  /// Initializes a constraint.
-  /// \param constraint The constraint.
-  void init(constraint& constraint, physics_context& physics_context);
-
-  ///
-  /// De-initializes a constraint.
-  /// \param constraint The constraint.
-  void de_init(constraint& constraint, physics_context& physics_context);
-
-  ///
-  /// Commits the state of a constraint to the physics engine.
-  /// \param constraint The constraint.
-  void commit(const constraint& constraint);
+  void connect(ghost_body& ghost_body, physics_context& physics_context, const dynamic_body_shape& dynamic_body_shape);*/
 }

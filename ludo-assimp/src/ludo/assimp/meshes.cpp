@@ -14,11 +14,11 @@
 namespace ludo
 {
   vertex_format format(const aiScene& assimp_scene, const aiMesh& assimp_mesh);
-  void write_mesh_data(mesh& mesh, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform, uint32_t index_start, uint32_t vertex_start);
+  void write_mesh_data(mesh& mesh, buffer& indices, buffer& vertices, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform);
 
   const auto bone_data_size = max_bone_weights_per_vertex * sizeof(uint32_t) + max_bone_weights_per_vertex * sizeof(float);
 
-  void import_meshes(import_results& results, heap& indices, heap& vertices, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
+  void import_meshes(import_results& results, buffer& indices, buffer& vertices, const std::string& folder, const aiScene& assimp_scene, const std::vector<import_object>& mesh_objects, const import_options& options)
   {
     if (options.merge_meshes && !mesh_objects.empty())
     {
@@ -27,7 +27,8 @@ namespace ludo
       auto format = ludo::format(assimp_scene, *assimp_scene.mMeshes[0]);
 
       auto mesh = ludo::mesh();
-      init(mesh, indices, vertices, mesh_counts.first, mesh_counts.second, format.size);
+      mesh.indices.count = mesh_counts.first;
+      mesh.vertices.count = mesh_counts.second;
 
       results.meshes.push_back(mesh);
     }
@@ -45,46 +46,43 @@ namespace ludo
 
       if (options.merge_meshes)
       {
-        write_mesh_data(results.meshes[0], assimp_mesh, format, mesh_object.transform, index_start, vertex_start);
-
-        index_start += index_count;
-        vertex_start += vertex_count;
+        write_mesh_data(results.meshes[0], indices, vertices, assimp_mesh, format, mesh_object.transform);
       }
       else
       {
         auto mesh = ludo::mesh();
-        init(mesh, indices, vertices, index_count, vertex_count, format.size);
-        write_mesh_data(mesh, assimp_mesh, format, mesh_object.transform, 0, 0);
+        mesh.indices.start = index_start;
+        mesh.indices.count = index_count;
+        mesh.vertices.start = vertex_start;
+        mesh.vertices.count = vertex_count;
+        write_mesh_data(mesh, indices, vertices, assimp_mesh, format, mesh_object.transform);
 
         auto texture = import_texture(folder, assimp_scene, mesh_object);
         if (texture.id)
         {
           results.textures.push_back(texture);
-          mesh.texture_id = texture.id;
         }
 
         if (assimp_mesh.mNumBones)
         {
           auto armature = import_armature(assimp_scene, assimp_mesh);
-          if (armature.id)
+          if (armature.bone_index != -1)
           {
             results.armatures.push_back(armature);
-            mesh.armature_id = armature.id;
           }
 
           auto animations = import_animations(assimp_scene, assimp_mesh);
           if (!animations.empty())
           {
             results.animations.insert(results.animations.end(), animations.begin(), animations.end());
-            for (auto& animation : animations)
-            {
-              mesh.animation_ids.push_back(animation.id);
-            }
           }
         }
 
         results.meshes.push_back(mesh);
       }
+
+      index_start += index_count;
+      vertex_start += vertex_count;
     }
   }
 
@@ -103,19 +101,19 @@ namespace ludo
     );
   }
 
-  void write_mesh_data(mesh& mesh, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform, uint32_t index_start, uint32_t vertex_start)
+  void write_mesh_data(mesh& mesh, buffer& indices, buffer& vertices, const aiMesh& assimp_mesh, const vertex_format& format, const mat4& transform)
   {
-    auto index_stream = stream(mesh.index_buffer, index_start * sizeof(uint32_t));
+    auto index_stream = stream(indices, (mesh.indices.start) * sizeof(uint32_t));
     for (auto face_index = 0; face_index < assimp_mesh.mNumFaces; face_index++)
     {
       auto& assimp_face = assimp_mesh.mFaces[face_index];
       for (auto index_index = 0; index_index < assimp_face.mNumIndices; index_index++)
       {
-        write(index_stream, vertex_start + assimp_face.mIndices[index_index]);
+        write(index_stream, mesh.indices.start + assimp_face.mIndices[index_index]);
       }
     }
 
-    auto vertex_stream = stream(mesh.vertex_buffer, vertex_start * format.size);
+    auto vertex_stream = stream(vertices, (mesh.vertices.start) * format.size);
     for (auto vertex_index = 0; vertex_index < assimp_mesh.mNumVertices; vertex_index++)
     {
       auto position = vec3(transform * vec4(to_vec3(assimp_mesh.mVertices[vertex_index])));
@@ -137,7 +135,7 @@ namespace ludo
       if (format.has_bone_weights)
       {
         // Initialize bone indices and weights to 0
-        std::memset(mesh.vertex_buffer.data + vertex_stream.position, 0, bone_data_size);
+        std::memset(vertices.data + vertex_stream.position, 0, bone_data_size);
         vertex_stream.position += bone_data_size;
       }
     }
@@ -154,11 +152,11 @@ namespace ludo
       {
         auto& assimp_vertex_weight = assimp_bone->mWeights[weight_index];
 
-        auto first_bone_index_byte_index = (vertex_start + assimp_vertex_weight.mVertexId) * format.size + format.bone_weights_offset;
+        auto first_bone_index_byte_index = (mesh.vertices.start + assimp_vertex_weight.mVertexId) * format.size + format.bone_weights_offset;
         auto bone_index_byte_index = first_bone_index_byte_index;
         auto first_bone_weight_byte_index = first_bone_index_byte_index + max_bone_weights_per_vertex * sizeof(uint32_t);
         auto bone_weight_byte_index = first_bone_weight_byte_index;
-        while (cast<float>(mesh.vertex_buffer, bone_weight_byte_index) != 0.0f)
+        while (cast<float>(vertices, bone_weight_byte_index) != 0.0f)
         {
           bone_index_byte_index += sizeof(uint32_t);
           bone_weight_byte_index += sizeof(float);
@@ -166,8 +164,8 @@ namespace ludo
           assert(bone_index_byte_index < first_bone_weight_byte_index && "the maximum bone weights per vertex has been exceeded");
         }
 
-        cast<uint32_t>(mesh.vertex_buffer, bone_index_byte_index) = bone_index;
-        cast<float>(mesh.vertex_buffer, bone_weight_byte_index) = assimp_vertex_weight.mWeight;
+        cast<uint32_t>(vertices, bone_index_byte_index) = bone_index;
+        cast<float>(vertices, bone_weight_byte_index) = assimp_vertex_weight.mWeight;
       }
     }
   }

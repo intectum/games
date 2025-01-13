@@ -22,7 +22,7 @@ set(SRC_FILES
     src/ludo/assimp/importing.cpp
     src/ludo/assimp/math.cpp
     src/ludo/assimp/meshes.cpp
-    src/ludo/assimp/physics.cpp
+    #src/ludo/assimp/physics.cpp
     src/ludo/assimp/textures.cpp
     src/ludo/assimp/util.cpp)
 

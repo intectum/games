@@ -9,32 +9,29 @@
 
 namespace ludo
 {
-  void polar_cap(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert, bool north);
-  void quads(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert);
+  void polar_cap(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert, bool north);
+  void quads(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert);
   vec3 point_on_sphere(float radius, uint32_t divisions, uint32_t parallel, uint32_t meridian);
 
-  void sphere_uv(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options)
+  void sphere_uv(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options)
   {
     assert(options.divisions >= 3 && "must have at-least 3 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
-
-    auto index_index = start_index;
-    auto vertex_index = start_vertex;
 
     auto radius = options.dimensions[0] / 2.0f;
 
     if (options.outward_faces)
     {
-      polar_cap(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, false, true);
-      quads(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, false);
-      polar_cap(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, false, false);
+      polar_cap(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, false, true);
+      quads(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, false);
+      polar_cap(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, false, false);
     }
 
     if (options.inward_faces)
     {
-      polar_cap(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, true, true);
-      quads(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, true);
-      polar_cap(mesh, format, index_index, vertex_index, options.center, radius, options.divisions, options.smooth, options.color, true, false);
+      polar_cap(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, true, true);
+      quads(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, true);
+      polar_cap(mesh, indices, vertices, format, options.center, radius, options.divisions, options.smooth, options.color, true, false);
     }
   }
 
@@ -58,7 +55,7 @@ namespace ludo
     return { total, unique };
   }
 
-  void polar_cap(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert, bool north)
+  void polar_cap(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert, bool north)
   {
     auto parallel = north ? 1 : divisions - 1;
     auto position_0 = vec3 { 0.0f, north ? radius : -radius, 0.0f };
@@ -88,22 +85,22 @@ namespace ludo
         normal_2 *= -1.0f;
       }
 
-      write_vertex(mesh, format, index_index, vertex_index, center + position_0, normal_0, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, center + position_0, normal_0, color, { 0.0f, 0.0f });
 
       if (north != invert)
       {
-        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_2, normal_2, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_1, normal_1, color, { 0.0f, 0.0f });
       }
       else
       {
-        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_1, normal_1, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_2, normal_2, color, { 0.0f, 0.0f });
       }
     }
   }
 
-  void quads(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert)
+  void quads(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert)
   {
     for (auto parallel = 1; parallel < divisions - 1; parallel++)
     {
@@ -132,13 +129,13 @@ namespace ludo
         normalize(normal_2);
         normalize(normal_3);
 
-        write_vertex(mesh, format, index_index, vertex_index, center + position_0, normal_0, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_0, normal_0, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_1, normal_1, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_2, normal_2, color, { 0.0f, 0.0f });
 
-        write_vertex(mesh, format, index_index, vertex_index, center + position_1, normal_1, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_3, normal_3, color, { 0.0f, 0.0f });
-        write_vertex(mesh, format, index_index, vertex_index, center + position_2, normal_2, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_1, normal_1, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_3, normal_3, color, { 0.0f, 0.0f });
+        append_vertex(mesh, indices, vertices, format, center + position_2, normal_2, color, { 0.0f, 0.0f });
       }
     }
   }

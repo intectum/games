@@ -17,7 +17,6 @@ namespace ludo
   /// A grid with uniformly-sized cubic cells.
   struct grid3
   {
-    uint64_t id = 0; ///< A unique identifier.
     uint64_t compute_program_id = 0; ///< The compute program used to add render commands.
 
     aabb3 bounds; ///< The outer bounds.

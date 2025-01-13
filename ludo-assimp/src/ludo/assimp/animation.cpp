@@ -2,6 +2,8 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <unordered_map>
+
 #include <ludo/animation.h>
 
 #include "animation.h"
@@ -57,7 +59,6 @@ namespace ludo
         .ticks_per_second = static_cast<float>(assimp_animation->mTicksPerSecond == 0.0 ? 24.0 : assimp_animation->mTicksPerSecond),
         .nodes = nodes
       };
-      init(animation);
 
       animations.push_back(animation);
     }
@@ -120,7 +121,6 @@ namespace ludo
     }
 
     auto node = armature { .transform = to_mat4(assimp_node.mTransformation) };
-    init(node);
 
     if (!root_found)
     {

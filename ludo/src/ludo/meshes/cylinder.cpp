@@ -10,15 +10,12 @@
 
 namespace ludo
 {
-  void pipe(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center_front, const vec3& center_back, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert);
+  void pipe(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center_front, const vec3& center_back, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert);
 
-  void cylinder(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options)
+  void cylinder(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options)
   {
     assert(options.divisions >= 3 && "must have at-least 3 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
-
-    auto index_index = start_index;
-    auto vertex_index = start_vertex;
 
     auto radius = options.dimensions[0] / 2.0f;
     auto center_front = options.center + vec3 { 0.0f, 0.0f, options.dimensions[0] * 0.5f };
@@ -26,16 +23,16 @@ namespace ludo
 
     if (options.outward_faces)
     {
-      circle(mesh, format, index_index, vertex_index, center_front, radius, options.divisions, options.color, false);
-      pipe(mesh, format, index_index, vertex_index, center_front, center_back, radius, options.divisions, options.smooth, options.color, false);
-      circle(mesh, format, index_index, vertex_index, center_back, radius, options.divisions, options.color, true);
+      append_circle(mesh, indices, vertices, format, center_front, radius, options.divisions, options.color, false);
+      pipe(mesh, indices, vertices, format, center_front, center_back, radius, options.divisions, options.smooth, options.color, false);
+      append_circle(mesh, indices, vertices, format, center_back, radius, options.divisions, options.color, true);
     }
 
     if (options.inward_faces)
     {
-      circle(mesh, format, index_index, vertex_index, center_front, radius, options.divisions, options.color, true);
-      pipe(mesh, format, index_index, vertex_index, center_front, center_back, radius, options.divisions, options.smooth, options.color, true);
-      circle(mesh, format, index_index, vertex_index, center_back, radius, options.divisions, options.color, false);
+      append_circle(mesh, indices, vertices, format, center_front, radius, options.divisions, options.color, true);
+      pipe(mesh, indices, vertices, format, center_front, center_back, radius, options.divisions, options.smooth, options.color, true);
+      append_circle(mesh, indices, vertices, format, center_back, radius, options.divisions, options.color, false);
     }
   }
 
@@ -58,7 +55,7 @@ namespace ludo
     return { total, unique };
   }
 
-  void pipe(mesh& mesh, const vertex_format& format, uint32_t& index_index, uint32_t& vertex_index, const vec3& center_front, const vec3& center_back, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert)
+  void pipe(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const vec3& center_front, const vec3& center_back, float radius, uint32_t divisions, bool smooth, const vec4& color, bool invert)
   {
     for (auto division = 0; division < divisions; division++)
     {
@@ -90,13 +87,13 @@ namespace ludo
         normal_1 *= -1.0f;
       }
 
-      write_vertex(mesh, format, index_index, vertex_index, position_bottom_left, normal_0, color, { 0.0f, 0.0f });
-      write_vertex(mesh, format, index_index, vertex_index, position_bottom_right, normal_0, color, { 0.0f, 0.0f });
-      write_vertex(mesh, format, index_index, vertex_index, position_top_left, normal_1, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_bottom_left, normal_0, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_bottom_right, normal_0, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_top_left, normal_1, color, { 0.0f, 0.0f });
 
-      write_vertex(mesh, format, index_index, vertex_index, position_bottom_right, normal_0, color, { 0.0f, 0.0f });
-      write_vertex(mesh, format, index_index, vertex_index, position_top_right, normal_1, color, { 0.0f, 0.0f });
-      write_vertex(mesh, format, index_index, vertex_index, position_top_left, normal_1, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_bottom_right, normal_0, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_top_right, normal_1, color, { 0.0f, 0.0f });
+      append_vertex(mesh, indices, vertices, format, position_top_left, normal_1, color, { 0.0f, 0.0f });
     }
   }
 }

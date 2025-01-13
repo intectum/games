@@ -7,7 +7,6 @@
 #include <array>
 #include <ostream>
 
-#include "../core.h"
 #include "vec.h"
 
 namespace ludo

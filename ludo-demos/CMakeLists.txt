@@ -46,8 +46,8 @@ target_link_libraries(physicy ludo-glfw)
 target_link_libraries(physicy ludo-opengl)
 target_link_libraries(spinny ludo)
 target_link_libraries(spinny ludo-glfw)
-target_link_libraries(spinny ludo-opengl)
 target_link_libraries(spinny ludo-stb)
+target_link_libraries(spinny ludo-opengl)
 
 # Target Resources
 #########################

@@ -8,5 +8,5 @@
 
 namespace ludo
 {
-  std::pair<uint32_t, uint32_t> clean(mesh& destination, const mesh& source, const vertex_format& destination_format, const vertex_format& source_format, bool dry_run = false);
+  void clean(mesh& dest_mesh, buffer& dest_indices, buffer& dest_vertices, const buffer& src_indices, const buffer& src_vertices, uint32_t count, const vertex_format& dest_format, const vertex_format& src_format, bool dry_run);
 }

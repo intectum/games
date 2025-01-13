@@ -9,28 +9,25 @@
 
 namespace ludo
 {
-  void sphere_cube(mesh& mesh, const vertex_format& format, uint32_t start_index, uint32_t start_vertex, const shape_options& options, bool spherified)
+  void append_sphere_cube(mesh& mesh, buffer& indices, buffer& vertices, const vertex_format& format, const shape_options& options, bool spherified)
   {
     assert(options.divisions >= 2 && "must have at-least 2 divisions");
     assert(options.outward_faces || options.inward_faces && "outward and/or inward faces must be specified");
-
-    auto index_index = start_index;
-    auto vertex_index = start_vertex;
 
     auto [ vertex_count, index_count ] = sphere_cube_counts(format, options);
     auto radius = options.dimensions[0] / 2.0f;
 
     // I couldn't figure out how to adapt the 'spherifying' code to different cube sizes, so we're using the 2x2x2 cube and multiplying the result by the radius.
-    auto box_index_index = index_index;
-    auto box_vertex_index = vertex_index;
+    auto box_index_start = mesh.indices.start + mesh.indices.count;
+    auto box_vertex_start = mesh.vertices.start + mesh.vertices.count;
     auto box_options = options;
     box_options.dimensions = vec3 { 2.0f, 2.0f, 2.0f };
-    box(mesh, format, box_index_index, box_vertex_index, box_options, options.smooth, options.smooth);
+    append_box(mesh, indices, vertices, format, box_options, options.smooth, options.smooth);
 
-    auto byte_index = vertex_index * format.size;
-    for (auto existing_vertex_index = vertex_index; existing_vertex_index < vertex_index + vertex_count; existing_vertex_index++)
+    auto byte_index = box_vertex_start * format.size;
+    for (auto existing_vertex_index = box_vertex_start; existing_vertex_index < box_vertex_start + vertex_count; existing_vertex_index++)
     {
-      auto position = cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset) - options.center;
+      auto position = cast<vec3>(vertices, byte_index + format.position_offset) - options.center;
 
       if (spherified)
       {
@@ -47,43 +44,43 @@ namespace ludo
         normalize(position);
       }
 
-      cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset) = options.center + position * radius;
+      cast<vec3>(vertices, byte_index + format.position_offset) = options.center + position * radius;
       byte_index += format.size;
     }
 
     if (format.has_normal)
     {
-      byte_index = vertex_index * format.size;
+      byte_index = box_vertex_start * format.size;
 
       if (options.smooth)
       {
-        for (auto existing_vertex_index = vertex_index; existing_vertex_index < vertex_index + vertex_count; existing_vertex_index++)
+        for (auto existing_vertex_index = box_vertex_start; existing_vertex_index < box_vertex_start + vertex_count; existing_vertex_index++)
         {
-          auto position = cast<vec3>(mesh.vertex_buffer, byte_index + format.position_offset);
+          auto& position = cast<vec3>(vertices, byte_index + format.position_offset);
           auto normal = position - options.center;
           normalize(normal);
 
-          cast<vec3>(mesh.vertex_buffer, byte_index + format.normal_offset) = normal;
+          cast<vec3>(vertices, byte_index + format.normal_offset) = normal;
           byte_index += format.size;
         }
       }
       else
       {
-        for (auto existing_index_index = index_index; existing_index_index < index_index + index_count; existing_index_index += 3)
+        for (auto existing_index_index = box_index_start; existing_index_index < box_index_start + index_count; existing_index_index += 3)
         {
-          auto index_0 = cast<uint32_t>(mesh.index_buffer, existing_index_index * sizeof(uint32_t));
-          auto index_1 = cast<uint32_t>(mesh.index_buffer, (existing_index_index + 1) * sizeof(uint32_t));
-          auto index_2 = cast<uint32_t>(mesh.index_buffer, (existing_index_index + 2) * sizeof(uint32_t));
+          auto index_0 = cast<uint32_t>(indices, existing_index_index * sizeof(uint32_t));
+          auto index_1 = cast<uint32_t>(indices, (existing_index_index + 1) * sizeof(uint32_t));
+          auto index_2 = cast<uint32_t>(indices, (existing_index_index + 2) * sizeof(uint32_t));
 
-          auto position_0 = cast<vec3>(mesh.vertex_buffer, index_0 * format.size + format.position_offset);
-          auto position_1 = cast<vec3>(mesh.vertex_buffer, index_1 * format.size + format.position_offset);
-          auto position_2 = cast<vec3>(mesh.vertex_buffer, index_2 * format.size + format.position_offset);
+          auto position_0 = cast<vec3>(vertices, index_0 * format.size + format.position_offset);
+          auto position_1 = cast<vec3>(vertices, index_1 * format.size + format.position_offset);
+          auto position_2 = cast<vec3>(vertices, index_2 * format.size + format.position_offset);
           auto normal = cross(position_1 - position_0, position_2 - position_0);
           normalize(normal);
 
-          cast<vec3>(mesh.vertex_buffer, index_0 * format.size + format.normal_offset) = normal;
-          cast<vec3>(mesh.vertex_buffer, index_1 * format.size + format.normal_offset) = normal;
-          cast<vec3>(mesh.vertex_buffer, index_2 * format.size + format.normal_offset) = normal;
+          cast<vec3>(vertices, index_0 * format.size + format.normal_offset) = normal;
+          cast<vec3>(vertices, index_1 * format.size + format.normal_offset) = normal;
+          cast<vec3>(vertices, index_2 * format.size + format.normal_offset) = normal;
         }
       }
     }

@@ -6,16 +6,16 @@
 
 #include <btBulletDynamicsCommon.h>
 
-#include <ludo/math/transform.h>
-#include <ludo/math/vec.h>
+#include <ludo/math/mat.h>
+#include <ludo/math/quat.h>
 
 namespace ludo
 {
-  btTransform to_btTransform(const transform& original);
+  btTransform to_btTransform(const vec3& position, const quat& rotation);
 
   btVector3 to_btVector3(const vec3& original);
 
-  transform to_transform(const btTransform& original);
+  mat4 to_mat4(const btTransform& original);
 
   vec3 to_vec3(const btVector3& original);
 }

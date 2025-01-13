@@ -2,6 +2,7 @@
  * This file is part of ludo. See the LICENSE file for the full license governing this code.
  */
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 
@@ -46,11 +47,6 @@ namespace ludo
   {
     glDeleteProgram(compute_program.id); check_opengl_error();
     compute_program.id = 0;
-
-    if (compute_program.shader_buffer.data)
-    {
-      deallocate_vram(compute_program.shader_buffer);
-    }
   }
 
   void execute(compute_program& compute_program, uint32_t groups_x, uint32_t groups_y, uint32_t groups_z)
@@ -70,7 +66,6 @@ namespace ludo
     assert(validate_status && "failed to validate compute program");
 
     glUseProgram(compute_program.id); check_opengl_error();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, compute_program.shader_buffer.id); check_opengl_error();
 
     glDispatchCompute(groups_x, groups_y, groups_z); check_opengl_error();
   }

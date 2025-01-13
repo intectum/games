@@ -10,8 +10,7 @@
 #include <assimp/vector3.h>
 
 #include <ludo/math/mat.h>
-#include <ludo/math/transform.h>
-#include <ludo/math/vec.h>
+#include <ludo/math/quat.h>
 
 namespace ludo
 {
